@@ -93,8 +93,12 @@ export function validateConfiguration(
         url.search ||
         url.hash ||
         url.pathname !== '/'
-      )
+      ) {
         issues.push(`${key} must be an HTTP origin without credentials, a path, query or fragment`);
+      } else if (key !== 'TOXIPROXY_URL' && (!url.port || Number(url.port) < 1)) {
+        // Lifecycle commands consume URL.port; parsing removes HTTP/HTTPS default ports.
+        issues.push(`${key} must include a non-default listening port between 1 and 65535`);
+      }
     } catch {
       issues.push(`${key} must be an HTTP origin`);
     }

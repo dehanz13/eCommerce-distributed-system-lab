@@ -11,12 +11,15 @@ All non-optional keys in `.env.example` must be present and nonblank. This inclu
 | `TOPOLOGY`                                 | `single` or `two`                                                                  |
 | Dependency ports                           | Integers from 1 through 65535                                                      |
 | Service and proxy URLs                     | HTTP origins without embedded credentials, paths, query parameters or fragments    |
+| Application URLs                           | Include a non-default listening port from 1 through 65535; port zero is rejected   |
 | `RABBIT_CONNECT_HOST`                      | May be blank; uses `RABBIT_HOST` for the AMQP proxy connection                     |
 | `REMOTE_HOST`, `REMOTE_USER`, `REMOTE_DIR` | Required in two-machine mode; SSH operations also check their command-safe formats |
 | `REMOTE_VM`                                | Optional for direct remote Linux operation; required by the guest-monitor command  |
 | `REMOTE_BIND_IP`                           | Required when generating the Lima guest template                                   |
 
 Missing required fields are reported together. The loader writes a message to stderr and throws before service startup. It reports variable names and corrective instructions, never supplied values. A missing or unreadable file is reported as a root configuration-file error.
+
+`ORDERING_URL`, `FULFILLMENT_URL`, `OPERATOR_URL` and `WEB_URL` must retain a port after URL parsing because lifecycle commands use that port to start and inspect the processes. Origins without a port, `http://host:80` and `https://host:443` are rejected: URL parsing removes default ports. `TOXIPROXY_URL` is an HTTP destination and can use its protocol's default port.
 
 Example terminal output:
 

@@ -45,6 +45,30 @@ it.each([
   expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(value);
 });
 
+it.each(
+  ['ORDERING_URL', 'FULFILLMENT_URL', 'OPERATOR_URL', 'WEB_URL'].flatMap((key) =>
+    [
+      'http://localhost',
+      'https://localhost',
+      'http://localhost:80',
+      'https://localhost:443',
+      'http://localhost:0',
+    ].map((value) => ({ key, value })),
+  ),
+)('rejects $key when $value has no usable lifecycle port', ({ key, value }) => {
+  expect(() => validateConfiguration({ ...example, [key]: value })).toThrow(
+    `${key} must include a non-default listening port between 1 and 65535`,
+  );
+  expect(console.error).toHaveBeenCalledWith(expect.stringContaining('root .env'));
+  expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(value);
+});
+
+it('allows a default-port proxy destination because lifecycle commands do not extract its port', () => {
+  expect(
+    validateConfiguration({ ...example, TOXIPROXY_URL: 'http://localhost' }).TOXIPROXY_URL,
+  ).toBe('http://localhost');
+});
+
 it('requires remote host, account and directory only for two-machine operation', () => {
   expect(() => validateConfiguration({ ...example, TOPOLOGY: 'two' })).toThrow(
     /missing REMOTE_HOST.*missing REMOTE_USER.*missing REMOTE_DIR/,
