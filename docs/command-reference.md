@@ -85,7 +85,7 @@ pnpm exec vitest run --coverage
 pnpm exec playwright install chromium
 # Ubuntu CI/host if system browser dependencies are missing:
 pnpm exec playwright install --with-deps chromium
-pnpm test:e2e -- --list
+pnpm exec playwright test --list
 pnpm exec playwright test --headed
 ```
 

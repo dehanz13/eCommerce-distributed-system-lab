@@ -84,7 +84,18 @@ Stop shoppers/exercises, then on the application host:
 ./lab status
 ```
 
-Substitute `rabbitmq`, `redis` or `toxiproxy` for the named service. Service recreation preserves named database/broker volumes unless you explicitly request deletion. Expect dependency disruption while changing a running service. The native fulfillment process in single topology does not acquire Docker limits; the `fulfillment` Compose limits apply to its remote container.
+The service-specific sequence above applies to single topology, where Compose reads the edited local checkout. In **two-machine mode**, a named service start does not transfer a newly edited Compose file. Finish active work, use the full lifecycle sequence below from the application host, and retain the same root configuration:
+
+```sh
+./lab stop
+# Edit the chosen service's cpus/mem_limit in canonical compose.yaml.
+./lab start
+./lab status
+```
+
+Full startup transfers the checkout and generates the private remote configuration before running Compose in the guest. Do not independently edit the generated `.lab/remote.env`. Verify effective limits inside the guest afterward.
+
+Substitute `rabbitmq`, `redis` or `toxiproxy` for the named single-host service. Service recreation preserves named database/broker volumes unless you explicitly request deletion. Expect dependency disruption while changing a running service. The native fulfillment process in single topology does not acquire Docker limits; the `fulfillment` Compose limits apply to its remote container.
 
 Inside the guest, inspect the effective container limits using the generated configuration:
 
