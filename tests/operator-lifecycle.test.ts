@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   cwd: new Map<number, string>(),
   spawned: [] as string[][],
   hiddenOwner: false,
+  retiringSocket: false,
 }));
 state.root = fs.mkdtempSync(path.join(os.tmpdir(), 'learning-lifecycle-'));
 vi.mock('@lab/runtime', async (original) => ({
@@ -20,7 +21,11 @@ vi.mock('node:child_process', async (original) => {
   const actual = await original<object>();
   const execFile = Object.assign(vi.fn(), {
     [promisify.custom]: async (file: string, args: string[]) => {
-      if (file === 'ss')
+      if (file === 'ss') {
+        if (state.retiringSocket && !state.listeners.length) {
+          state.retiringSocket = false;
+          return { stdout: 'LISTEN 0 511 127.0.0.1:4313 0.0.0.0:*', stderr: '' };
+        }
         return {
           stdout: state.hiddenOwner
             ? 'LISTEN 0 511 127.0.0.1:4313 0.0.0.0:*'
@@ -32,6 +37,7 @@ vi.mock('node:child_process', async (original) => {
                 .join('\n'),
           stderr: '',
         };
+      }
       if (file === 'readlink')
         return { stdout: state.cwd.get(Number(args[0]!.split('/')[2])) + '\n', stderr: '' };
       if (args[0] === '-t') return { stdout: state.listeners.join('\n'), stderr: '' };
@@ -61,6 +67,7 @@ beforeEach(() => {
   state.cwd.clear();
   state.spawned = [];
   state.hiddenOwner = false;
+  state.retiringSocket = false;
   fs.rmSync(path.join(state.root, '.lab/operator.pid'), { force: true });
   kill.mockReset().mockImplementation((pid, signal) => {
     if (signal === 0) throw Object.assign(new Error('Gone'), { code: 'ESRCH' });
@@ -117,6 +124,19 @@ it('refuses Linux lifecycle changes when a listening socket hides its owner', as
     await expect(stopService('operator')).rejects.toThrow('ownership is unavailable');
     expect(state.spawned).toEqual([]);
     expect(kill).not.toHaveBeenCalled();
+  } finally {
+    platform.mockRestore();
+  }
+});
+
+it('waits for a retiring Linux socket after its owned process has stopped', async () => {
+  const platform = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+  try {
+    await startService('operator');
+    state.retiringSocket = true;
+    await stopService('operator');
+    expect(state.retiringSocket).toBe(false);
+    expect(state.listeners).toEqual([]);
   } finally {
     platform.mockRestore();
   }

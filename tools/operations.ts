@@ -70,15 +70,19 @@ function servicePort(name: Service | 'operator') {
 async function listeners(name: Service | 'operator') {
   if (process.platform === 'linux') {
     // Older Linux lsof skips Next's truncated process name with unmatched parentheses.
-    const result = await command('ss', ['-H', '-ltnp', `sport = :${servicePort(name)}`]);
-    const rows = result.stdout.trim().split('\n').filter(Boolean);
-    const pids = rows.flatMap((row) => {
-      const matches = [...row.matchAll(/pid=(\d+)/g)].map((match) => Number(match[1]));
-      if (!matches.length)
+    const deadline = Date.now() + 500;
+    while (true) {
+      const result = await command('ss', ['-H', '-ltnp', `sport = :${servicePort(name)}`]);
+      const rows = result.stdout.trim().split('\n').filter(Boolean);
+      const owners = rows.map((row) =>
+        [...row.matchAll(/pid=(\d+)/g)].map((match) => Number(match[1])),
+      );
+      if (owners.every((pids) => pids.length)) return [...new Set(owners.flat())];
+      // After SIGKILL the kernel can briefly expose a socket whose owner has exited.
+      if (Date.now() >= deadline)
         throw new Error(`${name} listener ownership is unavailable; refusing lifecycle changes`);
-      return matches;
-    });
-    return [...new Set(pids)];
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
   }
   try {
     const result = await command('lsof', ['-t', `-iTCP:${servicePort(name)}`, '-sTCP:LISTEN']);
