@@ -21,7 +21,20 @@ test('shopper population creates real cart and checkout outcomes', async ({ page
   await page.getByRole('button', { name: 'Shoppers', exact: true }).click();
   await page.getByLabel('Shoppers', { exact: true }).fill('8');
   await page.getByLabel('Concurrency', { exact: true }).fill('2');
+  const accepted = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname.endsWith('/api/v1/feeder'),
+  );
   await page.getByRole('button', { name: 'Start shoppers' }).click();
+  const response = await accepted;
+  expect(response.status()).toBe(202);
+  const { data: startedRun } = await response.json();
+  expect(startedRun.id).toEqual(expect.any(String));
+  // A previous terminal run remains visible until the next dashboard observation arrives.
+  await expect(
+    page.locator('details').filter({ hasText: 'Retained unresolved submissions and run metadata' }),
+  ).toContainText(startedRun.id);
   await expect(page.getByText('completed · 8 / 8 shoppers finished', { exact: true })).toBeVisible({
     timeout: 30000,
   });
@@ -59,7 +72,19 @@ test('failure lab records and restores a scoped network interruption', async ({ 
   await page.getByRole('button', { name: 'Failure Lab', exact: true }).click();
   await page.getByRole('combobox', { name: 'Exercise', exact: true }).selectOption('network-cut');
   await page.getByLabel('Active duration (seconds)').fill('3');
+  const accepted = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname.endsWith('/api/v1/experiments'),
+  );
   await page.getByRole('button', { name: 'Engage exercise' }).click();
+  const response = await accepted;
+  expect(response.status()).toBe(202);
+  const { data: startedRun } = await response.json();
+  expect(startedRun.id).toEqual(expect.any(String));
+  await expect(
+    page.locator('details').filter({ hasText: 'Run identifiers and timestamps' }),
+  ).toContainText(startedRun.id);
   await expect(page.getByText('completed · restoration completed', { exact: true })).toBeVisible({
     timeout: 30000,
   });
