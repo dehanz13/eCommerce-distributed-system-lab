@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+project_root="$PWD"
+# Only stop listeners whose working directory belongs to this checkout.
+for port in 4310 4311 4312 4313; do
+  for pid in $(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true); do
+    if lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | rg -Fx "n$project_root" >/dev/null || lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | rg -Fx "n$project_root/apps/web" >/dev/null; then
+      kill -KILL "$pid"
+    fi
+  done
+done
+rm -f .lab/web.pid .lab/ordering.pid .lab/fulfillment.pid .lab/operator.pid

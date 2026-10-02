@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Run on the machine being observed; VM readings describe the guest, not its host.
+if ! command -v btop >/dev/null 2>&1; then
+  echo 'btop is missing. macOS: brew install btop; Debian/Ubuntu VM: sudo apt install btop' >&2
+  exit 1
+fi
+exec btop "$@"

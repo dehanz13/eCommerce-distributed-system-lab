@@ -1,0 +1,1507 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "ordering learning API", "version": "1.0.0" },
+  "components": { "schemas": {} },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/activity": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "properties": {
+                          "id": { "format": "uuid", "type": "string" },
+                          "owner": { "type": "string" },
+                          "type": { "type": "string" },
+                          "occurredAt": { "format": "date-time", "type": "string" },
+                          "correlationId": { "format": "uuid", "type": "string" },
+                          "requestId": { "format": "uuid", "type": "string" },
+                          "eventId": { "format": "uuid", "type": "string" },
+                          "eventType": { "type": "string" },
+                          "orderId": { "format": "uuid", "type": "string" },
+                          "jobId": { "format": "uuid", "type": "string" },
+                          "attemptId": { "format": "uuid", "type": "string" },
+                          "attemptNumber": { "minimum": 1, "type": "integer" },
+                          "durationMs": { "minimum": 0, "type": "number" },
+                          "method": { "type": "string" },
+                          "route": { "type": "string" },
+                          "status": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
+                          "outcome": { "type": "string" },
+                          "key": { "type": "string" }
+                        },
+                        "required": ["id", "owner", "type", "occurredAt"]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": { "get": { "responses": { "200": { "description": "Default Response" } } } },
+    "/health": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "format": "uuid", "type": "string" },
+                          "createdAt": { "format": "date-time", "type": "string" },
+                          "updatedAt": { "format": "date-time", "type": "string" },
+                          "name": { "type": "string" },
+                          "description": { "type": "string" },
+                          "priceCents": { "minimum": 0, "type": "integer" },
+                          "availableStock": { "minimum": 0, "type": "integer" },
+                          "active": { "type": "boolean" },
+                          "deactivatedAt": {
+                            "format": "date-time",
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "createdAt",
+                          "updatedAt",
+                          "name",
+                          "description",
+                          "priceCents",
+                          "availableStock",
+                          "active",
+                          "deactivatedAt"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "name": { "minLength": 1, "maxLength": 120, "type": "string" },
+                  "description": { "maxLength": 1000, "type": "string" },
+                  "priceCents": { "minimum": 0, "maximum": 1000000000, "type": "integer" },
+                  "availableStock": { "minimum": 0, "maximum": 1000000, "type": "integer" }
+                },
+                "required": ["name", "description", "priceCents", "availableStock"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "name": { "type": "string" },
+                        "description": { "type": "string" },
+                        "priceCents": { "minimum": 0, "type": "integer" },
+                        "availableStock": { "minimum": 0, "type": "integer" },
+                        "active": { "type": "boolean" },
+                        "deactivatedAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "createdAt",
+                        "updatedAt",
+                        "name",
+                        "description",
+                        "priceCents",
+                        "availableStock",
+                        "active",
+                        "deactivatedAt"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "name": { "type": "string" },
+                        "description": { "type": "string" },
+                        "priceCents": { "minimum": 0, "type": "integer" },
+                        "availableStock": { "minimum": 0, "type": "integer" },
+                        "active": { "type": "boolean" },
+                        "deactivatedAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "createdAt",
+                        "updatedAt",
+                        "name",
+                        "description",
+                        "priceCents",
+                        "availableStock",
+                        "active",
+                        "deactivatedAt"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "name": { "minLength": 1, "maxLength": 120, "type": "string" },
+                  "description": { "maxLength": 1000, "type": "string" },
+                  "priceCents": { "minimum": 0, "maximum": 1000000000, "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "name": { "type": "string" },
+                        "description": { "type": "string" },
+                        "priceCents": { "minimum": 0, "type": "integer" },
+                        "availableStock": { "minimum": 0, "type": "integer" },
+                        "active": { "type": "boolean" },
+                        "deactivatedAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "createdAt",
+                        "updatedAt",
+                        "name",
+                        "description",
+                        "priceCents",
+                        "availableStock",
+                        "active",
+                        "deactivatedAt"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "name": { "type": "string" },
+                        "description": { "type": "string" },
+                        "priceCents": { "minimum": 0, "type": "integer" },
+                        "availableStock": { "minimum": 0, "type": "integer" },
+                        "active": { "type": "boolean" },
+                        "deactivatedAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "createdAt",
+                        "updatedAt",
+                        "name",
+                        "description",
+                        "priceCents",
+                        "availableStock",
+                        "active",
+                        "deactivatedAt"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/{id}/stock": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "delta": { "minimum": -1000000, "maximum": 1000000, "type": "integer" }
+                },
+                "required": ["delta"]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "name": { "type": "string" },
+                        "description": { "type": "string" },
+                        "priceCents": { "minimum": 0, "type": "integer" },
+                        "availableStock": { "minimum": 0, "type": "integer" },
+                        "active": { "type": "boolean" },
+                        "deactivatedAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "createdAt",
+                        "updatedAt",
+                        "name",
+                        "description",
+                        "priceCents",
+                        "availableStock",
+                        "active",
+                        "deactivatedAt"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/carts": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": { "shopperId": { "format": "uuid", "type": "string" } },
+                "required": ["shopperId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "shopperId": { "format": "uuid", "type": "string" },
+                        "revision": { "minimum": 0, "type": "integer" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "createdAt": { "format": "date-time", "type": "string" },
+                              "updatedAt": { "format": "date-time", "type": "string" },
+                              "cartId": { "format": "uuid", "type": "string" },
+                              "productId": { "format": "uuid", "type": "string" },
+                              "quantity": { "minimum": 1, "type": "integer" },
+                              "name": { "type": "string" },
+                              "priceCents": { "minimum": 0, "type": "integer" },
+                              "availableStock": { "minimum": 0, "type": "integer" },
+                              "active": { "type": "boolean" }
+                            },
+                            "required": [
+                              "id",
+                              "createdAt",
+                              "updatedAt",
+                              "cartId",
+                              "productId",
+                              "quantity",
+                              "name",
+                              "priceCents",
+                              "availableStock",
+                              "active"
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["id", "createdAt", "updatedAt", "shopperId", "revision", "items"]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/carts/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "shopperId": { "format": "uuid", "type": "string" },
+                        "revision": { "minimum": 0, "type": "integer" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "createdAt": { "format": "date-time", "type": "string" },
+                              "updatedAt": { "format": "date-time", "type": "string" },
+                              "cartId": { "format": "uuid", "type": "string" },
+                              "productId": { "format": "uuid", "type": "string" },
+                              "quantity": { "minimum": 1, "type": "integer" },
+                              "name": { "type": "string" },
+                              "priceCents": { "minimum": 0, "type": "integer" },
+                              "availableStock": { "minimum": 0, "type": "integer" },
+                              "active": { "type": "boolean" }
+                            },
+                            "required": [
+                              "id",
+                              "createdAt",
+                              "updatedAt",
+                              "cartId",
+                              "productId",
+                              "quantity",
+                              "name",
+                              "priceCents",
+                              "availableStock",
+                              "active"
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["id", "createdAt", "updatedAt", "shopperId", "revision", "items"]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/carts/{id}/items/{productId}": {
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": { "quantity": { "minimum": 1, "maximum": 999, "type": "integer" } },
+                "required": ["quantity"]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "productId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "shopperId": { "format": "uuid", "type": "string" },
+                        "revision": { "minimum": 0, "type": "integer" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "createdAt": { "format": "date-time", "type": "string" },
+                              "updatedAt": { "format": "date-time", "type": "string" },
+                              "cartId": { "format": "uuid", "type": "string" },
+                              "productId": { "format": "uuid", "type": "string" },
+                              "quantity": { "minimum": 1, "type": "integer" },
+                              "name": { "type": "string" },
+                              "priceCents": { "minimum": 0, "type": "integer" },
+                              "availableStock": { "minimum": 0, "type": "integer" },
+                              "active": { "type": "boolean" }
+                            },
+                            "required": [
+                              "id",
+                              "createdAt",
+                              "updatedAt",
+                              "cartId",
+                              "productId",
+                              "quantity",
+                              "name",
+                              "priceCents",
+                              "availableStock",
+                              "active"
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["id", "createdAt", "updatedAt", "shopperId", "revision", "items"]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "productId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "shopperId": { "format": "uuid", "type": "string" },
+                        "revision": { "minimum": 0, "type": "integer" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "createdAt": { "format": "date-time", "type": "string" },
+                              "updatedAt": { "format": "date-time", "type": "string" },
+                              "cartId": { "format": "uuid", "type": "string" },
+                              "productId": { "format": "uuid", "type": "string" },
+                              "quantity": { "minimum": 1, "type": "integer" },
+                              "name": { "type": "string" },
+                              "priceCents": { "minimum": 0, "type": "integer" },
+                              "availableStock": { "minimum": 0, "type": "integer" },
+                              "active": { "type": "boolean" }
+                            },
+                            "required": [
+                              "id",
+                              "createdAt",
+                              "updatedAt",
+                              "cartId",
+                              "productId",
+                              "quantity",
+                              "name",
+                              "priceCents",
+                              "availableStock",
+                              "active"
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["id", "createdAt", "updatedAt", "shopperId", "revision", "items"]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/carts/{id}/preview": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "cartId": { "format": "uuid", "type": "string" },
+                        "revision": { "minimum": 0, "type": "integer" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "createdAt": { "format": "date-time", "type": "string" },
+                              "updatedAt": { "format": "date-time", "type": "string" },
+                              "cartId": { "format": "uuid", "type": "string" },
+                              "productId": { "format": "uuid", "type": "string" },
+                              "quantity": { "minimum": 1, "type": "integer" },
+                              "name": { "type": "string" },
+                              "priceCents": { "minimum": 0, "type": "integer" },
+                              "availableStock": { "minimum": 0, "type": "integer" },
+                              "active": { "type": "boolean" }
+                            },
+                            "required": [
+                              "id",
+                              "createdAt",
+                              "updatedAt",
+                              "cartId",
+                              "productId",
+                              "quantity",
+                              "name",
+                              "priceCents",
+                              "availableStock",
+                              "active"
+                            ]
+                          }
+                        },
+                        "totalCents": { "minimum": 0, "type": "integer" },
+                        "priceFingerprint": { "pattern": "^[a-f0-9]{64}$", "type": "string" },
+                        "observedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": [
+                        "cartId",
+                        "revision",
+                        "items",
+                        "totalCents",
+                        "priceFingerprint",
+                        "observedAt"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkouts": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "cartId": { "format": "uuid", "type": "string" },
+                  "revision": { "minimum": 0, "type": "integer" },
+                  "priceFingerprint": { "pattern": "^[a-f0-9]{64}$", "type": "string" }
+                },
+                "required": ["cartId", "revision", "priceFingerprint"]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": { "minLength": 1, "maxLength": 120, "type": "string" },
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "shopperId": { "format": "uuid", "type": "string" },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["accepted"] },
+                            { "type": "string", "enum": ["fulfilled"] },
+                            { "type": "string", "enum": ["failed"] }
+                          ]
+                        },
+                        "totalCents": { "minimum": 0, "type": "integer" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "fulfilledAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "failedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "orderId": { "format": "uuid", "type": "string" },
+                              "productId": { "format": "uuid", "type": "string" },
+                              "name": { "type": "string" },
+                              "priceCents": { "minimum": 0, "type": "integer" },
+                              "quantity": { "minimum": 1, "type": "integer" },
+                              "createdAt": { "format": "date-time", "type": "string" }
+                            },
+                            "required": [
+                              "id",
+                              "orderId",
+                              "productId",
+                              "name",
+                              "priceCents",
+                              "quantity",
+                              "createdAt"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "createdAt",
+                        "updatedAt",
+                        "shopperId",
+                        "status",
+                        "totalCents",
+                        "correlationId",
+                        "fulfilledAt",
+                        "failedAt",
+                        "items"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "query",
+            "name": "shopperId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "format": "uuid", "type": "string" },
+                          "createdAt": { "format": "date-time", "type": "string" },
+                          "updatedAt": { "format": "date-time", "type": "string" },
+                          "shopperId": { "format": "uuid", "type": "string" },
+                          "status": {
+                            "anyOf": [
+                              { "type": "string", "enum": ["accepted"] },
+                              { "type": "string", "enum": ["fulfilled"] },
+                              { "type": "string", "enum": ["failed"] }
+                            ]
+                          },
+                          "totalCents": { "minimum": 0, "type": "integer" },
+                          "correlationId": { "format": "uuid", "type": "string" },
+                          "fulfilledAt": {
+                            "format": "date-time",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "failedAt": { "format": "date-time", "type": "string", "nullable": true },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": { "format": "uuid", "type": "string" },
+                                "orderId": { "format": "uuid", "type": "string" },
+                                "productId": { "format": "uuid", "type": "string" },
+                                "name": { "type": "string" },
+                                "priceCents": { "minimum": 0, "type": "integer" },
+                                "quantity": { "minimum": 1, "type": "integer" },
+                                "createdAt": { "format": "date-time", "type": "string" }
+                              },
+                              "required": [
+                                "id",
+                                "orderId",
+                                "productId",
+                                "name",
+                                "priceCents",
+                                "quantity",
+                                "createdAt"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "createdAt",
+                          "updatedAt",
+                          "shopperId",
+                          "status",
+                          "totalCents",
+                          "correlationId",
+                          "fulfilledAt",
+                          "failedAt",
+                          "items"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "shopperId": { "format": "uuid", "type": "string" },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["accepted"] },
+                            { "type": "string", "enum": ["fulfilled"] },
+                            { "type": "string", "enum": ["failed"] }
+                          ]
+                        },
+                        "totalCents": { "minimum": 0, "type": "integer" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "fulfilledAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "failedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "orderId": { "format": "uuid", "type": "string" },
+                              "productId": { "format": "uuid", "type": "string" },
+                              "name": { "type": "string" },
+                              "priceCents": { "minimum": 0, "type": "integer" },
+                              "quantity": { "minimum": 1, "type": "integer" },
+                              "createdAt": { "format": "date-time", "type": "string" }
+                            },
+                            "required": [
+                              "id",
+                              "orderId",
+                              "productId",
+                              "name",
+                              "priceCents",
+                              "quantity",
+                              "createdAt"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "createdAt",
+                        "updatedAt",
+                        "shopperId",
+                        "status",
+                        "totalCents",
+                        "correlationId",
+                        "fulfilledAt",
+                        "failedAt",
+                        "items"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/recover": {
+      "post": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "createdAt": { "format": "date-time", "type": "string" },
+                        "updatedAt": { "format": "date-time", "type": "string" },
+                        "shopperId": { "format": "uuid", "type": "string" },
+                        "revision": { "minimum": 0, "type": "integer" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "createdAt": { "format": "date-time", "type": "string" },
+                              "updatedAt": { "format": "date-time", "type": "string" },
+                              "cartId": { "format": "uuid", "type": "string" },
+                              "productId": { "format": "uuid", "type": "string" },
+                              "quantity": { "minimum": 1, "type": "integer" },
+                              "name": { "type": "string" },
+                              "priceCents": { "minimum": 0, "type": "integer" },
+                              "availableStock": { "minimum": 0, "type": "integer" },
+                              "active": { "type": "boolean" }
+                            },
+                            "required": [
+                              "id",
+                              "createdAt",
+                              "updatedAt",
+                              "cartId",
+                              "productId",
+                              "quantity",
+                              "name",
+                              "priceCents",
+                              "availableStock",
+                              "active"
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["id", "createdAt", "updatedAt", "shopperId", "revision", "items"]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cache": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "strategy": { "type": "string" },
+                        "ttlSeconds": { "minimum": 0, "type": "integer" },
+                        "lastKey": { "type": "string", "nullable": true },
+                        "counts": {
+                          "type": "object",
+                          "additionalProperties": { "minimum": 0, "type": "integer" }
+                        },
+                        "activeFills": { "minimum": 0, "type": "integer" },
+                        "connected": { "type": "boolean" },
+                        "sampledAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": [
+                        "strategy",
+                        "ttlSeconds",
+                        "lastKey",
+                        "counts",
+                        "activeFills",
+                        "connected",
+                        "sampledAt"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cache/clear": {
+      "post": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cache/actions": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "anyOf": [
+                      { "type": "string", "enum": ["clear"] },
+                      { "type": "string", "enum": ["expire"] },
+                      { "type": "string", "enum": ["corrupt"] }
+                    ]
+                  }
+                },
+                "required": ["action"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

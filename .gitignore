@@ -1,0 +1,23 @@
+node_modules/
+.next/
+.lab/
+.env
+.pnpm-store/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.DS_Store
+AGENTS.md
+CLAUDE.md
+
+coverage/
+# Personal instructions live at the root and never enter the shared repository.
+/*.md
+!/README.md
+!/CHANGELOG.md
+/*.txt
+!/LICENSE.txt
+/*.pdf
+/*.docx
+/*.adoc
+/.local-guidance/

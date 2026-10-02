@@ -1,0 +1,1123 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "operator learning API", "version": "1.0.0" },
+  "components": { "schemas": {} },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/activity": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "properties": {
+                          "id": { "format": "uuid", "type": "string" },
+                          "owner": { "type": "string" },
+                          "type": { "type": "string" },
+                          "occurredAt": { "format": "date-time", "type": "string" },
+                          "correlationId": { "format": "uuid", "type": "string" },
+                          "requestId": { "format": "uuid", "type": "string" },
+                          "eventId": { "format": "uuid", "type": "string" },
+                          "eventType": { "type": "string" },
+                          "orderId": { "format": "uuid", "type": "string" },
+                          "jobId": { "format": "uuid", "type": "string" },
+                          "attemptId": { "format": "uuid", "type": "string" },
+                          "attemptNumber": { "minimum": 1, "type": "integer" },
+                          "durationMs": { "minimum": 0, "type": "number" },
+                          "method": { "type": "string" },
+                          "route": { "type": "string" },
+                          "status": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
+                          "outcome": { "type": "string" },
+                          "key": { "type": "string" }
+                        },
+                        "required": ["id", "owner", "type", "occurredAt"]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": { "get": { "responses": { "200": { "description": "Default Response" } } } },
+    "/health": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/actions": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "anyOf": [
+                      { "type": "string", "enum": ["start"] },
+                      { "type": "string", "enum": ["stop"] },
+                      { "type": "string", "enum": ["restart"] },
+                      { "type": "string", "enum": ["seed"] },
+                      { "type": "string", "enum": ["reset"] },
+                      { "type": "string", "enum": ["pause"] },
+                      { "type": "string", "enum": ["resume"] },
+                      { "type": "string", "enum": ["preset"] }
+                    ]
+                  },
+                  "service": {
+                    "anyOf": [
+                      { "type": "string", "enum": ["web"] },
+                      { "type": "string", "enum": ["ordering"] },
+                      { "type": "string", "enum": ["fulfillment"] },
+                      { "type": "string", "enum": ["postgres"] },
+                      { "type": "string", "enum": ["rabbitmq"] },
+                      { "type": "string", "enum": ["redis"] },
+                      { "type": "string", "enum": ["toxiproxy"] }
+                    ]
+                  },
+                  "preset": {
+                    "anyOf": [
+                      { "type": "string", "enum": ["success"] },
+                      { "type": "string", "enum": ["slow"] },
+                      { "type": "string", "enum": ["retry"] },
+                      { "type": "string", "enum": ["fail"] }
+                    ]
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/actions/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/broker": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/host": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/feeder": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "options": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "shoppers": { "minimum": 1, "maximum": 500, "type": "integer" },
+                            "concurrency": { "minimum": 1, "maximum": 20, "type": "integer" },
+                            "seed": { "minimum": 1, "maximum": 2147483647, "type": "integer" },
+                            "thinkMs": { "minimum": 0, "maximum": 2000, "type": "integer" }
+                          },
+                          "required": ["shoppers", "concurrency", "seed", "thinkMs"]
+                        },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["running"] },
+                            { "type": "string", "enum": ["stopping"] },
+                            { "type": "string", "enum": ["completed"] },
+                            { "type": "string", "enum": ["stopped"] },
+                            { "type": "string", "enum": ["interrupted"] }
+                          ]
+                        },
+                        "requestedAt": { "format": "date-time", "type": "string" },
+                        "finishedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "started": { "minimum": 0, "type": "integer" },
+                        "finished": { "minimum": 0, "type": "integer" },
+                        "active": { "minimum": 0, "type": "integer" },
+                        "accepted": { "minimum": 0, "type": "integer" },
+                        "abandoned": { "minimum": 0, "type": "integer" },
+                        "rejected": { "minimum": 0, "type": "integer" },
+                        "unknown": { "minimum": 0, "type": "integer" },
+                        "requestCount": { "minimum": 0, "type": "integer" },
+                        "requestErrors": { "minimum": 0, "type": "integer" },
+                        "totalRequestMs": { "minimum": 0, "type": "number" },
+                        "outcomes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "shopperId": { "format": "uuid", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "outcome": { "type": "string" },
+                              "orderId": { "format": "uuid", "type": "string" },
+                              "code": { "type": "string" }
+                            },
+                            "required": ["shopperId", "correlationId", "outcome"]
+                          }
+                        },
+                        "unresolved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "shopperId": { "format": "uuid", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "key": { "format": "uuid", "type": "string" },
+                              "body": {
+                                "type": "object",
+                                "properties": {
+                                  "cartId": { "format": "uuid", "type": "string" },
+                                  "revision": { "minimum": 0, "type": "integer" },
+                                  "priceFingerprint": {
+                                    "pattern": "^[a-f0-9]{64}$",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["cartId", "revision", "priceFingerprint"]
+                              }
+                            },
+                            "required": ["shopperId", "correlationId", "key", "body"]
+                          }
+                        },
+                        "error": { "type": "string" }
+                      },
+                      "required": [
+                        "id",
+                        "options",
+                        "status",
+                        "requestedAt",
+                        "finishedAt",
+                        "started",
+                        "finished",
+                        "active",
+                        "accepted",
+                        "abandoned",
+                        "rejected",
+                        "unknown",
+                        "requestCount",
+                        "requestErrors",
+                        "totalRequestMs",
+                        "outcomes",
+                        "unresolved"
+                      ],
+                      "nullable": true
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "shoppers": { "minimum": 1, "maximum": 500, "type": "integer" },
+                  "concurrency": { "minimum": 1, "maximum": 20, "type": "integer" },
+                  "seed": { "minimum": 1, "maximum": 2147483647, "type": "integer" },
+                  "thinkMs": { "minimum": 0, "maximum": 2000, "type": "integer" }
+                },
+                "required": ["shoppers", "concurrency", "seed", "thinkMs"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "options": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "shoppers": { "minimum": 1, "maximum": 500, "type": "integer" },
+                            "concurrency": { "minimum": 1, "maximum": 20, "type": "integer" },
+                            "seed": { "minimum": 1, "maximum": 2147483647, "type": "integer" },
+                            "thinkMs": { "minimum": 0, "maximum": 2000, "type": "integer" }
+                          },
+                          "required": ["shoppers", "concurrency", "seed", "thinkMs"]
+                        },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["running"] },
+                            { "type": "string", "enum": ["stopping"] },
+                            { "type": "string", "enum": ["completed"] },
+                            { "type": "string", "enum": ["stopped"] },
+                            { "type": "string", "enum": ["interrupted"] }
+                          ]
+                        },
+                        "requestedAt": { "format": "date-time", "type": "string" },
+                        "finishedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "started": { "minimum": 0, "type": "integer" },
+                        "finished": { "minimum": 0, "type": "integer" },
+                        "active": { "minimum": 0, "type": "integer" },
+                        "accepted": { "minimum": 0, "type": "integer" },
+                        "abandoned": { "minimum": 0, "type": "integer" },
+                        "rejected": { "minimum": 0, "type": "integer" },
+                        "unknown": { "minimum": 0, "type": "integer" },
+                        "requestCount": { "minimum": 0, "type": "integer" },
+                        "requestErrors": { "minimum": 0, "type": "integer" },
+                        "totalRequestMs": { "minimum": 0, "type": "number" },
+                        "outcomes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "shopperId": { "format": "uuid", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "outcome": { "type": "string" },
+                              "orderId": { "format": "uuid", "type": "string" },
+                              "code": { "type": "string" }
+                            },
+                            "required": ["shopperId", "correlationId", "outcome"]
+                          }
+                        },
+                        "unresolved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "shopperId": { "format": "uuid", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "key": { "format": "uuid", "type": "string" },
+                              "body": {
+                                "type": "object",
+                                "properties": {
+                                  "cartId": { "format": "uuid", "type": "string" },
+                                  "revision": { "minimum": 0, "type": "integer" },
+                                  "priceFingerprint": {
+                                    "pattern": "^[a-f0-9]{64}$",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["cartId", "revision", "priceFingerprint"]
+                              }
+                            },
+                            "required": ["shopperId", "correlationId", "key", "body"]
+                          }
+                        },
+                        "error": { "type": "string" }
+                      },
+                      "required": [
+                        "id",
+                        "options",
+                        "status",
+                        "requestedAt",
+                        "finishedAt",
+                        "started",
+                        "finished",
+                        "active",
+                        "accepted",
+                        "abandoned",
+                        "rejected",
+                        "unknown",
+                        "requestCount",
+                        "requestErrors",
+                        "totalRequestMs",
+                        "outcomes",
+                        "unresolved"
+                      ],
+                      "nullable": true
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/feeder/stop": {
+      "post": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "options": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "shoppers": { "minimum": 1, "maximum": 500, "type": "integer" },
+                            "concurrency": { "minimum": 1, "maximum": 20, "type": "integer" },
+                            "seed": { "minimum": 1, "maximum": 2147483647, "type": "integer" },
+                            "thinkMs": { "minimum": 0, "maximum": 2000, "type": "integer" }
+                          },
+                          "required": ["shoppers", "concurrency", "seed", "thinkMs"]
+                        },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["running"] },
+                            { "type": "string", "enum": ["stopping"] },
+                            { "type": "string", "enum": ["completed"] },
+                            { "type": "string", "enum": ["stopped"] },
+                            { "type": "string", "enum": ["interrupted"] }
+                          ]
+                        },
+                        "requestedAt": { "format": "date-time", "type": "string" },
+                        "finishedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "started": { "minimum": 0, "type": "integer" },
+                        "finished": { "minimum": 0, "type": "integer" },
+                        "active": { "minimum": 0, "type": "integer" },
+                        "accepted": { "minimum": 0, "type": "integer" },
+                        "abandoned": { "minimum": 0, "type": "integer" },
+                        "rejected": { "minimum": 0, "type": "integer" },
+                        "unknown": { "minimum": 0, "type": "integer" },
+                        "requestCount": { "minimum": 0, "type": "integer" },
+                        "requestErrors": { "minimum": 0, "type": "integer" },
+                        "totalRequestMs": { "minimum": 0, "type": "number" },
+                        "outcomes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "shopperId": { "format": "uuid", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "outcome": { "type": "string" },
+                              "orderId": { "format": "uuid", "type": "string" },
+                              "code": { "type": "string" }
+                            },
+                            "required": ["shopperId", "correlationId", "outcome"]
+                          }
+                        },
+                        "unresolved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "shopperId": { "format": "uuid", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "key": { "format": "uuid", "type": "string" },
+                              "body": {
+                                "type": "object",
+                                "properties": {
+                                  "cartId": { "format": "uuid", "type": "string" },
+                                  "revision": { "minimum": 0, "type": "integer" },
+                                  "priceFingerprint": {
+                                    "pattern": "^[a-f0-9]{64}$",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["cartId", "revision", "priceFingerprint"]
+                              }
+                            },
+                            "required": ["shopperId", "correlationId", "key", "body"]
+                          }
+                        },
+                        "error": { "type": "string" }
+                      },
+                      "required": [
+                        "id",
+                        "options",
+                        "status",
+                        "requestedAt",
+                        "finishedAt",
+                        "started",
+                        "finished",
+                        "active",
+                        "accepted",
+                        "abandoned",
+                        "rejected",
+                        "unknown",
+                        "requestCount",
+                        "requestErrors",
+                        "totalRequestMs",
+                        "outcomes",
+                        "unresolved"
+                      ],
+                      "nullable": true
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/feeder/recover/{id}": {
+      "post": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "options": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "shoppers": { "minimum": 1, "maximum": 500, "type": "integer" },
+                            "concurrency": { "minimum": 1, "maximum": 20, "type": "integer" },
+                            "seed": { "minimum": 1, "maximum": 2147483647, "type": "integer" },
+                            "thinkMs": { "minimum": 0, "maximum": 2000, "type": "integer" }
+                          },
+                          "required": ["shoppers", "concurrency", "seed", "thinkMs"]
+                        },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["running"] },
+                            { "type": "string", "enum": ["stopping"] },
+                            { "type": "string", "enum": ["completed"] },
+                            { "type": "string", "enum": ["stopped"] },
+                            { "type": "string", "enum": ["interrupted"] }
+                          ]
+                        },
+                        "requestedAt": { "format": "date-time", "type": "string" },
+                        "finishedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "started": { "minimum": 0, "type": "integer" },
+                        "finished": { "minimum": 0, "type": "integer" },
+                        "active": { "minimum": 0, "type": "integer" },
+                        "accepted": { "minimum": 0, "type": "integer" },
+                        "abandoned": { "minimum": 0, "type": "integer" },
+                        "rejected": { "minimum": 0, "type": "integer" },
+                        "unknown": { "minimum": 0, "type": "integer" },
+                        "requestCount": { "minimum": 0, "type": "integer" },
+                        "requestErrors": { "minimum": 0, "type": "integer" },
+                        "totalRequestMs": { "minimum": 0, "type": "number" },
+                        "outcomes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "shopperId": { "format": "uuid", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "outcome": { "type": "string" },
+                              "orderId": { "format": "uuid", "type": "string" },
+                              "code": { "type": "string" }
+                            },
+                            "required": ["shopperId", "correlationId", "outcome"]
+                          }
+                        },
+                        "unresolved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "shopperId": { "format": "uuid", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "key": { "format": "uuid", "type": "string" },
+                              "body": {
+                                "type": "object",
+                                "properties": {
+                                  "cartId": { "format": "uuid", "type": "string" },
+                                  "revision": { "minimum": 0, "type": "integer" },
+                                  "priceFingerprint": {
+                                    "pattern": "^[a-f0-9]{64}$",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["cartId", "revision", "priceFingerprint"]
+                              }
+                            },
+                            "required": ["shopperId", "correlationId", "key", "body"]
+                          }
+                        },
+                        "error": { "type": "string" }
+                      },
+                      "required": [
+                        "id",
+                        "options",
+                        "status",
+                        "requestedAt",
+                        "finishedAt",
+                        "started",
+                        "finished",
+                        "active",
+                        "accepted",
+                        "abandoned",
+                        "rejected",
+                        "unknown",
+                        "requestCount",
+                        "requestErrors",
+                        "totalRequestMs",
+                        "outcomes",
+                        "unresolved"
+                      ],
+                      "nullable": true
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/experiments": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "scenarios": {
+                          "type": "object",
+                          "additionalProperties": { "type": "string" }
+                        },
+                        "run": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "format": "uuid", "type": "string" },
+                            "options": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "scenario": {
+                                  "anyOf": [
+                                    { "type": "string", "enum": ["cache-outage"] },
+                                    { "type": "string", "enum": ["broker-outage"] },
+                                    { "type": "string", "enum": ["database-outage"] },
+                                    { "type": "string", "enum": ["fulfillment-restart"] },
+                                    { "type": "string", "enum": ["network-latency"] },
+                                    { "type": "string", "enum": ["network-cut"] },
+                                    { "type": "string", "enum": ["slow-processing"] },
+                                    { "type": "string", "enum": ["retry-processing"] },
+                                    { "type": "string", "enum": ["failed-processing"] }
+                                  ]
+                                },
+                                "durationSeconds": {
+                                  "minimum": 3,
+                                  "maximum": 30,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": ["scenario", "durationSeconds"]
+                            },
+                            "status": {
+                              "anyOf": [
+                                { "type": "string", "enum": ["running"] },
+                                { "type": "string", "enum": ["completed"] },
+                                { "type": "string", "enum": ["failed"] },
+                                { "type": "string", "enum": ["interrupted"] }
+                              ]
+                            },
+                            "requestedAt": { "format": "date-time", "type": "string" },
+                            "finishedAt": {
+                              "format": "date-time",
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "expected": { "type": "string" },
+                            "progress": { "type": "string" },
+                            "before": {},
+                            "during": {},
+                            "after": {},
+                            "error": { "type": "string" },
+                            "restoration": {
+                              "anyOf": [
+                                { "type": "string", "enum": ["pending"] },
+                                { "type": "string", "enum": ["completed"] },
+                                { "type": "string", "enum": ["failed"] },
+                                { "type": "string", "enum": ["unknown"] }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "options",
+                            "status",
+                            "requestedAt",
+                            "finishedAt",
+                            "expected",
+                            "progress",
+                            "restoration"
+                          ],
+                          "nullable": true
+                        }
+                      },
+                      "required": ["scenarios", "run"]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "scenario": {
+                    "anyOf": [
+                      { "type": "string", "enum": ["cache-outage"] },
+                      { "type": "string", "enum": ["broker-outage"] },
+                      { "type": "string", "enum": ["database-outage"] },
+                      { "type": "string", "enum": ["fulfillment-restart"] },
+                      { "type": "string", "enum": ["network-latency"] },
+                      { "type": "string", "enum": ["network-cut"] },
+                      { "type": "string", "enum": ["slow-processing"] },
+                      { "type": "string", "enum": ["retry-processing"] },
+                      { "type": "string", "enum": ["failed-processing"] }
+                    ]
+                  },
+                  "durationSeconds": { "minimum": 3, "maximum": 30, "type": "integer" }
+                },
+                "required": ["scenario", "durationSeconds"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "options": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "scenario": {
+                              "anyOf": [
+                                { "type": "string", "enum": ["cache-outage"] },
+                                { "type": "string", "enum": ["broker-outage"] },
+                                { "type": "string", "enum": ["database-outage"] },
+                                { "type": "string", "enum": ["fulfillment-restart"] },
+                                { "type": "string", "enum": ["network-latency"] },
+                                { "type": "string", "enum": ["network-cut"] },
+                                { "type": "string", "enum": ["slow-processing"] },
+                                { "type": "string", "enum": ["retry-processing"] },
+                                { "type": "string", "enum": ["failed-processing"] }
+                              ]
+                            },
+                            "durationSeconds": { "minimum": 3, "maximum": 30, "type": "integer" }
+                          },
+                          "required": ["scenario", "durationSeconds"]
+                        },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["running"] },
+                            { "type": "string", "enum": ["completed"] },
+                            { "type": "string", "enum": ["failed"] },
+                            { "type": "string", "enum": ["interrupted"] }
+                          ]
+                        },
+                        "requestedAt": { "format": "date-time", "type": "string" },
+                        "finishedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "expected": { "type": "string" },
+                        "progress": { "type": "string" },
+                        "before": {},
+                        "during": {},
+                        "after": {},
+                        "error": { "type": "string" },
+                        "restoration": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["pending"] },
+                            { "type": "string", "enum": ["completed"] },
+                            { "type": "string", "enum": ["failed"] },
+                            { "type": "string", "enum": ["unknown"] }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "options",
+                        "status",
+                        "requestedAt",
+                        "finishedAt",
+                        "expected",
+                        "progress",
+                        "restoration"
+                      ]
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/experiments/restore": {
+      "post": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@lab/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./broker": "./src/broker.ts",
+    "./rows": "./src/rows.ts",
+    "./telemetry": "./src/telemetry.ts"
+  }
+}

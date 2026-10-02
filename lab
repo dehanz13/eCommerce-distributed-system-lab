@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+if [ ! -f .env ]; then cp .env.example .env; fi
+node_bin="$(command -v node || true)"
+if [ -z "$node_bin" ] || [ "$("$node_bin" -p 'process.versions.node.split(".")[0]')" != 24 ]; then
+  node_bin=""
+  for candidate in "$HOME"/.nvm/versions/node/v24*/bin/node; do
+    if [ -x "$candidate" ]; then node_bin="$candidate"; fi
+  done
+fi
+if [ -z "$node_bin" ]; then echo "Install Node 24, then run this command again."; exit 1; fi
+PATH="$(dirname "$node_bin"):$PATH"
+export PATH
+exec "$node_bin" node_modules/tsx/dist/cli.mjs tools/cli.ts "$@"

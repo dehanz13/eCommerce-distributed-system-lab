@@ -1,0 +1,92 @@
+{
+  "anyOf": [
+    {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "id": { "format": "uuid", "type": "string" },
+        "schemaVersion": { "const": 1, "type": "number" },
+        "occurredAt": { "format": "date-time", "type": "string" },
+        "correlationId": { "format": "uuid", "type": "string" },
+        "causationId": { "format": "uuid", "type": "string" },
+        "type": { "const": "order.accepted", "type": "string" },
+        "data": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": { "orderId": { "format": "uuid", "type": "string" } },
+          "required": ["orderId"]
+        }
+      },
+      "required": [
+        "id",
+        "schemaVersion",
+        "occurredAt",
+        "correlationId",
+        "causationId",
+        "type",
+        "data"
+      ]
+    },
+    {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "id": { "format": "uuid", "type": "string" },
+        "schemaVersion": { "const": 1, "type": "number" },
+        "occurredAt": { "format": "date-time", "type": "string" },
+        "correlationId": { "format": "uuid", "type": "string" },
+        "causationId": { "format": "uuid", "type": "string" },
+        "type": { "const": "fulfillment.completed", "type": "string" },
+        "data": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "orderId": { "format": "uuid", "type": "string" },
+            "fulfillmentId": { "format": "uuid", "type": "string" }
+          },
+          "required": ["orderId", "fulfillmentId"]
+        }
+      },
+      "required": [
+        "id",
+        "schemaVersion",
+        "occurredAt",
+        "correlationId",
+        "causationId",
+        "type",
+        "data"
+      ]
+    },
+    {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "id": { "format": "uuid", "type": "string" },
+        "schemaVersion": { "const": 1, "type": "number" },
+        "occurredAt": { "format": "date-time", "type": "string" },
+        "correlationId": { "format": "uuid", "type": "string" },
+        "causationId": { "format": "uuid", "type": "string" },
+        "type": { "const": "fulfillment.failed", "type": "string" },
+        "data": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "orderId": { "format": "uuid", "type": "string" },
+            "fulfillmentId": { "format": "uuid", "type": "string" },
+            "failureCode": { "minLength": 1, "maxLength": 80, "type": "string" }
+          },
+          "required": ["orderId", "fulfillmentId", "failureCode"]
+        }
+      },
+      "required": [
+        "id",
+        "schemaVersion",
+        "occurredAt",
+        "correlationId",
+        "causationId",
+        "type",
+        "data"
+      ]
+    }
+  ]
+}

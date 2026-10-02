@@ -1,0 +1,94 @@
+{
+  "observedAt": "2026-10-02T07:27:48.039Z",
+  "topology": "single",
+  "host": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "cpuCount": 14,
+    "totalMemoryBytes": 38654705664,
+    "freeMemoryBytes": 361365504
+  },
+  "containers": [
+    {
+      "name": "learning-core-postgres-1",
+      "memory": "41.95MiB / 1GiB",
+      "cpu": "8.77%",
+      "pids": "13"
+    },
+    {
+      "name": "learning-core-rabbitmq-1",
+      "memory": "89.6MiB / 768MiB",
+      "cpu": "0.57%",
+      "pids": "49"
+    }
+  ],
+  "processes": {
+    "ordering": {
+      "processStartedAt": "2026-10-02T07:12:31.662Z",
+      "sampledAt": "2026-10-02T07:27:48.014Z",
+      "residentMemoryBytes": 46710784,
+      "heapTotalBytes": 36536320,
+      "cpuSeconds": 10.65560299999999
+    },
+    "fulfillment": {
+      "processStartedAt": "2026-10-02T07:12:31.662Z",
+      "sampledAt": "2026-10-02T07:27:48.023Z",
+      "residentMemoryBytes": 47251456,
+      "heapTotalBytes": 100384768,
+      "cpuSeconds": 18.657169999999983
+    },
+    "operator": {
+      "processStartedAt": "2026-10-02T07:09:54.862Z",
+      "sampledAt": "2026-10-02T07:27:48.028Z",
+      "residentMemoryBytes": 57540608,
+      "heapTotalBytes": 37797888,
+      "cpuSeconds": 13.018959999999995
+    }
+  },
+  "status": {
+    "topology": "single",
+    "services": [
+      {
+        "name": "ordering",
+        "reachable": true,
+        "database": true,
+        "broker": true,
+        "ready": true,
+        "requestedState": "running",
+        "observedAt": "2026-10-02T07:27:48.038Z"
+      },
+      {
+        "name": "fulfillment",
+        "reachable": true,
+        "database": true,
+        "broker": true,
+        "ready": true,
+        "requestedState": "running",
+        "observedAt": "2026-10-02T07:27:48.038Z"
+      },
+      {
+        "name": "operator",
+        "reachable": true,
+        "ready": true,
+        "requestedState": "running",
+        "observedAt": "2026-10-02T07:27:48.036Z"
+      },
+      {
+        "name": "web",
+        "reachable": true,
+        "ready": true,
+        "requestedState": "running",
+        "observedAt": "2026-10-02T07:27:48.039Z"
+      }
+    ],
+    "webUrl": "http://127.0.0.1:4310",
+    "observedAt": "2026-10-02T07:27:48.039Z"
+  },
+  "limitations": [
+    "One live sample, not a workload peak or benchmark",
+    "Native web process and launcher overhead are not included in these backend RSS values",
+    "Docker Desktop hosts other unrelated containers; its VM memory is shared",
+    "The eight-GB full ecosystem target has not been established",
+    "MBP19 Linux VM operation is unverified"
+  ]
+}
