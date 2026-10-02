@@ -9,6 +9,8 @@ const state = vi.hoisted(() => ({
   listeners: [] as number[],
   cwd: new Map<number, string>(),
   spawned: [] as string[][],
+  hiddenOwner: false,
+  retiringSocket: false,
 }));
 state.root = fs.mkdtempSync(path.join(os.tmpdir(), 'learning-lifecycle-'));
 vi.mock('@lab/runtime', async (original) => ({
@@ -18,7 +20,26 @@ vi.mock('@lab/runtime', async (original) => ({
 vi.mock('node:child_process', async (original) => {
   const actual = await original<object>();
   const execFile = Object.assign(vi.fn(), {
-    [promisify.custom]: async (_file: string, args: string[]) => {
+    [promisify.custom]: async (file: string, args: string[]) => {
+      if (file === 'ss') {
+        if (state.retiringSocket && !state.listeners.length) {
+          state.retiringSocket = false;
+          return { stdout: 'LISTEN 0 511 127.0.0.1:4313 0.0.0.0:*', stderr: '' };
+        }
+        return {
+          stdout: state.hiddenOwner
+            ? 'LISTEN 0 511 127.0.0.1:4313 0.0.0.0:*'
+            : state.listeners
+                .map(
+                  (pid) =>
+                    `LISTEN 0 511 127.0.0.1:4313 0.0.0.0:* users:(("next-server (v1",pid=${pid},fd=18))`,
+                )
+                .join('\n'),
+          stderr: '',
+        };
+      }
+      if (file === 'readlink')
+        return { stdout: state.cwd.get(Number(args[0]!.split('/')[2])) + '\n', stderr: '' };
       if (args[0] === '-t') return { stdout: state.listeners.join('\n'), stderr: '' };
       return { stdout: 'n' + state.cwd.get(Number(args[2])), stderr: '' };
     },
@@ -45,6 +66,8 @@ beforeEach(() => {
   state.listeners = [];
   state.cwd.clear();
   state.spawned = [];
+  state.hiddenOwner = false;
+  state.retiringSocket = false;
   fs.rmSync(path.join(state.root, '.lab/operator.pid'), { force: true });
   kill.mockReset().mockImplementation((pid, signal) => {
     if (signal === 0) throw Object.assign(new Error('Gone'), { code: 'ESRCH' });
@@ -77,4 +100,44 @@ it('starts TypeScript in the recorded process and verifies that it owns the list
   expect(state.spawned[0]![0]).toBe('--import');
   expect(state.spawned[0]![2]).toBe(state.root + '/apps/operator/src/main.ts');
   expect(fs.readFileSync(path.join(state.root, '.lab/operator.pid'), 'utf8')).toBe('12345');
+});
+
+it('accepts Linux socket ownership despite a truncated Next process name', async () => {
+  const platform = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+  try {
+    await startService('operator');
+    await stopService('operator');
+    expect(state.listeners).toEqual([]);
+    state.listeners = [85021];
+    state.cwd.set(85021, '/some/other/project');
+    await expect(stopService('operator')).rejects.toThrow('another checkout');
+  } finally {
+    platform.mockRestore();
+  }
+});
+
+it('refuses Linux lifecycle changes when a listening socket hides its owner', async () => {
+  const platform = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+  try {
+    state.hiddenOwner = true;
+    await expect(startService('operator')).rejects.toThrow('ownership is unavailable');
+    await expect(stopService('operator')).rejects.toThrow('ownership is unavailable');
+    expect(state.spawned).toEqual([]);
+    expect(kill).not.toHaveBeenCalled();
+  } finally {
+    platform.mockRestore();
+  }
+});
+
+it('waits for a retiring Linux socket after its owned process has stopped', async () => {
+  const platform = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+  try {
+    await startService('operator');
+    state.retiringSocket = true;
+    await stopService('operator');
+    expect(state.retiringSocket).toBe(false);
+    expect(state.listeners).toEqual([]);
+  } finally {
+    platform.mockRestore();
+  }
 });

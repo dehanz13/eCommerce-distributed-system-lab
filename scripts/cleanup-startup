@@ -2,10 +2,24 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 project_root="$PWD"
+listener_pids() {
+  if [ "$(uname -s)" = Linux ]; then
+    ss -H -ltnp "sport = :$1" | sed -n 's/.*pid=\([0-9]*\),.*/\1/p'
+  else
+    lsof -tiTCP:"$1" -sTCP:LISTEN 2>/dev/null || true
+  fi
+}
+process_cwd() {
+  if [ "$(uname -s)" = Linux ]; then
+    readlink "/proc/$1/cwd"
+  else
+    lsof -a -p "$1" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p'
+  fi
+}
 # Only stop listeners whose working directory belongs to this checkout.
 for port in 4310 4311 4312 4313; do
-  for pid in $(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true); do
-    if lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | rg -Fx "n$project_root" >/dev/null || lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | rg -Fx "n$project_root/apps/web" >/dev/null; then
+  for pid in $(listener_pids "$port"); do
+    if process_cwd "$pid" | rg -Fx -e "$project_root" -e "$project_root/apps/web" >/dev/null; then
       kill -KILL "$pid"
     fi
   done

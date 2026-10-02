@@ -59,12 +59,7 @@ async function ownedPid(name: string) {
   try {
     const pid = Number(fs.readFileSync(pidFile(name), 'utf8'));
     process.kill(pid, 0);
-    const info = await command('lsof', ['-a', '-p', String(pid), '-d', 'cwd', '-Fn']);
-    return info.stdout
-      .split('\n')
-      .some((line) => line === 'n' + root || line === 'n' + path.join(root, 'apps/web'))
-      ? pid
-      : null;
+    return (await listenerBelongsHere(pid)) ? pid : null;
   } catch {
     return null;
   }
@@ -73,6 +68,22 @@ function servicePort(name: Service | 'operator') {
   return new URL(cfg[`${name.toUpperCase()}_URL` as 'WEB_URL']).port;
 }
 async function listeners(name: Service | 'operator') {
+  if (process.platform === 'linux') {
+    // Older Linux lsof skips Next's truncated process name with unmatched parentheses.
+    const deadline = Date.now() + 500;
+    while (true) {
+      const result = await command('ss', ['-H', '-ltnp', `sport = :${servicePort(name)}`]);
+      const rows = result.stdout.trim().split('\n').filter(Boolean);
+      const owners = rows.map((row) =>
+        [...row.matchAll(/pid=(\d+)/g)].map((match) => Number(match[1])),
+      );
+      if (owners.every((pids) => pids.length)) return [...new Set(owners.flat())];
+      // After SIGKILL the kernel can briefly expose a socket whose owner has exited.
+      if (Date.now() >= deadline)
+        throw new Error(`${name} listener ownership is unavailable; refusing lifecycle changes`);
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
   try {
     const result = await command('lsof', ['-t', `-iTCP:${servicePort(name)}`, '-sTCP:LISTEN']);
     return [...new Set(result.stdout.trim().split(/\s+/).map(Number))].filter(
@@ -85,6 +96,11 @@ async function listeners(name: Service | 'operator') {
   }
 }
 async function listenerBelongsHere(pid: number) {
+  if (process.platform === 'linux') {
+    const info = await command('readlink', [`/proc/${pid}/cwd`]);
+    const cwd = info.stdout.trim();
+    return cwd === root || cwd === path.join(root, 'apps/web');
+  }
   const info = await command('lsof', ['-a', '-p', String(pid), '-d', 'cwd', '-Fn']);
   return info.stdout
     .split('\n')
