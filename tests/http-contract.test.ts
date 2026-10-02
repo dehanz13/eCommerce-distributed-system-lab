@@ -1,3 +1,4 @@
+import './runtime-fixture';
 import { randomUUID } from 'node:crypto';
 import { afterAll, expect, it } from 'vitest';
 import {

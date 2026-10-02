@@ -62,7 +62,7 @@ Presets are success, slow (five seconds), retry (first attempt fails, second suc
 | fulfillment.completed | Fulfillment | orderId, fulfillmentId              |
 | fulfillment.failed    | Fulfillment | orderId, fulfillmentId, failureCode |
 
-All envelopes include id, type, schemaVersion, occurredAt, correlationId and causationId. Repeated publication retains the original event ID. Consumer effects commit before acknowledgment. Durable queues, persistent messages, routing checks and publisher confirmations provide at-least-once delivery; application deduplication supplies the business guarantee. Invalid or wrong-owner contracts enter lab.quarantine with diagnostic activity.
+All envelopes include id, type, schemaVersion, occurredAt, correlationId and causationId. Repeated publication retains the original event ID. Consumer effects commit before acknowledgment. Durable queues, persistent messages, routing checks and publisher confirmations provide at-least-once delivery; application transactions and deduplication handle repeated delivery. Invalid or wrong-owner contracts enter lab.quarantine with diagnostic activity.
 
 An entity ID identifies a record; an event ID identifies a fact; a request ID identifies one HTTP attempt; a correlation ID ties together the journey; an idempotency key identifies one confirmed checkout submission. A new HTTP retry has its own request ID but retains the submission/key and correlation context. IDs appear in drill-down records and activity, never aggregate metric labels.
 
@@ -72,7 +72,7 @@ Server timestamps use UTC ISO 8601; PostgreSQL stores timestamptz. createdAt/upd
 
 Problem Details responses contain a stable code, HTTP status, human-readable detail, request/correlation identifiers, response time and applicable field/item details. Invalid input is a client error; stale cart/prices, stock shortages and conflicting idempotency submissions are conflicts; dependency outages are unavailable responses. An ambiguous checkout response preserves the saved submission for explicit recovery.
 
-Group 1 supports up to 50 distinct cart products and quantities 1–999. Prices/stock adjustments have bounded request values; currency is USD and amounts are integer cents. Historical product references survive deactivation. Lists and record panels are intentionally small; this is a learning lab, not a high-volume storefront. Process metrics reset on restart; durable records provide lifecycle history. Advanced telemetry storage, Redis, load benchmarking/reporting, packaged failure labs, SFTP/batch feeders, additional database models and Kubernetes belong to later groups.
+Group 1 supports up to 50 distinct cart products and quantities 1–999. Prices/stock adjustments have bounded request values; currency is USD and amounts are integer cents. Historical product references survive deactivation. Lists and record panels are intentionally small; this is a learning lab, not a high-volume storefront. Process metrics reset on restart; durable records provide lifecycle history. The repository also implements a revisioned Redis catalog cache, simulated shoppers and nine scoped failure exercises. Telemetry history storage, repeatable load reporting, SFTP/batch ingestion, additional database models and Kubernetes remain future work.
 
 ## Decision register
 

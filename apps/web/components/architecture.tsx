@@ -246,7 +246,7 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
           <span className="font-semibold">Runtime & ownership map</span>
           <span className="hint">
             {(samples.status?.data as { topology?: string } | undefined)?.topology === 'two'
-              ? 'M3 + MBP19 Linux VM · Tailscale'
+              ? 'Application host + remote Linux guest · Tailscale'
               : 'Single machine · native apps + dependency containers'}
           </span>
         </div>
@@ -570,7 +570,7 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
           ))}
         </div>
         <p className="hint mt-4">
-          Before adding services: verify the MBP19 deployment and record a capacity baseline. Add
+          Before adding services: verify the remote deployment and record a capacity baseline. Add
           benchmarking and richer telemetry as later learning tools; additional database models
           follow an actual use case.
         </p>

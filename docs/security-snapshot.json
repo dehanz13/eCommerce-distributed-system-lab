@@ -1,0 +1,156 @@
+{
+  "recordedAt": "2026-10-02T18:56:28.200731+00:00",
+  "scope": "Current source policy, npm dependency advisories, reachable Git history secret patterns, and six pinned container/base images on linux/arm64",
+  "tools": {
+    "secretScanner": "8.30.1",
+    "containerScanner": "0.75.0"
+  },
+  "npmBefore": {
+    "info": 0,
+    "low": 0,
+    "moderate": 2,
+    "high": 0,
+    "critical": 1
+  },
+  "npmAfter": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "containerAdvisoryDatabase": {
+    "Version": 2,
+    "NextUpdate": "2026-10-03T12:48:00.080864987Z",
+    "UpdatedAt": "2026-10-02T12:48:00.080865328Z",
+    "DownloadedAt": "2026-10-02T18:36:11.127451Z"
+  },
+  "images": [
+    {
+      "component": "postgres",
+      "reference": "postgres:18.6-alpine3.24@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873",
+      "imageId": "sha256:d7a8005067f55a2f8ea369e767545fd467b1943a4f0f1a48b7dc44f06c366109",
+      "platform": "arm64",
+      "os": {
+        "Family": "alpine",
+        "Name": "3.24.2"
+      },
+      "counts": {
+        "CRITICAL": 1,
+        "HIGH": 21,
+        "MEDIUM": 22,
+        "LOW": 2,
+        "UNKNOWN": 1
+      },
+      "rawReportSha256": "b47e8f73ea64ac7afd461e1e1f5ef0c37de62b874134ad51b59d455f405e3f25"
+    },
+    {
+      "component": "rabbitmq",
+      "reference": "rabbitmq:4.2.9-management-alpine@sha256:97a167ef716a2c8799525d672c70896920c5415e2221418c0627603852dfcfb9",
+      "imageId": "sha256:d3ff7c73d737772ff756a0e8e4f4b5e01b157b9a3498085b3f26a508decd232d",
+      "platform": "arm64",
+      "os": {
+        "Family": "alpine",
+        "Name": "3.23.6"
+      },
+      "counts": {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+        "UNKNOWN": 0
+      },
+      "rawReportSha256": "c3add7ee4bfee3f58f50cf12781e2327a1a64bccef131c4e162dff5876b0c414"
+    },
+    {
+      "component": "redis",
+      "reference": "redis:8-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0",
+      "imageId": "sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0",
+      "platform": "arm64",
+      "os": {
+        "Family": "alpine",
+        "Name": "3.23.6"
+      },
+      "counts": {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+        "UNKNOWN": 0
+      },
+      "rawReportSha256": "02830a412a090bf8e18ab539ab1b45cd5d38f29151f23eb6f30147d1b5d0d503"
+    },
+    {
+      "component": "toxiproxy",
+      "reference": "ghcr.io/shopify/toxiproxy:2.12.0@sha256:9378ed52a28bc50edc1350f936f518f31fa95f0d15917d6eb40b8e376d1a214e",
+      "imageId": "sha256:9378ed52a28bc50edc1350f936f518f31fa95f0d15917d6eb40b8e376d1a214e",
+      "platform": "arm64",
+      "os": null,
+      "counts": {
+        "CRITICAL": 2,
+        "HIGH": 44,
+        "MEDIUM": 64,
+        "LOW": 6,
+        "UNKNOWN": 2
+      },
+      "rawReportSha256": "6dfcf25b0f2b9aa8a770041d940afcc29d9dfee06b7dc2db0a0d10a34bff7c8b"
+    },
+    {
+      "component": "node-service-base",
+      "reference": "node:24.21.0-bookworm-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6",
+      "imageId": "sha256:234deedb4512c28a423279fb96167f8d1c8ba3da6cb4ef1cb2299cb7249c1174",
+      "platform": "arm64",
+      "os": {
+        "Family": "debian",
+        "Name": "12.15"
+      },
+      "counts": {
+        "CRITICAL": 4,
+        "HIGH": 60,
+        "MEDIUM": 113,
+        "LOW": 76,
+        "UNKNOWN": 2
+      },
+      "rawReportSha256": "fecaae44ef82063a2fb66752234d9be4b84a78575f1aeb0f3131da6f65cd5f7a"
+    },
+    {
+      "component": "browser-test-base",
+      "reference": "mcr.microsoft.com/playwright:v1.56.1-noble@sha256:f1e7e01021efd65dd1a2c56064be399f3e4de00fd021ac561325f2bfbb2b837a",
+      "imageId": "sha256:cb5973ffd9cc7a3b0b5389b12904b24e0ed43751169ca47b4ebdc4e8d9fb1be9",
+      "platform": "arm64",
+      "os": {
+        "Family": "ubuntu",
+        "Name": "24.04"
+      },
+      "counts": {
+        "CRITICAL": 3,
+        "HIGH": 49,
+        "MEDIUM": 1140,
+        "LOW": 191,
+        "UNKNOWN": 0
+      },
+      "rawReportSha256": "03210485ef0e21881c08514d37b6c5acd09be120b08606d6053ad5f9334b3d51"
+    }
+  ],
+  "limitations": [
+    "Image findings are package advisory matches, not confirmed application exploit paths.",
+    "Recorded container scans cover linux/arm64; other architectures and physical-host packages were not scanned.",
+    "Application images built on these bases were not separately scanned.",
+    "Public-content policy checks current files; historical developer-local paths remain in earlier commits.",
+    "Git author metadata and third-party package metadata are outside the current file-content policy.",
+    "No configured matches does not establish that every possible secret or identifying value is absent."
+  ],
+  "historicalHomePaths": {
+    "commitsWithMatches": 7,
+    "distinctFiles": 2,
+    "commitIds": [
+      "1624320b700d7d8bca62ec63089fde636dc45afc",
+      "d48bfdf39d89aa994f18d5ea0bc5b07a669665b0",
+      "fde44cde72ae671ef30429f41de96be91e2d7cb5",
+      "67ef1789ea43aa4257e0206923af2a2bee6b894b",
+      "582e3e7ffe82713eeea81e412c6d370d05013688",
+      "20cc762b45992ca5885d6f5755a8075ab8dc8c26",
+      "3b8df832d7ef5bf5ef47a82ed69579d0573ec356"
+    ]
+  }
+}

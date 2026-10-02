@@ -30,10 +30,10 @@ Shopper is an anonymous identity, not an account. Product is mutable inventory. 
 | 10. CI/runners                                                  | Quality and ecosystem jobs execute the repo's own checks; runner hosting is a separate deployment choice |
 | 11. UI/accessibility                                            | Keyboard forms, labels, status messages, light/dark theme and accessibility lint                         |
 | 12. Business/product reasoning                                  | Explain the problem solved by each capability; this lab makes no market-fit claim                        |
-| 13. Database/cache management                                   | Inspect two PostgreSQL owners and migrations now; Redis/cache invalidation is later                      |
+| 13. Database/cache management                                   | Inspect two PostgreSQL owners, migrations and revisioned Redis catalog caching                           |
 | 14. Capacity/benchmarking                                       | Record live host/container observations now; repeatable benchmark/report tooling is later                |
 | 15. Container orchestration                                     | Docker Compose now; Kubernetes/k3s/alternative proxies are later experiments                             |
-| 16. AI development guardrails                                   | Local root guidance applies throughout the repo; shared standards remain documented in docs/             |
+| 16. Development guidance                                        | Local root guidance applies throughout the repo; shared standards remain documented in docs/             |
 | 17. Ontology                                                    | Distinguish intention, transaction, fact, processing attempt and observation using this map              |
 
 A useful teaching exercise is to pause fulfillment, accept an order, inspect the persisted job, resume processing and follow its terminal event back to ordering. Then compare a failed job's three attempts with the order's single compensation transition. Use disposable lab data and check action outcomes before repeating commands.

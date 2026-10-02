@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { intro, outro, select, isCancel } from '@clack/prompts';
 import { cfg } from '@lab/runtime';
+import { requireSettings } from '@lab/runtime/configuration';
 import {
   startService,
   stopService,
@@ -12,16 +13,18 @@ import {
 } from './operations';
 const [name, service, arg] = process.argv.slice(2);
 function monitor() {
-  if (service === 'mbp19' || service === 'lab-vm') {
-    if (!cfg.REMOTE_HOST || !cfg.REMOTE_USER)
-      throw new Error('Configure the remote host and user in root .env');
+  if (service === 'remote-host' || service === 'lab-vm') {
+    requireSettings(cfg, ['REMOTE_HOST', 'REMOTE_USER']);
     const host = cfg.REMOTE_USER + '@' + cfg.REMOTE_HOST;
     if (!/^[a-zA-Z0-9_.@-]+$/.test(host)) throw new Error('Invalid remote host');
-    if (service === 'lab-vm' && !/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM))
-      throw new Error('Configure REMOTE_VM');
+    if (service === 'lab-vm') {
+      requireSettings(cfg, ['REMOTE_VM']);
+      if (!/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM))
+        throw new Error('Invalid REMOTE_VM in root .env');
+    }
     const result = spawnSync(
       'ssh',
-      ['-t', host, service === 'mbp19' ? 'btop' : 'limactl shell ' + cfg.REMOTE_VM + ' btop'],
+      ['-t', host, service === 'remote-host' ? 'btop' : 'limactl shell ' + cfg.REMOTE_VM + ' btop'],
       { stdio: 'inherit' },
     );
     if (result.error) throw result.error;

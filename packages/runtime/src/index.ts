@@ -1,77 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import dotenv from 'dotenv';
+import { projectRoot, loadConfiguration } from './configuration';
+export { projectRoot } from './configuration';
 import pg from 'pg';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import swagger from '@fastify/swagger';
 import { httpSchema } from '@lab/contracts';
 import * as metrics from '@prometheus-io/client';
 import { telemetry } from './telemetry';
-export function projectRoot() {
-  let p = process.cwd();
-  while (!fs.existsSync(path.join(p, 'pnpm-workspace.yaml'))) {
-    const parent = path.dirname(p);
-    if (parent === p) throw new Error('Run within the lab repository');
-    p = parent;
-  }
-  return p;
-}
 export const root = projectRoot();
-export const cfg = {
-  TOPOLOGY: 'single',
-  PG_HOST: '127.0.0.1',
-  PG_PORT: '54329',
-  PG_ADMIN_USER: 'lab_admin',
-  PG_ADMIN_PASSWORD: 'dummy_local_admin',
-  ORDERING_DB: 'lab_ordering',
-  ORDERING_USER: 'ordering',
-  ORDERING_PASSWORD: 'dummy_ordering',
-  FULFILLMENT_DB: 'lab_fulfillment',
-  FULFILLMENT_USER: 'fulfillment',
-  FULFILLMENT_PASSWORD: 'dummy_fulfillment',
-  RABBIT_HOST: '127.0.0.1',
-  RABBIT_PORT: '56729',
-  RABBIT_CONNECT_HOST: '',
-  RABBIT_CONNECT_PORT: '56730',
-  REDIS_HOST: '127.0.0.1',
-  REDIS_PORT: '63729',
-  TOXIPROXY_URL: 'http://127.0.0.1:8474',
-  RABBIT_MANAGEMENT_PORT: '15629',
-  RABBIT_USER: 'lab',
-  RABBIT_PASSWORD: 'dummy_rabbit',
-  ORDERING_URL: 'http://127.0.0.1:4311',
-  FULFILLMENT_URL: 'http://127.0.0.1:4312',
-  OPERATOR_URL: 'http://127.0.0.1:4313',
-  WEB_URL: 'http://127.0.0.1:4310',
-  REMOTE_HOST: '',
-  REMOTE_USER: '',
-  REMOTE_DIR: '',
-  REMOTE_VM: '',
-  REMOTE_BIND_IP: '',
-  ...dotenv.parse(
-    fs.existsSync(path.join(root, '.env')) ? fs.readFileSync(path.join(root, '.env')) : '',
-  ),
-};
-if (!['single', 'two'].includes(cfg.TOPOLOGY)) throw new Error('TOPOLOGY must be single or two');
-for (const k of [
-  'PG_PORT',
-  'RABBIT_PORT',
-  'RABBIT_CONNECT_PORT',
-  'RABBIT_MANAGEMENT_PORT',
-  'REDIS_PORT',
-] as const)
-  if (!/^\d+$/.test(cfg[k]) || +cfg[k] < 1 || +cfg[k] > 65535) throw new Error(`Invalid ${k}`);
-for (const k of [
-  'ORDERING_URL',
-  'FULFILLMENT_URL',
-  'OPERATOR_URL',
-  'WEB_URL',
-  'TOXIPROXY_URL',
-] as const) {
-  const u = new URL(cfg[k]);
-  if (!['http:', 'https:'].includes(u.protocol)) throw new Error(`Invalid ${k}`);
-}
+export const cfg = loadConfiguration();
 export function pool(owner: 'ordering' | 'fulfillment') {
   const name = owner.toUpperCase() as 'ORDERING' | 'FULFILLMENT';
   const p = new pg.Pool({

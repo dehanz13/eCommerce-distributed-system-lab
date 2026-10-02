@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-[ -f .env ] || cp .env.example .env
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "[configuration] Created root .env from .env.example; review it before using remote services."
+fi
 if [ "$(node -p 'process.versions.node.split(".")[0]')" != 24 ]; then echo 'Use Node 24 (nvm use), then rerun.'; exit 1; fi
 pnpm install --frozen-lockfile
 ./lab operator

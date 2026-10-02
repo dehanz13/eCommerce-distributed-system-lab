@@ -2,9 +2,9 @@
 
 ## First run
 
-Install Node 24.11.0 (or use the committed .nvmrc), pnpm 10.21.0, Docker with Compose, and lsof. Linux also requires `ss` (provided by `iproute2`; install with `sudo apt install iproute2`). Native lifecycle checks inspect listening sockets and verify that the owning process belongs to this checkout. Linux uses `ss` and `/proc` because older lsof versions can miss Next.js process names; macOS uses lsof. Copy .env.example to .env, review ports, then run scripts/bootstrap from the repository root. It installs locked dependencies, bootstraps the operator, migrates/seeds the owner databases and starts the lab. It builds the production frontend on each web start so source/config changes are reflected.
+Install the Node version recorded in .nvmrc, pnpm 10.21.0, Docker with Compose, and lsof. Linux also requires `ss` (provided by `iproute2`; install with `sudo apt install iproute2`). Native lifecycle checks inspect listening sockets and verify that the owning process belongs to this checkout. Linux uses `ss` and `/proc` because older lsof versions can miss Next.js process names; macOS uses lsof. Copy .env.example to .env, review ports, then run scripts/bootstrap from the repository root. It installs locked dependencies, bootstraps the operator, migrates/seeds the owner databases and starts the lab. It builds the production frontend on each web start so source/config changes are reflected.
 
-The ignored root .env is the editable configuration source. Settings are validated on startup. SSH key files remain separate and should be referenced through your SSH configuration. Do not edit .lab/remote.env; it is a generated projection. Change database initialization settings only before a fresh lab reset/recreation.
+The ignored root .env is the editable configuration source. Missing or invalid required settings are logged without values and stop startup. See [configuration](configuration.md) for the required keys and error format. SSH key files remain separate and should be referenced through your SSH configuration. Do not edit .lab/remote.env; it is a generated projection. Change database initialization settings only before a fresh lab reset/recreation.
 
 | Command                                                 | Behavior                                                                                |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -26,13 +26,11 @@ For a complete shutdown on both machines, resource cleanup, verification and res
 
 ## Two-machine topology
 
-On the Intel MBP19, create a Linux VM with Docker/Compose and SSH access through Tailscale. Install btop in the VM. Allocate CPU/RAM/disk deliberately; the eight-GB budget is a measurement target, not a tested guarantee. The dedicated lab guest has been provisioned and measured; see [the VM runbook](mbp19-lab-vm.md) and [current verification](learning-labs-verification.md) for its timestamped readiness and access limits.
+The application host runs web, ordering and operator. The remote Linux host or guest runs PostgreSQL, RabbitMQ, Redis, the AMQP proxy and fulfillment. Configure the root `.env` with `TOPOLOGY=two`, reachable dependency hosts, service URLs, SSH account and checkout directory. Set `REMOTE_VM=ecommerce-lab` only when the remote host manages that guest through Lima.
 
-On M3, configure the MBP19 SSH host/account and checkout path, with `REMOTE_VM=ecommerce-lab` when the Linux guest is managed by Lima on macOS. Compose commands then explicitly target that guest; they never use the Mac's default Docker context. See [the dedicated VM runbook](mbp19-lab-vm.md) for the generated template, pinned packages and forwarded ports.
+See the [remote guest runbook](remote-lab-vm.md) for pinned setup, port forwarding and btop scopes. The operator generates `.lab/remote.env` and explicitly selects the configured guest rather than the host's default Docker context. Missing remote settings name the variables in terminal diagnostics.
 
-For two-machine mode set `TOPOLOGY=two`, the PostgreSQL/RabbitMQ/Redis host fields to the reachable MBP19 tailnet hostname, `TOXIPROXY_URL` to port 8474 and `FULFILLMENT_URL` to port 4312 there. Keep web, ordering and operator on M3. Source and service settings are projected from root `.env`; private SSH keys remain outside the repository. Restart the operator explicitly after editing configuration.
-
-Changing hosts means recreate and reseed, with no business-data migration promise. Stop the old lab before changing topology and recreate only the destination's lab-owned data. Dedicated-guest transactions were verified, but the main interactive application remains in single-machine mode; the complete two-machine UI flow has not been activated or certified.
+Stop the old lab before changing topology. Moving hosts recreates and reseeds lab data; there is no data-migration routine. The [verification record](verification.md) distinguishes tested local behavior from remote deployment and capacity measurements.
 
 ## Observations and troubleshooting
 
@@ -46,6 +44,6 @@ If a checkout is ambiguous, use Recover submission rather than creating another 
 
 ## Verification commands
 
-Run pnpm quality and pnpm build for static/unit/build gates. With the lab running, run pnpm test:integration, then pnpm test:recovery, then pnpm test:e2e sequentially: these tests change global simulation settings and intentionally interrupt lab dependencies. Install the selected Chromium with pnpm exec playwright install chromium (Linux may need --with-deps). Recovery tests intentionally restart fulfillment and stop/start PostgreSQL/RabbitMQ; run only against this disposable lab. The GitHub ecosystem job uses an isolated runner and this same sequence.
+Run pnpm quality and pnpm build for static/unit/build gates. With the lab running, run pnpm test:integration, then pnpm test:recovery, then pnpm test:learning, then pnpm test:e2e sequentially: these tests change global simulation settings and intentionally interrupt lab dependencies. Install the selected Chromium with pnpm exec playwright install chromium (Linux may need --with-deps). Recovery tests intentionally restart fulfillment and stop/start PostgreSQL/RabbitMQ; run only against this disposable lab. The GitHub ecosystem job uses an isolated runner and this same sequence.
 
 For Docker-based browser verification, run `./lab test-browser` while the lab is running. It builds the pinned Node 24/Playwright Linux image, generates a testing-only configuration projection from the canonical root .env, and runs the suite with a one-GB container limit. The first browser image download is roughly one GB; it is optional verification tooling and is not part of the running lab. Failure screenshots/traces appear in test-results/. Its host.docker.internal mapping targets the local web process on Docker Desktop; Linux hosts must make that web listener reachable from their Docker bridge or run the native Playwright checks instead.
