@@ -38,7 +38,10 @@ The cleanup helper checks listener working directories before terminating this c
 Verify shutdown without bootstrapping the operator again:
 
 ```sh
+# macOS
 lsof -nP -iTCP:4310-4313 -sTCP:LISTEN
+# Linux (older lsof versions can miss Next.js)
+ss -H -ltnp 'sport >= :4310 and sport <= :4313'
 docker compose --env-file .env --profile remote ps -a
 ```
 

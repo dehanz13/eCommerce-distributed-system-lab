@@ -2,7 +2,7 @@
 
 ## First run
 
-Install Node 24.11.0 (or use the committed .nvmrc), pnpm 10.21.0, Docker with Compose, and lsof. Native lifecycle checks use lsof to verify a recorded PID belongs to this checkout. Copy .env.example to .env, review ports, then run scripts/bootstrap from the repository root. It installs locked dependencies, bootstraps the operator, migrates/seeds the owner databases and starts the lab. It builds the production frontend on each web start so source/config changes are reflected.
+Install Node 24.11.0 (or use the committed .nvmrc), pnpm 10.21.0, Docker with Compose, and lsof. Linux also requires `ss` (provided by `iproute2`; install with `sudo apt install iproute2`). Native lifecycle checks inspect listening sockets and verify that the owning process belongs to this checkout. Linux uses `ss` and `/proc` because older lsof versions can miss Next.js process names; macOS uses lsof. Copy .env.example to .env, review ports, then run scripts/bootstrap from the repository root. It installs locked dependencies, bootstraps the operator, migrates/seeds the owner databases and starts the lab. It builds the production frontend on each web start so source/config changes are reflected.
 
 The ignored root .env is the editable configuration source. Settings are validated on startup. SSH key files remain separate and should be referenced through your SSH configuration. Do not edit .lab/remote.env; it is a generated projection. Change database initialization settings only before a fresh lab reset/recreation.
 
