@@ -1,0 +1,342 @@
+import { telemetry } from '@lab/runtime/telemetry';
+import { randomUUID } from 'node:crypto';
+import { Type } from '@sinclair/typebox';
+import {
+  ProductWrite,
+  ProductPatch,
+  StockWrite,
+  CartWrite,
+  ItemWrite,
+  CheckoutWrite,
+  Id,
+  type Product,
+  type CheckoutInput,
+} from '@lab/contracts';
+import {
+  cfg,
+  pool,
+  server,
+  listen,
+  response,
+  identifiers,
+  Problem,
+  transaction,
+  loop,
+  activity,
+} from '@lab/runtime';
+import { row } from '@lab/runtime/rows';
+import { broker } from '@lab/runtime/broker';
+import { ordering } from './domain';
+import { catalogCache } from './catalog-cache';
+import { createClient } from '@redis/client';
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
+import { ProductSchema } from '@lab/contracts';
+const p = pool('ordering');
+const domain = ordering(p);
+const redis = createClient({
+  socket: {
+    host: cfg.REDIS_HOST,
+    port: +cfg.REDIS_PORT,
+    connectTimeout: 600,
+    reconnectStrategy: () => 1000,
+  },
+  disableOfflineQueue: true,
+  commandsQueueMaxLength: 100,
+});
+redis.on('error', () => {});
+void redis.connect().catch(() => {});
+const ajv = new Ajv();
+addFormats(ajv);
+const validateProducts = ajv.compile(Type.Array(ProductSchema));
+async function cacheCommand<T>(run: () => Promise<T>): Promise<T> {
+  if (!redis.isReady) throw new Error('Cache unavailable');
+  let timer: ReturnType<typeof setTimeout>;
+  try {
+    return await Promise.race([
+      run(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Cache deadline exceeded')), 600);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+const catalog = catalogCache({
+  revision: async () =>
+    String(
+      (await p.query('SELECT revision FROM catalog_revision WHERE singleton=true')).rows[0]
+        .revision,
+    ),
+  load: domain.products,
+  get: (key) => cacheCommand(() => redis.get(key)),
+  set: (key, value, ttl) => cacheCommand(() => redis.set(key, value, { EX: ttl })),
+  remove: (key) => cacheCommand(() => redis.del(key)),
+  valid: (value): value is Product[] => !!validateProducts(value),
+  observe: (outcome, details) => {
+    activity('ordering', 'cache.' + outcome, details);
+    telemetry('ordering').operations.inc({ operation: 'catalog_cache', outcome });
+  },
+});
+const app = await server('ordering');
+const io = broker('ordering', p, domain.consume);
+loop('ordering', io.tick);
+const one = Type.Object({ id: Id });
+const itemParams = Type.Object({ id: Id, productId: Id });
+app.get('/health', async (req, reply) => {
+  let db = true;
+  try {
+    await p.query('SELECT 1');
+  } catch {
+    db = false;
+  }
+  reply.code(db ? 200 : 503);
+  return response(req, {
+    database: db,
+    broker: io.status().connected,
+    ready: db && io.status().connected,
+  });
+});
+app.get('/api/v1/products', async (req) =>
+  response(req, await catalog.read(identifiers(req).correlationId)),
+);
+app.get('/api/v1/products/:id', { schema: { params: one } }, async (req) => {
+  const result = await p.query('SELECT * FROM products WHERE id=$1', [
+    (req.params as { id: string }).id,
+  ]);
+  if (!result.rows[0]) throw new Problem(404, 'PRODUCT_NOT_FOUND', 'Product does not exist');
+  return response(req, row<Product>(result.rows[0]));
+});
+app.post('/api/v1/products', { schema: { body: ProductWrite } }, async (req, reply) => {
+  const b = req.body as {
+    name: string;
+    description: string;
+    priceCents: number;
+    availableStock: number;
+  };
+  const result = await p.query(
+    'INSERT INTO products(id,name,description,price_cents,available_stock) VALUES($1,$2,$3,$4,$5) RETURNING *',
+    [randomUUID(), b.name, b.description, b.priceCents, b.availableStock],
+  );
+  reply.code(201);
+  return response(req, row<Product>(result.rows[0]));
+});
+app.patch('/api/v1/products/:id', { schema: { params: one, body: ProductPatch } }, async (req) => {
+  const { id } = req.params as { id: string };
+  const b = req.body as { name?: string; description?: string; priceCents?: number };
+  const result = await p.query(
+    'UPDATE products SET name=COALESCE($2,name),description=COALESCE($3,description),price_cents=COALESCE($4,price_cents),updated_at=now() WHERE id=$1 RETURNING *',
+    [id, b.name, b.description, b.priceCents],
+  );
+  if (!result.rows[0]) throw new Problem(404, 'PRODUCT_NOT_FOUND', 'Product does not exist');
+  return response(req, row<Product>(result.rows[0]));
+});
+app.delete('/api/v1/products/:id', { schema: { params: one } }, async (req) => {
+  const { id } = req.params as { id: string };
+  const result = await p.query(
+    'UPDATE products SET active=false,deactivated_at=COALESCE(deactivated_at,now()),updated_at=now() WHERE id=$1 RETURNING *',
+    [id],
+  );
+  if (!result.rows[0]) throw new Problem(404, 'PRODUCT_NOT_FOUND', 'Product does not exist');
+  return response(req, row<Product>(result.rows[0]));
+});
+app.post(
+  '/api/v1/products/:id/stock',
+  { schema: { params: one, body: StockWrite } },
+  async (req) => {
+    const { id } = req.params as { id: string };
+    const { delta } = req.body as { delta: number };
+    const result = await p.query(
+      'UPDATE products SET available_stock=available_stock+$2,updated_at=now() WHERE id=$1 AND available_stock+$2 BETWEEN 0 AND 1000000 RETURNING *',
+      [id, delta],
+    );
+    if (!result.rows[0])
+      throw new Problem(
+        409,
+        'INVALID_STOCK_ADJUSTMENT',
+        'Product missing or resulting stock outside 0–1,000,000',
+      );
+    telemetry('ordering').stock.inc(
+      { reason: 'adjustment', direction: delta < 0 ? 'decrease' : 'increase' },
+      Math.abs(delta),
+    );
+    return response(req, row<Product>(result.rows[0]));
+  },
+);
+app.post('/api/v1/carts', { schema: { body: CartWrite } }, async (req) => {
+  const { shopperId } = req.body as { shopperId: string };
+  const result = await p.query(
+    'INSERT INTO carts(id,shopper_id) VALUES($1,$2) ON CONFLICT(shopper_id) DO UPDATE SET shopper_id=excluded.shopper_id RETURNING id',
+    [randomUUID(), shopperId],
+  );
+  return response(req, await domain.cart(result.rows[0].id));
+});
+app.get('/api/v1/carts/:id', { schema: { params: one } }, async (req) =>
+  response(req, await domain.cart((req.params as { id: string }).id)),
+);
+app.put(
+  '/api/v1/carts/:id/items/:productId',
+  { schema: { params: itemParams, body: ItemWrite } },
+  async (req) => {
+    const { id, productId } = req.params as { id: string; productId: string };
+    const { quantity } = req.body as { quantity: number };
+    await transaction(p, async (c) => {
+      const cart = await c.query('SELECT id FROM carts WHERE id=$1 FOR UPDATE', [id]);
+      if (!cart.rowCount) throw new Problem(404, 'CART_NOT_FOUND', 'Cart does not exist');
+      const product = await c.query('SELECT id FROM products WHERE id=$1', [productId]);
+      if (!product.rowCount) throw new Problem(404, 'PRODUCT_NOT_FOUND', 'Product does not exist');
+      const count = await c.query('SELECT count(*) FROM cart_items WHERE cart_id=$1', [id]);
+      if (+count.rows[0].count >= 50) {
+        const exists = await c.query(
+          'SELECT id FROM cart_items WHERE cart_id=$1 AND product_id=$2',
+          [id, productId],
+        );
+        if (!exists.rowCount) throw new Problem(409, 'CART_LIMIT', 'A cart supports 50 products');
+      }
+      await c.query(
+        'INSERT INTO cart_items(id,cart_id,product_id,quantity) VALUES($1,$2,$3,$4) ON CONFLICT(cart_id,product_id) DO UPDATE SET quantity=excluded.quantity,updated_at=now()',
+        [randomUUID(), id, productId, quantity],
+      );
+      await c.query('UPDATE carts SET revision=revision+1,updated_at=now() WHERE id=$1', [id]);
+    });
+    return response(req, await domain.cart(id));
+  },
+);
+app.delete(
+  '/api/v1/carts/:id/items/:productId',
+  { schema: { params: itemParams } },
+  async (req) => {
+    const { id, productId } = req.params as { id: string; productId: string };
+    await transaction(p, async (c) => {
+      if (!(await c.query('SELECT id FROM carts WHERE id=$1 FOR UPDATE', [id])).rowCount)
+        throw new Problem(404, 'CART_NOT_FOUND', 'Cart does not exist');
+      await c.query('DELETE FROM cart_items WHERE cart_id=$1 AND product_id=$2', [id, productId]);
+      await c.query('UPDATE carts SET revision=revision+1,updated_at=now() WHERE id=$1', [id]);
+    });
+    return response(req, await domain.cart(id));
+  },
+);
+app.get('/api/v1/carts/:id/preview', { schema: { params: one } }, async (req) =>
+  response(req, await domain.preview((req.params as { id: string }).id)),
+);
+app.post(
+  '/api/v1/checkouts',
+  {
+    schema: {
+      body: CheckoutWrite,
+      headers: Type.Object({ 'idempotency-key': Type.String({ minLength: 1, maxLength: 120 }) }),
+    },
+  },
+  async (req, reply) => {
+    const ids = identifiers(req);
+    const result = await domain
+      .accept(
+        req.body as CheckoutInput,
+        String(req.headers['idempotency-key']),
+        ids.correlationId,
+        ids.requestId,
+      )
+      .catch((error) => {
+        telemetry('ordering').operations.inc({
+          operation: 'checkout',
+          outcome: error instanceof Problem ? error.code : 'dependency_unavailable',
+        });
+        throw error;
+      });
+    activity('ordering', 'checkout.accepted', { ...ids, orderId: result.id });
+    reply.code(201);
+    return response(req, result);
+  },
+);
+app.get(
+  '/api/v1/orders',
+  {
+    schema: {
+      querystring: Type.Object({ shopperId: Type.Optional(Id) }, { additionalProperties: false }),
+    },
+  },
+  async (req) => {
+    const shopperId = (req.query as { shopperId?: string }).shopperId;
+    const found = await p.query(
+      'SELECT id FROM orders WHERE ($1::uuid IS NULL OR shopper_id=$1) ORDER BY created_at DESC LIMIT 100',
+      [shopperId ?? null],
+    );
+    return response(req, await Promise.all(found.rows.map((x) => domain.order(x.id))));
+  },
+);
+app.get('/api/v1/orders/:id', { schema: { params: one } }, async (req) =>
+  response(req, await domain.order((req.params as { id: string }).id)),
+);
+app.post('/api/v1/orders/:id/recover', { schema: { params: one } }, async (req) =>
+  response(req, await domain.recover((req.params as { id: string }).id)),
+);
+app.get('/api/v1/system', async (req) => {
+  const queries = await p.query(
+    'SELECT (SELECT count(*) FROM orders) AS orders,(SELECT count(*) FROM carts) AS carts,(SELECT count(*) FROM outbox WHERE published_at IS NULL) AS pending_outbox,(SELECT min(created_at) FROM outbox WHERE published_at IS NULL) AS oldest_pending_at,(SELECT count(*) FROM inbox) AS consumed_events',
+  );
+  const states = await p.query(
+    'SELECT status,count(*)::integer AS count FROM orders GROUP BY status',
+  );
+  const outbox = await p.query('SELECT * FROM outbox ORDER BY created_at DESC LIMIT 50');
+  const db = await p.query(
+    'SELECT numbackends,xact_commit,xact_rollback,deadlocks FROM pg_stat_database WHERE datname=current_database()',
+  );
+  return response(req, {
+    ...row<Record<string, unknown>>(queries.rows[0]),
+    states: states.rows,
+    outbox: outbox.rows.map(row),
+    database: db.rows[0],
+    broker: io.status(),
+  });
+});
+app.get('/api/v1/cache', async (req) =>
+  response(req, {
+    ...catalog.inspect(),
+    connected: redis.isReady,
+    sampledAt: new Date().toISOString(),
+  }),
+);
+app.post('/api/v1/cache/clear', async (req) => {
+  const key =
+    'lab:catalog:v' +
+    String(
+      (await p.query('SELECT revision FROM catalog_revision WHERE singleton=true')).rows[0]
+        .revision,
+    );
+  await cacheCommand(() => redis.del(key));
+  activity('ordering', 'cache.cleared', { ...identifiers(req), key });
+  return response(req, { key, clearedAt: new Date().toISOString() });
+});
+app.post(
+  '/api/v1/cache/actions',
+  {
+    schema: {
+      body: Type.Object(
+        {
+          action: Type.Union([
+            Type.Literal('clear'),
+            Type.Literal('expire'),
+            Type.Literal('corrupt'),
+          ]),
+        },
+        { additionalProperties: false },
+      ),
+    },
+  },
+  async (req) => {
+    const { action } = req.body as { action: 'clear' | 'expire' | 'corrupt' };
+    const key =
+      'lab:catalog:v' +
+      String(
+        (await p.query('SELECT revision FROM catalog_revision WHERE singleton=true')).rows[0]
+          .revision,
+      );
+    if (action === 'clear') await cacheCommand(() => redis.del(key));
+    else if (action === 'expire') await cacheCommand(() => redis.expire(key, 1));
+    else await cacheCommand(() => redis.set(key, '{invalid-json', { EX: 15 }));
+    activity('ordering', 'cache.' + action, { ...identifiers(req), key });
+    return response(req, { key, action, observedAt: new Date().toISOString() });
+  },
+);
+await listen(app, cfg.ORDERING_URL);

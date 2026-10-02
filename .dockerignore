@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/.next
+.lab
+.env
+.pnpm-store
+.git
+coverage
+test-results
+playwright-report
+**/AGENTS.md
+**/CLAUDE.md

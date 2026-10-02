@@ -1,0 +1,69 @@
+minimumLimaVersion: 2.2.0
+vmType: vz
+arch: x86_64
+images:
+  - location: https://cloud-images.ubuntu.com/releases/noble/release-20260911/ubuntu-24.04-server-cloudimg-amd64.img
+    arch: x86_64
+    digest: sha256:612b2c0cc1bc413a6cb8c38fd611794caf0f2b436c50013d8b3794db12ad7354
+cpus: 4
+memory: 4GiB
+disk: 40GiB
+mountType: virtiofs
+mounts:
+  - location: __REMOTE_DIR__
+    mountPoint: __REMOTE_DIR__
+    writable: true
+ssh:
+  loadDotSSHPubKeys: false
+  forwardAgent: false
+containerd:
+  system: false
+  user: false
+portForwards:
+  - guestPort: 54329
+    hostPort: 54329
+    hostIP: __REMOTE_BIND_IP__
+  - guestPort: 56730
+    hostPort: 56730
+    hostIP: __REMOTE_BIND_IP__
+  - guestPort: 56729
+    hostPort: 56729
+    hostIP: __REMOTE_BIND_IP__
+  - guestPort: 15629
+    hostPort: 15629
+    hostIP: __REMOTE_BIND_IP__
+  - guestPort: 4312
+    hostPort: 4312
+    hostIP: __REMOTE_BIND_IP__
+  - guestPort: 63729
+    hostPort: 63729
+    hostIP: __REMOTE_BIND_IP__
+  - guestPort: 8474
+    hostPort: 8474
+    hostIP: __REMOTE_BIND_IP__
+  - guestPortRange: [1, 65535]
+    ignore: true
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y ca-certificates curl btop=1.3.0-1 jq
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      chmod a+r /etc/apt/keyrings/docker.asc
+      cat > /etc/apt/sources.list.d/docker.sources <<'SOURCES'
+      Types: deb
+      URIs: https://download.docker.com/linux/ubuntu
+      Suites: noble
+      Components: stable
+      Signed-By: /etc/apt/keyrings/docker.asc
+      SOURCES
+      apt-get update
+      apt-get install -y docker-ce=5:29.8.2-1~ubuntu.24.04~noble docker-ce-cli=5:29.8.2-1~ubuntu.24.04~noble containerd.io=2.3.6-1~ubuntu.24.04~noble docker-buildx-plugin=0.37.1-1~ubuntu.24.04~noble docker-compose-plugin=5.5.1-1~ubuntu.24.04~noble
+  - mode: yq
+    path: /etc/systemd/system/docker.socket.d/override.conf
+    format: ini
+    expression: .Socket.SocketUser="__REMOTE_USER__"

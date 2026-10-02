@@ -1,0 +1,88 @@
+name: learning-core
+services:
+  postgres:
+    image: postgres:18.1-alpine@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29
+    environment:
+      POSTGRES_USER: ${PG_ADMIN_USER}
+      POSTGRES_PASSWORD: ${PG_ADMIN_PASSWORD}
+      ORDERING_PASSWORD: ${ORDERING_PASSWORD}
+      FULFILLMENT_PASSWORD: ${FULFILLMENT_PASSWORD}
+      ORDERING_USER: ${ORDERING_USER}
+      ORDERING_DB: ${ORDERING_DB}
+      FULFILLMENT_USER: ${FULFILLMENT_USER}
+      FULFILLMENT_DB: ${FULFILLMENT_DB}
+    ports: ['${PG_PUBLISHED_PORT:-${PG_PORT}}:5432']
+    volumes:
+      - pg_data:/var/lib/postgresql
+      - ./infrastructure/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    mem_limit: 1g
+    cpus: 1.0
+    restart: 'no'
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U $$POSTGRES_USER']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  rabbitmq:
+    image: rabbitmq:4.2.1-management-alpine@sha256:f1f1ec0bb9b5cb55335a433c00e2f4804bdf90f513e53260ce47b82d2165de24
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
+    ports: ['${RABBIT_PUBLISHED_PORT:-${RABBIT_PORT}}:5672', '${RABBIT_MANAGEMENT_PORT}:15672']
+    volumes: [rabbit_data:/var/lib/rabbitmq]
+    mem_limit: 768m
+    cpus: 1.0
+    restart: 'no'
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:8-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+    command:
+      [
+        redis-server,
+        --maxmemory,
+        96mb,
+        --maxmemory-policy,
+        allkeys-lru,
+        --save,
+        '',
+        --appendonly,
+        'no',
+      ]
+    ports: ['${REDIS_PUBLISHED_PORT:-${REDIS_PORT:-63729}}:6379']
+    mem_limit: 128m
+    cpus: 0.5
+    restart: 'no'
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0@sha256:9378ed52a28bc50edc1350f936f518f31fa95f0d15917d6eb40b8e376d1a214e
+    command: [-host, 0.0.0.0, -config, /config.json]
+    ports: ['${RABBIT_PROXY_PUBLISHED_PORT:-${RABBIT_CONNECT_PORT:-56730}}:8666', '8474:8474']
+    volumes: [./infrastructure/toxiproxy.json:/config.json:ro]
+    mem_limit: 64m
+    cpus: 0.5
+    restart: 'no'
+  fulfillment:
+    profiles: [remote]
+    build: .
+    command: [pnpm, dev:fulfillment]
+    ports: ['${FULFILLMENT_PORT:-4312}:${FULFILLMENT_PORT:-4312}']
+    volumes:
+      - ./.lab/remote.env:/app/.env:ro
+      - ./.lab/logs:/app/.lab/logs
+    mem_limit: 512m
+    cpus: 1.0
+    restart: 'no'
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+volumes:
+  pg_data:
+  rabbit_data:
