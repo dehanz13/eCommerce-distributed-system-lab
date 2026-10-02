@@ -58,10 +58,21 @@ jobs:
       - run: pnpm test:recovery
       - run: pnpm test:learning
       - run: pnpm test:e2e
+      - name: Show startup diagnostics
+        if: failure()
+        run: |
+          for log in .lab/*.stdout.log; do
+            [ -f "$log" ] || continue
+            echo "$log"
+            tail -n 60 "$log"
+          done
+          lsof -nP -iTCP -sTCP:LISTEN || true
+          ps -eo pid,ppid,args
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
           name: ecosystem-diagnostics
+          include-hidden-files: true
           path: |
             test-results/
             .lab/logs/
