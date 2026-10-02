@@ -34,7 +34,9 @@ jobs:
           name: coverage
           path: |
             coverage/
-            docs/badges/unit-coverage.svg
+            docs/badges/*.svg
+            docs/coverage-report.md
+            docs/coverage-snapshot.json
           if-no-files-found: warn
       - name: Publish coverage when Codecov is configured
         if: env.CODECOV_TOKEN != '' && github.event_name != 'pull_request'

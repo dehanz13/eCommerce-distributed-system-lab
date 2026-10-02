@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
+    maxWorkers: 2,
     include: ['tests/**/*.test.ts'],
     coverage: {
       provider: 'v8',
@@ -12,7 +13,7 @@ export default defineConfig({
         'packages/**/src/**/*.ts',
         'tools/**/*.ts',
       ],
-      reporter: ['text', 'html', 'lcov', 'json-summary'],
+      reporter: ['text', 'html', 'lcov', 'json-summary', 'json'],
       reportsDirectory: 'coverage',
     },
   },

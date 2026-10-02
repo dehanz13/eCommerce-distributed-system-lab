@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import type { ActivityRecord } from '@lab/contracts';
 import {
+  records,
+  isStale,
   activityEdge,
   journeyHops,
   journeyOutcome,
@@ -29,6 +31,70 @@ const accepted = () => [
   log('event.received', 'fulfillment'),
   log('job.recorded', 'fulfillment'),
 ];
+it('maps cache observations, operator controls and uncertain health without inventing hops', () => {
+  expect(records([null, [], 'bad', { id: 'valid' }])).toEqual([{ id: 'valid' }]);
+  expect(records(null)).toEqual([]);
+  const now = Date.now(),
+    at = new Date(now).toISOString();
+  expect(isStale({ at: 'invalid' }, now, true)).toBe(true);
+  expect(pieceHealth('redis', { cache: { at, data: { connected: true } } }, now, true)).toBe(
+    'ready',
+  );
+  expect(pieceHealth('redis', { cache: { at, data: { connected: false } } }, now, true)).toBe(
+    'unavailable',
+  );
+  expect(pieceHealth('redis', {}, now, true)).toBe('unknown');
+  expect(pieceHealth('redis', { cache: { at, error: 'offline' } }, now, true)).toBe('stale');
+  const status = {
+    at,
+    data: {
+      services: [
+        { name: 'fulfillment', reachable: true, ready: true, broker: true },
+        { name: 'ordering', reachable: true, ready: true, broker: false },
+      ],
+    },
+  };
+  expect(
+    pieceHealth(
+      'fulfillment',
+      { status, fulfillment: { at, data: { settings: { paused: true } } } },
+      now,
+      true,
+    ),
+  ).toBe('paused');
+  expect(pieceHealth('rabbitmq', { status }, now, true)).toBe('degraded');
+  expect(pieceHealth('web', { status }, now, true)).toBe('unavailable');
+  expect(pieceHealth('ordering', { status: { at, error: 'offline' } }, now, true)).toBe('stale');
+  const logs = [
+    log('http.received', 'ordering', { method: 'GET', route: '/api/v1/products' }),
+    log('cache.database'),
+    log('cache.hit'),
+    log('http.completed', 'ordering', { status: 200 }),
+  ];
+  const trace = journeys(logs)[0]!;
+  expect(journeyHops(trace).map((x) => x.edge)).toEqual([
+    'request',
+    'ordering-write',
+    'cache',
+    'response',
+  ]);
+  expect(journeyOutcome(trace)).toBe('HTTP activity');
+  const completed = journeys([
+    log('outcome.applied', 'ordering', { eventType: 'fulfillment.completed' }),
+  ])[0]!;
+  expect(journeyOutcome(completed)).toBe('fulfilled');
+  expect(activityEdge(log('cache.hit'))).toBe('cache');
+  expect(activityEdge(log('cache.database'))).toBe('ordering-write');
+  expect(activityEdge(log('http.received', 'operator'))).toBe('control');
+  expect(activityEdge(log('http.received', 'fulfillment'))).toBeUndefined();
+  expect(activityEdge(log('http.completed', 'fulfillment'))).toBeUndefined();
+  expect(activityEdge(log('checkout.recovered'))).toBe('ordering-write');
+  expect(activityEdge(log('event.published', 'ordering'))).toBe('accepted');
+  expect(activityEdge(log('event.published', 'fulfillment'))).toBe('outcome');
+  expect(activityEdge(log('event.acknowledged', 'fulfillment'))).toBe('delivery');
+  expect(activityEdge(log('event.received', 'ordering'))).toBe('outcome-delivery');
+  expect(activityEdge(log('unrelated'))).toBeUndefined();
+});
 describe('observed architecture journeys', () => {
   it('does not infer unobserved work from an accepted response or missing activity', () => {
     const trace = journeys(accepted())[0]!;

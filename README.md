@@ -1,7 +1,8 @@
 # eCommerce distributed systems lab
 
 [![Code quality](https://github.com/dehanz13/eCommerce-distributed-system-lab/actions/workflows/quality.yml/badge.svg)](https://github.com/dehanz13/eCommerce-distributed-system-lab/actions/workflows/quality.yml)
-![Measured unit coverage](docs/badges/unit-coverage.svg)
+[![Business line coverage](docs/badges/business-coverage.svg)](docs/coverage-report.md)
+[![Overall unit line coverage](docs/badges/unit-coverage.svg)](docs/coverage-report.md)
 
 A local monorepo with four applications: web, ordering, fulfillment and operator. Ordering and fulfillment own separate PostgreSQL databases. RabbitMQ carries checkout and fulfillment events. Redis caches catalog reads. Toxiproxy introduces scoped AMQP interruptions for learning exercises. Seed records and simulated shopper traffic are fictional; there is no signup, payment or carrier integration.
 
@@ -31,6 +32,8 @@ The dashboard provides Overview, Architecture, Cache, Shoppers, Failure Lab, Rec
 
 ## Documentation
 
+Start with the [step-by-step learning path](docs/learning-path.md). Keep the [complete command reference](docs/command-reference.md) alongside it, and use the [capacity guide](docs/resource-capacity.md) for CPU, memory, disk and shopper-traffic parameters. [Editable Excalidraw scenes and SVG diagrams](docs/diagrams/README.md) show the whole ecosystem, each data path and the dedicated guest.
+
 | Topic                                                 | Reference                                                                 |
 | ----------------------------------------------------- | ------------------------------------------------------------------------- |
 | Per-system tools, dependencies and infrastructure     | [Technology inventory](docs/tech-stack.md)                                |
@@ -52,6 +55,6 @@ pnpm security # requires gitleaks
 
 With the disposable lab running, execute `pnpm test:integration`, `pnpm test:recovery`, `pnpm test:learning` and `pnpm test:e2e` sequentially. These suites change simulation settings and interrupt lab dependencies. CI runs them on an isolated Ubuntu runner. The [verification record](docs/verification.md) links results to specific commits and runs.
 
-The coverage badge is a committed unit-coverage measurement, not a general correctness percentage. [Quality and monitoring](docs/code-quality.md) explains the measured scope and report locations.
+The business line gate is 91%. Overall coverage retains startup, HTTP assembly, UI and operational tools, including untested files. Both badges link to the [per-system report](docs/coverage-report.md); these are committed measurements, not general correctness percentages. [Quality and monitoring](docs/code-quality.md) explains the measured scope and report locations.
 
 `develop` is the default integration branch. Release branches target it through pull requests. Configuration, key files, runtime state, generated results and personal root guidance are excluded by ignore rules. Shared documentation belongs under `docs/`; check staged files because ignore rules do not remove already tracked files.

@@ -38,3 +38,14 @@ it('does not retry client validation errors', async () => {
   await expect(request('/products')).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
   expect(fetch).toHaveBeenCalledTimes(1);
 });
+it('bounds transport retries and respects an explicitly aborted read', async () => {
+  const fetch = vi.fn().mockRejectedValue(new TypeError('offline'));
+  vi.stubGlobal('fetch', fetch);
+  await expect(request('/products')).rejects.toMatchObject({ code: 'OUTCOME_UNKNOWN' });
+  expect(fetch).toHaveBeenCalledTimes(2);
+  fetch.mockClear();
+  const controller = new AbortController();
+  controller.abort();
+  await expect(request('/products', { signal: controller.signal })).rejects.toThrow('offline');
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
