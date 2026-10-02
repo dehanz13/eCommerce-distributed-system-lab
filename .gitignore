@@ -21,3 +21,16 @@ coverage/
 /*.docx
 /*.adoc
 /.local-guidance/
+
+# Private configuration and key material.
+.env.*
+!.env.example
+.ssh/
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*

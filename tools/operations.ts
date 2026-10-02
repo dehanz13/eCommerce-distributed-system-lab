@@ -4,6 +4,7 @@ import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { root, cfg, activity } from '@lab/runtime';
+import { requireSettings } from '@lab/runtime/configuration';
 const exec = promisify(execFile);
 const state = path.join(root, '.lab');
 fs.mkdirSync(state, { recursive: true });
@@ -30,8 +31,7 @@ export async function command(
   });
 }
 function remoteHost() {
-  if (!cfg.REMOTE_HOST || !cfg.REMOTE_USER || !cfg.REMOTE_DIR)
-    throw new Error('Configure REMOTE_HOST, REMOTE_USER and REMOTE_DIR in .env');
+  requireSettings(cfg, ['REMOTE_HOST', 'REMOTE_USER', 'REMOTE_DIR']);
   if (!/^[a-zA-Z0-9_.@/-]+$/.test(cfg.REMOTE_DIR) || !cfg.REMOTE_DIR.startsWith('/'))
     throw new Error('REMOTE_DIR must be an absolute simple path');
   if (cfg.REMOTE_VM && !/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM))

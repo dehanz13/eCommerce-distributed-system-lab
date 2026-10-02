@@ -89,6 +89,6 @@
     "Native web process and launcher overhead are not included in these backend RSS values",
     "Docker Desktop hosts other unrelated containers; its VM memory is shared",
     "The eight-GB full ecosystem target has not been established",
-    "MBP19 Linux VM operation is unverified"
+    "Remote Linux VM operation is unverified"
   ]
 }

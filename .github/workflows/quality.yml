@@ -22,10 +22,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: cp .env.example .env
+      - run: pnpm check:public
       - run: pnpm quality
       - run: pnpm build
       - name: Check executable shell scripts
-        run: shellcheck lab scripts/bootstrap scripts/cleanup-startup scripts/monitor infrastructure/init-db.sh
+        run: shellcheck lab scripts/bootstrap scripts/cleanup-startup scripts/monitor scripts/security-check infrastructure/init-db.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -80,3 +82,26 @@ jobs:
             .lab/*.stdout.log
       - run: ./lab stop
         if: always()
+  security:
+    name: Dependency and publication checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install pinned secret scanner
+        run: |
+          mkdir -p "$RUNNER_TEMP/security-tools"
+          cd "$RUNNER_TEMP/security-tools"
+          curl -fsSL --retry 3 https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz -o scanner.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  scanner.tar.gz' | sha256sum -c -
+          tar -xzf scanner.tar.gz gitleaks
+          echo "$RUNNER_TEMP/security-tools" >> "$GITHUB_PATH"
+      - run: pnpm security

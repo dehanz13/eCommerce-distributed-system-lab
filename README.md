@@ -1,32 +1,57 @@
-# eCommerce full-stack learning ecosystem
+# eCommerce distributed systems lab
 
 [![Code quality](https://github.com/dehanz13/eCommerce-distributed-system-lab/actions/workflows/quality.yml/badge.svg)](https://github.com/dehanz13/eCommerce-distributed-system-lab/actions/workflows/quality.yml)
 ![Measured unit coverage](docs/badges/unit-coverage.svg)
 
-Local learning monorepo: web, ordering, fulfillment, and operator. PostgreSQL stores two separately owned databases; RabbitMQ delivers durable events, Redis caches revisioned catalog reads, and a scoped AMQP proxy supports network exercises. Fictional data only. The single-machine learning core runs locally. See [current verification](docs/learning-labs-verification.md) for exactly what was tested and what remains unverified.
+A local monorepo with four applications: web, ordering, fulfillment and operator. Ordering and fulfillment own separate PostgreSQL databases. RabbitMQ carries checkout and fulfillment events. Redis caches catalog reads. Toxiproxy introduces scoped AMQP interruptions for learning exercises. Seed records and simulated shopper traffic are fictional; there is no signup, payment or carrier integration.
 
-## Run locally
+## Start
 
-Install Docker with Compose, Node 24 and pnpm 10.21.0. From this repository, select Node with `nvm use`, then run `pnpm install --frozen-lockfile`. Copy `.env.example` to `.env` if needed and review its ports/hosts. `./lab operator` boots the control service; `./lab start` starts dependencies, migrates/seeds the databases and starts the applications. `./lab` opens the terminal menu. Shop: http://localhost:4310, catalog: http://localhost:4310/catalog, system dashboard: http://localhost:4310/system. `./lab stop` stops the managed lab services; `./lab reset` erases and reseeds lab data.
+Install the Node version in `.nvmrc`, pnpm 10.21.0 and Docker with Compose. Native lifecycle checks use lsof on macOS and ss from iproute2 on Linux. Run these commands from the repository root:
 
-The canonical editable configuration is the ignored root `.env`. Do not copy running process IDs or generated runtime state between machines. Stop older processes before starting another checkout on the same ports.
+```sh
+nvm install
+nvm use
+pnpm install --frozen-lockfile
+cp .env.example .env # first setup only; preserve an existing file
+./lab operator
+./lab start
+./lab status
+```
 
-`develop` is the integration/default branch. Release work is reviewed on a separate branch before merging; the first release candidate is `release/0.1.0-learning-core`. See [the branch and release workflow](docs/git-workflow.md).
+The default pages are Shop at http://127.0.0.1:4310, Catalog Admin at http://127.0.0.1:4310/catalog and System Dashboard at http://127.0.0.1:4310/system. `./lab` opens the terminal menu. `./lab reload-operator` loads operator source or configuration changes; `./lab restart web` rebuilds the frontend.
 
-## Shutdown and free resources
+The root `.env` is the editable configuration source. Missing or invalid required settings stop startup and print their names, the file to check and the example to compare. Values are omitted from configuration errors. Remote settings are required only for remote operations. See [configuration and troubleshooting](docs/configuration.md).
 
-Follow the [shutdown, cleanup and restart runbook](docs/shutdown-and-cleanup.md) for M3 and the dedicated MBP19 guest. It covers stopping the operator, preserving database records, checking that services stopped, removing rebuildable files, optional data/VM deletion, and starting again. `./lab stop` leaves the operator running; `./lab reset` erases data and starts the lab again.
+## Operate and inspect
 
-## Repository guidance
+The dashboard provides Overview, Architecture, Cache, Shoppers, Failure Lab, Records, Timeline, Metrics and Controls. Architecture follows recorded activity with two-second polling. Its progress indicates observed milestones, not network transit time or completion percentages for real processing work.
 
-Your root instruction documents apply to every leaf folder. Root Markdown, text, PDF, DOCX and AsciiDoc instruction documents are ignored by Git, with exceptions for this README, CHANGELOG and LICENSE. Local AGENTS.md tells assistants to read the user-maintained root guidance first. Keep shared onboarding/design documentation under docs/ so it can be committed. Ignore rules do not untrack files previously committed.
+`./lab stop` stops the managed services while leaving the operator available. `./lab reset` erases and reseeds managed lab data. Follow the [shutdown and cleanup runbook](docs/shutdown-and-cleanup.md) to stop the remaining operator, preserve or delete volumes, remove generated files and stop a dedicated guest. Run `./lab monitor` for local btop, `./lab monitor remote-host` for the remote physical host, or `./lab monitor lab-vm` for its configured guest.
 
-## Quality and monitoring
+## Documentation
 
-`pnpm quality` checks types, lint, formatting and measured unit coverage; `pnpm build` builds the frontend. `pnpm test:integration` and `pnpm test:e2e` exercise the running lab. `./lab monitor` opens btop for the current machine. See [quality, GitHub badges and host monitoring](docs/code-quality.md) for scope, badge setup and VM measurement details. The displayed percentage is a measured local unit-test baseline, not a general correctness score or a live GitHub result.
+| Topic                                                 | Reference                                                                 |
+| ----------------------------------------------------- | ------------------------------------------------------------------------- |
+| Per-system tools, dependencies and infrastructure     | [Technology inventory](docs/tech-stack.md)                                |
+| Ownership, transactions, events and state transitions | [Architecture](docs/architecture.md)                                      |
+| Records, commands, facts and observations             | [Ontology and learning map](docs/ontology-and-learning.md)                |
+| Local and remote operation                            | [Operations](docs/operations.md), [remote guest](docs/remote-lab-vm.md)   |
+| Recorded activity and animation limits                | [Architecture dashboard](docs/architecture-dashboard.md)                  |
+| Cache, shopper traffic and failure exercises          | [Learning labs](docs/learning-labs.md)                                    |
+| Measured checks and their limits                      | [Verification](docs/verification.md), [security checks](docs/security.md) |
+| Review and release process                            | [Git workflow](docs/git-workflow.md)                                      |
 
-Start learning with [architecture and decisions](docs/architecture.md), [ontology and all 17 learning goals](docs/ontology-and-learning.md), and [local/two-machine operations](docs/operations.md). Run `./lab test-browser` for the isolated Linux browser suite when native browser launch is restricted.
+## Check changes
 
-The System Dashboard now includes an Architecture tab with the ownership map, observed checkout hops, replay, service health and planned additions. Run a demo checkout there, or observe orders submitted from Shop. See [the architecture dashboard guide](docs/architecture-dashboard.md) for observation guarantees and extension points.
+```sh
+pnpm quality
+pnpm build
+pnpm security # requires gitleaks
+```
 
-The dashboard also includes **Cache**, **Shoppers**, and **Failure Lab** views. See [guided exercises and contracts](docs/learning-labs.md) and [the dedicated MBP19 VM runbook](docs/mbp19-lab-vm.md). Use `pnpm test:learning` to verify all nine named fault controls against the running lab. `./lab reload-operator` reloads the operator explicitly after source/config changes; restart web separately to rebuild its interface.
+With the disposable lab running, execute `pnpm test:integration`, `pnpm test:recovery`, `pnpm test:learning` and `pnpm test:e2e` sequentially. These suites change simulation settings and interrupt lab dependencies. CI runs them on an isolated Ubuntu runner. The [verification record](docs/verification.md) links results to specific commits and runs.
+
+The coverage badge is a committed unit-coverage measurement, not a general correctness percentage. [Quality and monitoring](docs/code-quality.md) explains the measured scope and report locations.
+
+`develop` is the default integration branch. Release branches target it through pull requests. Configuration, key files, runtime state, generated results and personal root guidance are excluded by ignore rules. Shared documentation belongs under `docs/`; check staged files because ignore rules do not remove already tracked files.

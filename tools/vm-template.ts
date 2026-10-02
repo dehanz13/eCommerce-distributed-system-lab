@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { isIP } from 'node:net';
 import { cfg, root } from '@lab/runtime';
+import { requireSettings } from '@lab/runtime/configuration';
+requireSettings(cfg, ['REMOTE_USER', 'REMOTE_DIR', 'REMOTE_BIND_IP']);
 if (
   !/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_USER) ||
   !/^[a-zA-Z0-9_./-]+$/.test(cfg.REMOTE_DIR) ||

@@ -10,3 +10,26 @@ test-results
 playwright-report
 **/AGENTS.md
 **/CLAUDE.md
+
+# Private configuration and key material.
+.env.*
+!.env.example
+.ssh/
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+
+/*.md
+!/README.md
+!/CHANGELOG.md
+/*.txt
+!/LICENSE.txt
+/*.pdf
+/*.docx
+/*.adoc
+/.local-guidance/

@@ -1,41 +1,39 @@
-# Group 1 verification — 2026-10-02
+# Verification record
 
-Historical slice evidence. See [current learning-lab verification](learning-labs-verification.md) for the Redis, shopper, failure-control and MBP19 results that supersede the earlier readiness and coverage figures below.
+Recorded baseline: October 2, 2026, commit `1624320b700d7d8bca62ec63089fde636dc45afc`. [GitHub run 37046030584](https://github.com/dehanz13/eCommerce-distributed-system-lab/actions/runs/37046030584) completed at 18:18:11 UTC with both jobs successful. It used an isolated Ubuntu runner, Node 24.11.0 and the committed lockfile. This run predates the subsequent configuration and dependency update; inspect that update's checks separately.
 
-Canonical source directory: `/Users/dehanz13/development/projects/ecommerce-fullstack-ecosystem`. The four applications are running with PostgreSQL and RabbitMQ locally. Test records are left in the lab for inspection; reset has been independently verified to erase/reseed managed data.
+| Check                             | Recorded result | Scope                                                                                                         |
+| --------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------- |
+| Type checking, ESLint, formatting | Passed          | Workspace source                                                                                              |
+| Unit and contract tests           | 33 passed       | Validation, policies, shared contracts, wrapper, cache, feeder and lifecycle                                  |
+| Frontend build                    | Passed          | Next.js production build                                                                                      |
+| ShellCheck                        | Passed          | Committed executable helpers                                                                                  |
+| Transaction integration           | Passed          | Stock competition, cart preservation, reconfirmation, replay, key conflict, terminal failure and compensation |
+| Recovery suite                    | Passed          | Lost response, restart, duplicate delivery and dependency interruption                                        |
+| Learning suite                    | Passed          | Catalog invalidation and nine named failure exercises                                                         |
+| Browser suite                     | 11 passed       | Shop, recovery, architecture, cache, shoppers and scoped network exercise                                     |
+| Shutdown                          | Passed          | Managed services stopped after the tests                                                                      |
 
-## Observed checks
+## Configuration and dependency update
 
-| Check                                                                  | Actual outcome                                                                                                                                                                               |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Strict TypeScript, ESLint, React Hooks/accessibility rules, formatting | Passed                                                                                                                                                                                       |
-| Unit/HTTP-contract tests                                               | 10 passed across 3 files                                                                                                                                                                     |
-| Frontend production build                                              | Passed through the operator's web restart                                                                                                                                                    |
-| ShellCheck                                                             | Passed for the executable scripts                                                                                                                                                            |
-| Production dependency audit                                            | No known vulnerabilities reported after patch updates                                                                                                                                        |
-| Integration guarantees                                                 | Passed: last-stock concurrency, cart preservation, idempotent replay/conflicting key reuse, price/cart reconfirmation, LWW edits, exhausted retries, one-time compensation and recovery cart |
-| Recovery guarantees                                                    | Passed: discarded accepted-response replay, same persisted attempt after restart, duplicate accepted-event delivery, durable outbox during broker outage, database outage/recovery           |
-| Browser suite                                                          | 4 passed in isolated Linux, Node 24.11.0 / Playwright 1.56.1; last run 19.2 seconds                                                                                                          |
-| Browser cases                                                          | Checkout/fulfillment/admin navigation; changed prices; committed checkout with response deliberately lost and original-key recovery; failed-order recovery/reconfirmation                    |
-| Live owner inspection                                                  | Product detail contract and job detail with three recorded failed attempts passed                                                                                                            |
-| Invalid-event handling                                                 | Malformed message entered quarantine with the owner source; verified message was acknowledged after inspection                                                                               |
-| Dashboard controls                                                     | Pause/resume completed; terminal-controlled restart and reset completed                                                                                                                      |
-| Fresh managed lab data                                                 | Reset recreated databases/queues and seeded the catalog successfully                                                                                                                         |
-| Contracts                                                              | Running owner OpenAPI documents and discriminated version-one event schema exported into docs/contracts/                                                                                     |
-| Host monitor                                                           | Existing btop 1.4.7+6e39144 verified; ./lab monitor opens it                                                                                                                                 |
+Local checks completed on October 2, 2026 at 19:05 UTC with Node 24.21.0, pnpm 10.21.0 and Vitest 4.1.11: 51 unit/contract tests across ten files passed, along with type checking, linting, formatting, production build and ShellCheck. The current-file policy checked 122 files with no configured matches; the npm audit reported zero advisories. Gitleaks 8.30.1 reported no configured secret matches in reachable history. These are local outcomes; the update's pull request records its separate CI results.
 
-Unit line coverage is **16.94%**; branch coverage is 65.54%, function coverage 50%. The unit coverage scope includes untested application/UI files. Integration and browser checks are separate evidence and do not inflate this percentage. The SVG badge reflects this measured local baseline.
+Measured unit coverage was 28.45% lines, 27.47% statements, 23.57% functions and 26.35% branches. The coverage provider changed with Vitest; values across tool versions are not directly comparable as a trend.
 
-The native macOS Playwright launch was blocked by its process environment. The isolated Linux suite passed without changing Mac browser protections. It found and verified a real portability fix: browser IDs use the standard UUID library so HTTP hostnames work when crypto.randomUUID is unavailable. See [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID) and [uuid](https://github.com/uuidjs/uuid).
+## Reproduce
 
-## Recorded resource sample
+```sh
+pnpm quality
+pnpm build
+pnpm security
+```
 
-At 2026-10-02T07:27:48.039Z, the lab PostgreSQL container used 41.95MiB / 1GiB and RabbitMQ used 89.6MiB / 768MiB. Ordering, fulfillment and operator process RSS were about 44.5, 45.1 and 54.9 MiB respectively. The full sampled values and scope limitations are in docs/resource-snapshot.json. This is one live observation, not a peak benchmark or proof of the eight-GB target. The native web process, launchers and shared Docker Desktop overhead are outside those backend RSS figures.
+Start the disposable lab, then run integration, recovery, learning and browser suites sequentially. Each suite changes lab-owned state. The workflow source is `.github/workflows/quality.yml`; GitHub records the command outcomes for each commit.
 
-## Remaining external verification
+## Resource evidence
 
-Two-machine SSH/Compose projection is implemented, but MBP19 VM access and capacity were not verified. A blank physical host has not been provisioned from scratch; Linux locked-dependency installation and local data recreation were verified. GitHub CI and live coverage badges are prepared but not connected/run because a repository URL and coverage integration have not been supplied. No commit, push or cloud deployment was performed. Root personal instructions are excluded by the ignore rules; the chosen source directory has not yet been initialized as a Git repository because metadata creation was blocked in this environment.
+`resource-snapshot.json` retains a single local observation from October 2, 2026 at 07:27:48 UTC. It records host, container and backend-process values from an earlier slice. It omits some current components and frontend/launcher overhead. It is neither a load benchmark nor evidence that the full lab fits an eight-GB budget.
 
-## Explore
+For a new measurement, record topology, workload, timestamp and scope. Compare btop host/guest readings, `docker stats --no-stream`, and dashboard process metrics. Do not add guest allocation, container limits and host free memory as if they were independent capacity.
 
-Open http://localhost:4310 for the shop, /catalog for catalog administration and /system for observation/controls. `./lab` opens the terminal menu. `./lab test-browser` runs the isolated Linux verification suite; `./lab monitor` opens btop. Start services from a normal Terminal so the operator can send their lifecycle signals. Read docs/architecture.md, docs/ontology-and-learning.md and docs/operations.md for the ownership map, state machines, all 17 learning goals and single/two-machine operation.
+The runner result does not establish a complete remote interactive deployment, physical-host capacity, or every production failure mode. The nine exercise scenarios are a finite test set. Security scans have their own scope, tool version and advisory timestamp in [security checks](security.md).

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+pnpm check:public
+pnpm audit --audit-level=low
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo '[security] gitleaks is missing. Install it, then rerun pnpm security.' >&2
+  exit 1
+fi
+gitleaks git --log-opts="--all --full-history -m" --redact --no-banner .
