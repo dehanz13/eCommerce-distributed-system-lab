@@ -23,9 +23,9 @@
     "branches": { "total": 483, "covered": 449, "pct": 92.96 }
   },
   "overall": {
-    "lines": { "total": 2106, "covered": 1064, "skipped": 0, "pct": 50.52 },
-    "statements": { "total": 2337, "covered": 1154, "skipped": 0, "pct": 49.37 },
-    "functions": { "total": 561, "covered": 234, "skipped": 0, "pct": 41.71 },
+    "lines": { "total": 2108, "covered": 1070, "skipped": 0, "pct": 50.75 },
+    "statements": { "total": 2340, "covered": 1161, "skipped": 0, "pct": 49.61 },
+    "functions": { "total": 563, "covered": 238, "skipped": 0, "pct": 42.27 },
     "branches": { "total": 1589, "covered": 746, "skipped": 0, "pct": 46.94 },
     "branchesTrue": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
   },
@@ -67,9 +67,9 @@
       "branches": { "total": 75, "covered": 64, "pct": 85.33 }
     },
     "packages/runtime": {
-      "lines": { "total": 324, "covered": 193, "pct": 59.56 },
-      "statements": { "total": 350, "covered": 207, "pct": 59.14 },
-      "functions": { "total": 76, "covered": 49, "pct": 64.47 },
+      "lines": { "total": 326, "covered": 199, "pct": 61.04 },
+      "statements": { "total": 353, "covered": 214, "pct": 60.62 },
+      "functions": { "total": 78, "covered": 53, "pct": 67.94 },
       "branches": { "total": 186, "covered": 123, "pct": 66.12 }
     },
     "tools": {
@@ -255,9 +255,9 @@
       "branches": { "total": 39, "covered": 36, "skipped": 0, "pct": 92.3 }
     },
     "packages/runtime/src/index.ts": {
-      "lines": { "total": 116, "covered": 97, "skipped": 0, "pct": 83.62 },
-      "functions": { "total": 30, "covered": 23, "skipped": 0, "pct": 76.66 },
-      "statements": { "total": 123, "covered": 100, "skipped": 0, "pct": 81.3 },
+      "lines": { "total": 118, "covered": 103, "skipped": 0, "pct": 87.28 },
+      "functions": { "total": 32, "covered": 27, "skipped": 0, "pct": 84.37 },
+      "statements": { "total": 126, "covered": 107, "skipped": 0, "pct": 84.92 },
       "branches": { "total": 82, "covered": 63, "skipped": 0, "pct": 76.82 }
     },
     "packages/runtime/src/observation.ts": {

@@ -29,6 +29,10 @@ export function pool(owner: 'ordering' | 'fulfillment') {
     statement_timeout: 5000,
   });
   p.on('error', (e) => activity(owner, 'database.disconnected', { message: e.message }));
+  // Pool errors cover idle clients; checked-out clients need a listener during outages too.
+  p.on('connect', (client) => {
+    client.on('error', (e) => activity(owner, 'database.disconnected', { message: e.message }));
+  });
   return p;
 }
 export async function transaction<T>(
