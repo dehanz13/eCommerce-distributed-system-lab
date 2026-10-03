@@ -18,6 +18,8 @@ Read the drawings in this order. Each has an editable Excalidraw scene and an SV
 
 Blue paths carry HTTP requests/responses and event messages; green paths carry persistence/cache operations; purple paths carry named controls. Orange annotations identify failures, uncertainty and recovery. Protocol/port labels in the deployment drawing distinguish guest-internal connectivity from forwarded host ports. IDs and timestamps are data, not aggregate metric labels.
 
+Each component separates its name, a short purpose statement, a smaller tool/vendor list, and its processing details. Tool lists use 12-point text (11.5 in compact deployment cards); purpose statements use 13–15 points. The scene and SVG contain the same descriptions. Configured guest capacity remains separate from measured resource use.
+
 ## Read a detailed diagram alongside a tutorial
 
 1. Follow [one shopping journey](../learning-path.md) and match its request/correlation ID to recorded activity.
