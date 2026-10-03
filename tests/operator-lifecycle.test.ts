@@ -21,7 +21,7 @@ vi.mock('@lab/runtime', async (original) => ({
   root: state.root,
 }));
 vi.mock('node:child_process', async (original) => {
-  const actual = await original<object>();
+  const actual = await original<typeof import('node:child_process')>();
   const execFile = Object.assign(vi.fn(), {
     [promisify.custom]: async (file: string, args: string[]) => {
       state.commands.push({ file, args });
@@ -30,7 +30,9 @@ vi.mock('node:child_process', async (original) => {
         return { stdout: '', stderr: '' };
       }
       if (file === 'ps') return { stdout: '128\n', stderr: '' };
-      if (file === 'ssh')
+      if (file === 'ssh') {
+        // Parse the real forwarded command; a canned SSH reply must not hide broken quoting.
+        actual.execFileSync('/bin/sh', ['-n', '-c', args.at(-1)!]);
         return {
           stdout: args.at(-1)?.includes('python3')
             ? JSON.stringify({
@@ -43,6 +45,7 @@ vi.mock('node:child_process', async (original) => {
             : '',
           stderr: '',
         };
+      }
       if (file === 'ss') {
         if (state.retiringSocket && !state.listeners.length) {
           state.retiringSocket = false;

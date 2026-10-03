@@ -1,5 +1,4 @@
-import { controlPage } from '../../../tools/control-page';
-import { collectActivity } from '../../../tools/activity-collection';
+import { registerInspectionRoutes } from './inspection-routes';
 import { Type } from '@sinclair/typebox';
 import {
   Id,
@@ -35,22 +34,7 @@ for (const a of readActions()) {
   actions.set(a.id, a);
 }
 let busy = false;
-app.get('/', (_req, reply) => reply.type('text/html').send(controlPage));
-app.get(
-  '/api/v1/activity',
-  {
-    schema: {
-      querystring: Type.Object(
-        { correlationId: Type.Optional(Id) },
-        { additionalProperties: false },
-      ),
-    },
-  },
-  (req) =>
-    collectActivity((req.query as { correlationId?: string }).correlationId).then((data) =>
-      response(req, data),
-    ),
-);
+registerInspectionRoutes(app);
 app.get('/health', (req) => response(req, { ready: true }));
 app.get('/api/v1/resources', (req) => response(req, readCleanup()));
 app.get('/api/v1/status', (req) => status().then((x) => response(req, x)));

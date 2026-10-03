@@ -92,28 +92,9 @@
     "/": {
       "get": {
         "responses": {
-          "2XX": {
+          "200": {
             "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {},
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "requestId": { "format": "uuid", "type": "string" },
-                        "correlationId": { "format": "uuid", "type": "string" },
-                        "respondedAt": { "format": "date-time", "type": "string" }
-                      },
-                      "required": ["requestId", "correlationId", "respondedAt"]
-                    }
-                  },
-                  "required": ["data", "meta"]
-                }
-              }
-            }
+            "content": { "text/html": { "schema": { "type": "string" } } }
           }
         }
       }
@@ -137,32 +118,92 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "type": "array",
-                      "items": {
-                        "additionalProperties": true,
-                        "type": "object",
-                        "properties": {
-                          "id": { "format": "uuid", "type": "string" },
-                          "owner": { "type": "string" },
-                          "type": { "type": "string" },
-                          "occurredAt": { "format": "date-time", "type": "string" },
-                          "correlationId": { "format": "uuid", "type": "string" },
-                          "requestId": { "format": "uuid", "type": "string" },
-                          "eventId": { "format": "uuid", "type": "string" },
-                          "eventType": { "type": "string" },
-                          "orderId": { "format": "uuid", "type": "string" },
-                          "jobId": { "format": "uuid", "type": "string" },
-                          "attemptId": { "format": "uuid", "type": "string" },
-                          "attemptNumber": { "minimum": 1, "type": "integer" },
-                          "durationMs": { "minimum": 0, "type": "number" },
-                          "method": { "type": "string" },
-                          "route": { "type": "string" },
-                          "status": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
-                          "outcome": { "type": "string" },
-                          "key": { "type": "string" }
+                      "type": "object",
+                      "properties": {
+                        "sampledAt": { "format": "date-time", "type": "string" },
+                        "exhaustive": { "type": "boolean", "enum": [false] },
+                        "limitPerOwner": { "minimum": 1, "type": "integer" },
+                        "retentionDays": { "minimum": 1, "type": "integer" },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "owner": { "type": "string" },
+                              "available": { "type": "boolean" },
+                              "sampledAt": { "format": "date-time", "type": "string" },
+                              "records": {
+                                "type": "array",
+                                "items": {
+                                  "additionalProperties": true,
+                                  "type": "object",
+                                  "properties": {
+                                    "id": { "format": "uuid", "type": "string" },
+                                    "owner": { "type": "string" },
+                                    "type": { "type": "string" },
+                                    "occurredAt": { "format": "date-time", "type": "string" },
+                                    "correlationId": { "format": "uuid", "type": "string" },
+                                    "requestId": { "format": "uuid", "type": "string" },
+                                    "eventId": { "format": "uuid", "type": "string" },
+                                    "eventType": { "type": "string" },
+                                    "orderId": { "format": "uuid", "type": "string" },
+                                    "jobId": { "format": "uuid", "type": "string" },
+                                    "attemptId": { "format": "uuid", "type": "string" },
+                                    "attemptNumber": { "minimum": 1, "type": "integer" },
+                                    "durationMs": { "minimum": 0, "type": "number" },
+                                    "method": { "type": "string" },
+                                    "route": { "type": "string" },
+                                    "status": {
+                                      "anyOf": [{ "type": "integer" }, { "type": "string" }]
+                                    },
+                                    "outcome": { "type": "string" },
+                                    "key": { "type": "string" }
+                                  },
+                                  "required": ["id", "owner", "type", "occurredAt"]
+                                }
+                              },
+                              "error": { "type": "string", "nullable": true }
+                            },
+                            "required": ["owner", "available", "sampledAt", "records", "error"]
+                          }
                         },
-                        "required": ["id", "owner", "type", "occurredAt"]
-                      }
+                        "records": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": true,
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "owner": { "type": "string" },
+                              "type": { "type": "string" },
+                              "occurredAt": { "format": "date-time", "type": "string" },
+                              "correlationId": { "format": "uuid", "type": "string" },
+                              "requestId": { "format": "uuid", "type": "string" },
+                              "eventId": { "format": "uuid", "type": "string" },
+                              "eventType": { "type": "string" },
+                              "orderId": { "format": "uuid", "type": "string" },
+                              "jobId": { "format": "uuid", "type": "string" },
+                              "attemptId": { "format": "uuid", "type": "string" },
+                              "attemptNumber": { "minimum": 1, "type": "integer" },
+                              "durationMs": { "minimum": 0, "type": "number" },
+                              "method": { "type": "string" },
+                              "route": { "type": "string" },
+                              "status": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
+                              "outcome": { "type": "string" },
+                              "key": { "type": "string" }
+                            },
+                            "required": ["id", "owner", "type", "occurredAt"]
+                          }
+                        }
+                      },
+                      "required": [
+                        "sampledAt",
+                        "exhaustive",
+                        "limitPerOwner",
+                        "retentionDays",
+                        "sources",
+                        "records"
+                      ]
                     },
                     "meta": {
                       "type": "object",

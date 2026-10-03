@@ -128,7 +128,7 @@ export async function server(owner: string) {
     openapi: { info: { title: owner + ' learning API', version: '1.0.0' } },
   });
   app.addHook('onRoute', (options) => {
-    if (options.url === '/openapi.json') return;
+    if (options.url === '/openapi.json' || options.schema?.response) return;
     const method = Array.isArray(options.method) ? options.method[0]! : options.method;
     options.schema = { ...options.schema, response: { '2xx': httpSchema(options.url, method) } };
   });

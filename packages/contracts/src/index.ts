@@ -239,6 +239,24 @@ export const ActivitySchema = Type.Object(
   { additionalProperties: true },
 );
 export type ActivityRecord = Static<typeof ActivitySchema>;
+/** Bounded owner collection; unavailable sources carry diagnostics rather than invented records. */
+export const ActivityCollectionSchema = Type.Object({
+  sampledAt: Time,
+  exhaustive: Type.Literal(false),
+  limitPerOwner: Type.Integer({ minimum: 1 }),
+  retentionDays: Type.Integer({ minimum: 1 }),
+  sources: Type.Array(
+    Type.Object({
+      owner: Type.String(),
+      available: Type.Boolean(),
+      sampledAt: Time,
+      records: Type.Array(ActivitySchema),
+      error: Type.Union([Type.String(), Type.Null()]),
+    }),
+  ),
+  records: Type.Array(ActivitySchema),
+});
+export type ActivityCollection = Static<typeof ActivityCollectionSchema>;
 export function httpSchema(path: string, method: string) {
   let data: TSchema = Type.Unknown();
   const route = (path.split('?')[0] ?? path).replace(
@@ -264,6 +282,7 @@ export function httpSchema(path: string, method: string) {
             run: Type.Union([ExperimentRunSchema, Type.Null()]),
           })
         : ExperimentRunSchema;
+  else if (route === '/api/v1/activity') data = ActivityCollectionSchema;
   else if (route === '/activity' || route.endsWith('/activity')) data = Type.Array(ActivitySchema);
   else if (/^\/api\/v1\/products(?:\/|$)/.test(route))
     data =

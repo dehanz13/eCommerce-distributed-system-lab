@@ -1,3 +1,4 @@
+import { quoteShell } from './shell';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, execFile } from 'node:child_process';
@@ -43,14 +44,13 @@ function remoteHost() {
     throw new Error('Invalid remote host or user');
   return `${cfg.REMOTE_USER}@${cfg.REMOTE_HOST}`;
 }
-const quote = (s: string) => "'" + s.replaceAll("'", "'\''") + "'";
 async function compose(args: string[]) {
   if (cfg.TOPOLOGY === 'two') {
     return command('ssh', [
       remoteHost(),
       cfg.REMOTE_VM
-        ? `limactl shell ${quote(cfg.REMOTE_VM)} sh -c ${quote(`cd ${quote(cfg.REMOTE_DIR)} && docker compose --env-file .lab/remote.env ${args.map(quote).join(' ')}`)}`
-        : `cd ${quote(cfg.REMOTE_DIR)} && docker compose --env-file .lab/remote.env ${args.map(quote).join(' ')}`,
+        ? `limactl shell ${quoteShell(cfg.REMOTE_VM)} sh -c ${quoteShell(`cd ${quoteShell(cfg.REMOTE_DIR)} && docker compose --env-file .lab/remote.env ${args.map(quoteShell).join(' ')}`)}`
+        : `cd ${quoteShell(cfg.REMOTE_DIR)} && docker compose --env-file .lab/remote.env ${args.map(quoteShell).join(' ')}`,
     ]);
   }
   return command('docker', ['compose', '--env-file', '.env', ...args]);
@@ -239,7 +239,7 @@ export async function waitReady(url: string, timeout = 60000) {
 }
 export async function deployRemote() {
   const host = remoteHost();
-  await command('ssh', [host, 'mkdir -p ' + quote(cfg.REMOTE_DIR)]);
+  await command('ssh', [host, 'mkdir -p ' + quoteShell(cfg.REMOTE_DIR)]);
   await command('rsync', [
     '-az',
     '--exclude=node_modules',
@@ -276,7 +276,7 @@ export async function deployRemote() {
       .join('\n'),
     { mode: 0o600 },
   );
-  await command('ssh', [host, `mkdir -p ${quote(cfg.REMOTE_DIR + '/.lab')}`]);
+  await command('ssh', [host, `mkdir -p ${quoteShell(cfg.REMOTE_DIR + '/.lab')}`]);
   await command('scp', [
     path.join(state, 'remote.env'),
     `${host}:${cfg.REMOTE_DIR}/.lab/remote.env`,
@@ -285,7 +285,7 @@ export async function deployRemote() {
 export async function startLab(progress: (message: string) => void = () => {}) {
   if (cfg.TOPOLOGY === 'two') {
     if (cfg.REMOTE_VM)
-      await command('ssh', [remoteHost(), `limactl start ${quote(cfg.REMOTE_VM)}`]);
+      await command('ssh', [remoteHost(), `limactl start ${quoteShell(cfg.REMOTE_VM)}`]);
     await deployRemote();
   }
   progress('Starting PostgreSQL, RabbitMQ, Redis and proxy');
@@ -544,11 +544,11 @@ export async function sampleResources(includeGuest = true): Promise<ResourceSnap
   if (cfg.TOPOLOGY === 'two') {
     for (const scope of ['remote host', ...(cfg.REMOTE_VM && includeGuest ? ['lab guest'] : [])]) {
       try {
-        const script = `python3 -c ${quote(remoteSample)}`;
+        const script = `python3 -c ${quoteShell(remoteSample)}`;
         const result = await command('ssh', [
           remoteHost(),
           scope === 'lab guest'
-            ? `limactl shell ${quote(cfg.REMOTE_VM)} sh -c ${quote(script)}`
+            ? `limactl shell ${quoteShell(cfg.REMOTE_VM)} sh -c ${quoteShell(script)}`
             : script,
         ]);
         const observed = JSON.parse(result.stdout);
@@ -605,7 +605,7 @@ export async function stopLab(
   if (releaseVm && cfg.TOPOLOGY === 'two' && cfg.REMOTE_VM) {
     try {
       progress('Stopping configured dedicated guest');
-      await command('ssh', [remoteHost(), `limactl stop ${quote(cfg.REMOTE_VM)}`]);
+      await command('ssh', [remoteHost(), `limactl stop ${quoteShell(cfg.REMOTE_VM)}`]);
       vmReleased = true;
     } catch {
       errors.push('Configured lab guest did not stop; inspect its status.');
