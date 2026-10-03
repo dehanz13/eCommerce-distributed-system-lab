@@ -1,7 +1,9 @@
+import { controlPage } from '../../../tools/control-page';
+import { collectActivity } from '../../../tools/activity-collection';
 import { Type } from '@sinclair/typebox';
 import {
   Id,
-  Preset,
+  ActionInput,
   FeederInput,
   ExperimentInput,
   type FeederOptions,
@@ -9,13 +11,12 @@ import {
 } from '@lab/contracts';
 import { cfg, server, listen, response, Problem, root } from '@lab/runtime';
 import {
-  names,
-  actionNames,
   action,
   execute,
   record,
   readActions,
   status,
+  readCleanup,
   type Action,
   type Service,
 } from '../../../tools/operations';
@@ -34,26 +35,37 @@ for (const a of readActions()) {
   actions.set(a.id, a);
 }
 let busy = false;
+app.get('/', (_req, reply) => reply.type('text/html').send(controlPage));
+app.get(
+  '/api/v1/activity',
+  {
+    schema: {
+      querystring: Type.Object(
+        { correlationId: Type.Optional(Id) },
+        { additionalProperties: false },
+      ),
+    },
+  },
+  (req) =>
+    collectActivity((req.query as { correlationId?: string }).correlationId).then((data) =>
+      response(req, data),
+    ),
+);
 app.get('/health', (req) => response(req, { ready: true }));
+app.get('/api/v1/resources', (req) => response(req, readCleanup()));
 app.get('/api/v1/status', (req) => status().then((x) => response(req, x)));
 app.post(
   '/api/v1/actions',
   {
     schema: {
-      body: Type.Object(
-        {
-          name: Type.Union(actionNames.map((x) => Type.Literal(x))),
-          service: Type.Optional(Type.Union(names.map((x) => Type.Literal(x)))),
-          preset: Type.Optional(Preset),
-        },
-        { additionalProperties: false },
-      ),
+      body: ActionInput,
     },
   },
   async (req, reply) => {
     if (busy || experiments.busy() || feeder.busy())
       throw new Problem(409, 'ACTION_IN_PROGRESS', 'Wait for the current control action');
     const b = req.body as { name: string; service?: Service; preset?: string };
+    const previousCleanupId = readCleanup()?.id;
     const a = action(b.name, b.service);
     actions.set(a.id, a);
     if (actions.size > 100) actions.delete(actions.keys().next().value!);
@@ -63,15 +75,21 @@ app.post(
       a.status = 'running';
       a.startedAt = new Date().toISOString();
       record(a);
-      execute(b.name, b.service, b.preset)
-        .then(() => {
+      execute(b.name, b.service, b.preset, (progress) => {
+        a.progress = progress;
+        record(a);
+      })
+        .then((cleanup) => {
+          if (cleanup) a.cleanup = cleanup;
           if (b.name === 'reset')
             for (const key of actions.keys()) if (key !== a.id) actions.delete(key);
           a.status = 'completed';
         })
         .catch((e) => {
           a.status = 'failed';
-          a.error = String(e);
+          a.error = e instanceof Error ? e.message : 'Action failed; inspect operator activity';
+          const cleanup = readCleanup();
+          if (cleanup && cleanup.id !== previousCleanupId) a.cleanup = cleanup;
         })
         .finally(() => {
           a.finishedAt = new Date().toISOString();

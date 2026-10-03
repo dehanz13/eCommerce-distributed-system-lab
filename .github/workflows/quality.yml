@@ -37,6 +37,8 @@ jobs:
             docs/badges/*.svg
             docs/coverage-report.md
             docs/coverage-snapshot.json
+            docs/test-inventory.md
+            docs/test-inventory.json
           if-no-files-found: warn
       - name: Publish coverage when Codecov is configured
         if: env.CODECOV_TOKEN != '' && github.event_name != 'pull_request'

@@ -70,6 +70,9 @@ if (name === 'monitor') {
       2,
     ),
   );
+} else if (name === 'resources') {
+  const { readCleanup } = await import('./operations');
+  console.log(JSON.stringify(readCleanup(), null, 2));
 } else if (name === 'status') console.log(JSON.stringify(await status(), null, 2));
 else if (name) {
   await startService('operator');
@@ -85,6 +88,8 @@ else if (name) {
       options: [
         'start',
         'status',
+        'resources',
+        'poweroff',
         'monitor',
         'pause',
         'resume',
@@ -101,6 +106,10 @@ else if (name) {
       console.log(JSON.stringify(await status(), null, 2));
       continue;
     }
+    if (choice === 'resources') {
+      console.log(JSON.stringify((await import('./operations')).readCleanup(), null, 2));
+      continue;
+    }
     if (choice === 'monitor') {
       monitor();
       continue;
@@ -110,10 +119,13 @@ else if (name) {
     if (choice === 'restart') {
       const v = await select({
         message: 'Which service?',
-        options: names.map((value) => ({ value, label: value })),
+        options: [
+          { value: 'all', label: 'Entire lab' },
+          ...names.map((value) => ({ value, label: value })),
+        ],
       });
       if (isCancel(v)) continue;
-      service = v;
+      service = v === 'all' ? undefined : (v as Service);
     }
     if (choice === 'preset') {
       const v = await select({

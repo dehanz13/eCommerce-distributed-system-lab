@@ -1,5 +1,30 @@
 # Verification record
 
+## Transaction observations and lifecycle controls
+
+Local verification on October 3, 2026 UTC used Node 24.21.0, pnpm 10.21.0, Vitest 4.1.11 and the pinned lockfile. This is evidence for the observation/control changes on `release/0.3.0-observation-controls`; earlier entries below describe earlier source revisions.
+
+| Check                                | Observed result                 | Scope                                                                                                                                                |
+| ------------------------------------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript, ESLint, formatting       | Passed                          | Workspace source and generated reports                                                                                                               |
+| Unit/module/contract checks          | 131 passed in 18 files          | Domain invariants, invalid controls, observation stages/redaction, bounded logging, collection availability, resource reports and lifecycle fixtures |
+| Business line coverage               | 615/628, 97.92%                 | Explicit business scope; 91% gate                                                                                                                    |
+| Overall line coverage                | 1056/2102, 50.23%               | Separate complete configured scope; per-system figures remain in the coverage report                                                                 |
+| Production web build                 | Passed                          | Next.js 16.3.8                                                                                                                                       |
+| Real transaction integration         | Passed                          | Concurrent checkout, cart preservation, replay/conflicts, terminal outcomes and compensation                                                         |
+| Recovery suite                       | Passed                          | Lost response, durable attempt restart, duplicate delivery, broker and database outages                                                              |
+| Learning integration                 | Passed                          | Catalog behavior and the nine named scenarios                                                                                                        |
+| Browser journeys                     | 12 passed in 55.8 seconds       | Chromium in the pinned Linux browser image; local HTTP forwarded through Docker; shop, recovery, map replay, keyboard help and controls              |
+| API export                           | Completed                       | Running ordering/fulfillment; current operator source on a temporary port, with malformed preset and misdirected poweroff requests observed rejected |
+| Publication/dependency/history scans | Passed within configured scope  | No configured publication matches, no dependency advisories, no secret matches in reachable history; existing image findings remain separate         |
+| Disposable teardown                  | Seven services observed stopped | Owned native listeners plus the isolated Compose project; operator retained for separate shutdown                                                    |
+
+The browser run first exposed unavailable `crypto.randomUUID` on a local HTTP hostname and an excessively long replay after adding detailed SQL observations. A portable cryptographic ID fallback and replay of observed milestones resolved those failures. The final full browser run passed; failed attempts are not counted as passing runs.
+
+The [cleanup snapshot](cleanup-snapshot.json) was collected at 00:59:39.810 UTC in single-machine topology after these sequential suites. It records OS free memory changing from 93,732,864 to 156,106,752 bytes, a 62,373,888-byte increase. An earlier stop during this same session observed a 35,225,600-byte decrease. These are host observations under changing workloads, not measurements of memory exclusively reclaimed by the lab. Before-stop managed RSS was unavailable; after-stop owned application RSS was zero. No idle baseline was certified (`baselineRestored: null`). Volumes, images, logs, the Docker runtime and unrelated workloads remained allocated.
+
+Remote guest startup/shutdown, unavailable remote hosts and cross-host cleanup were exercised through process/SSH fixtures, not a physical two-host deployment. No guest allocation was changed. No btop reading or remote capacity improvement is claimed. The resource guide provides commands for a separately observed demonstration. The root standards document remains local and ignored. CI results for the published revision must be inspected separately.
+
 Recorded baseline: October 2, 2026, commit `1624320b700d7d8bca62ec63089fde636dc45afc`. [GitHub run 37046030584](https://github.com/dehanz13/eCommerce-distributed-system-lab/actions/runs/37046030584) completed at 18:18:11 UTC with both jobs successful. It used an isolated Ubuntu runner, Node 24.11.0 and the committed lockfile. This run predates the subsequent configuration and dependency update; inspect that update's checks separately.
 
 | Check                             | Recorded result | Scope                                                                                                         |

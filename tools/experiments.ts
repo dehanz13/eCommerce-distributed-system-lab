@@ -143,7 +143,9 @@ async function perform(run: ExperimentRun) {
     } else {
       const observed = baseline.fulfillment as { data?: { settings?: { preset?: string } } };
       const preset = observed.data?.settings?.preset ?? 'success';
-      restore = () => execute('preset', undefined, preset);
+      restore = async () => {
+        await execute('preset', undefined, preset);
+      };
       await execute(
         'preset',
         undefined,

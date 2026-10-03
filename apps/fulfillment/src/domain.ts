@@ -27,6 +27,13 @@ export function fulfillment(p: pg.Pool, connected: () => boolean) {
       );
     });
     measurements.consumption.inc({ outcome: duplicate ? 'duplicate' : 'committed' });
+    activity('fulfillment', 'job.processing', {
+      correlationId: e.correlationId,
+      eventId: e.id,
+      stage: 'process',
+      step: 'inbox deduplication and durable job insert committed',
+      duplicate,
+    });
     activity('fulfillment', duplicate ? 'job.duplicate' : 'job.recorded', {
       orderId: e.data.orderId,
       eventId: e.id,
@@ -124,7 +131,13 @@ export function fulfillment(p: pg.Pool, connected: () => boolean) {
     });
     // Observation follows COMMIT so rolled-back work never appears completed.
     if (started) {
-      activity('fulfillment', 'attempt.started', started);
+      const recorded = started as Record<string, unknown>;
+      activity('fulfillment', 'attempt.started', { ...recorded, stage: 'input' });
+      activity('fulfillment', 'attempt.processing', {
+        ...recorded,
+        stage: 'process',
+        step: 'persisted deadline; simulated work waits until dueAt',
+      });
       measurements.attempts.inc({ outcome: 'started' });
     }
     if (finished) {
@@ -133,7 +146,13 @@ export function fulfillment(p: pg.Pool, connected: () => boolean) {
         seconds: number;
         data: Record<string, unknown>;
       };
-      activity('fulfillment', 'attempt.finished', result.data);
+      activity('fulfillment', 'attempt.finished', {
+        ...result.data,
+        stage: 'output',
+        durationMs: result.seconds * 1000,
+        retryDelayMs:
+          result.outcome === 'retry' ? (result.data.attemptNumber === 1 ? 1000 : 5000) : null,
+      });
       measurements.attempts.inc({ outcome: result.outcome });
       measurements.duration.observe({ kind: 'fulfillment_attempt' }, result.seconds);
     }

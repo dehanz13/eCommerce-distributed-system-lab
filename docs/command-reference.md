@@ -110,7 +110,7 @@ curl --fail-with-body -sS "$OPERATOR/api/v1/experiments" \
   -d '{"scenario":"network-cut","durationSeconds":12}' | jq
 # Explicit restoration after a finished/interrupted exercise:
 curl --fail-with-body -sS -X POST "$OPERATOR/api/v1/experiments/restore" | jq
-# Named lifecycle action: name required; service required for restart;
+# Named lifecycle action: name required; omit service for the entire lab;
 # preset required for preset action. Omit unused fields.
 ACTION=$(curl --fail-with-body -sS "$OPERATOR/api/v1/actions" \
   -H 'Content-Type: application/json' -d '{"name":"restart","service":"ordering"}' | jq -er '.data.id')
@@ -165,25 +165,29 @@ The tables below come from committed owner OpenAPI paths. `:id`/`:productId` are
 
 ### Operator
 
-| Method | Path                          | Required input                                    |
-| ------ | ----------------------------- | ------------------------------------------------- |
-| GET    | `/metrics`                    | None                                              |
-| GET    | `/activity`                   | None                                              |
-| GET    | `/openapi.json`               | None                                              |
-| GET    | `/health`                     | None                                              |
-| GET    | `/api/v1/status`              | None                                              |
-| POST   | `/api/v1/actions`             | body: name, service (optional), preset (optional) |
-| GET    | `/api/v1/actions`             | None                                              |
-| GET    | `/api/v1/actions/{id}`        | path: id (required)                               |
-| GET    | `/api/v1/broker`              | None                                              |
-| GET    | `/api/v1/host`                | None                                              |
-| GET    | `/api/v1/feeder`              | None                                              |
-| POST   | `/api/v1/feeder`              | body: shoppers, concurrency, seed, thinkMs        |
-| POST   | `/api/v1/feeder/stop`         | None                                              |
-| POST   | `/api/v1/feeder/recover/{id}` | path: id (required)                               |
-| GET    | `/api/v1/experiments`         | None                                              |
-| POST   | `/api/v1/experiments`         | body: scenario, durationSeconds                   |
-| POST   | `/api/v1/experiments/restore` | None                                              |
+| Method | Path                          | Required input                                     |
+| ------ | ----------------------------- | -------------------------------------------------- |
+| GET    | `/metrics`                    | None                                               |
+| GET    | `/activity`                   | None                                               |
+| GET    | `/openapi.json`               | None                                               |
+| GET    | `/health`                     | None                                               |
+| GET    | `/api/v1/status`              | None                                               |
+| GET    | `/api/v1/resources`           | None; returns the stored stop-phase report or null |
+| GET    | `/api/v1/activity`            | query: correlationId (optional UUID)               |
+| POST   | `/api/v1/actions`             | body: name, service (optional), preset (optional)  |
+| GET    | `/api/v1/actions`             | None                                               |
+| GET    | `/api/v1/actions/{id}`        | path: id (required)                                |
+| GET    | `/api/v1/broker`              | None                                               |
+| GET    | `/api/v1/host`                | None                                               |
+| GET    | `/api/v1/feeder`              | None                                               |
+| POST   | `/api/v1/feeder`              | body: shoppers, concurrency, seed, thinkMs         |
+| POST   | `/api/v1/feeder/stop`         | None                                               |
+| POST   | `/api/v1/feeder/recover/{id}` | path: id (required)                                |
+| GET    | `/api/v1/experiments`         | None                                               |
+| POST   | `/api/v1/experiments`         | body: scenario, durationSeconds                    |
+| POST   | `/api/v1/experiments/restore` | None                                               |
+
+Action inputs reject unknown fields and invalid combinations. `start`, `stop` and `restart` accept an optional named service. `seed`, `reset` and `poweroff` operate on the lab and reject `service`. `pause` and `resume` accept only fulfillment as an optional service. `preset` requires a preset (`success`, `slow`, `retry`, `fail`) and accepts only fulfillment as an optional service. A 202 response means accepted for execution; inspect the action ID for its outcome.
 
 ## Infrastructure inspection and capacity controls
 
@@ -206,3 +210,9 @@ docker compose --env-file .env exec -T postgres sh -c 'psql -U "$POSTGRES_USER" 
 Readiness and metrics: each owner has `/health`, `/metrics`, `/activity`, `/openapi.json`; ordering and fulfillment expose `/api/v1/system`. Operator `/api/v1/status`, `/api/v1/host` and `/api/v1/broker` observe named lab systems. Correlated activity uses `?correlationId=UUID`. `/metrics` returns JSON measurements, not a telemetry database.
 
 Shutdown and deletion commands, including `docker compose ... down`, `down --volumes`, `limactl delete ecommerce-lab`, generated-file cleanup and restart, are spelled out with consequences in [shutdown and cleanup](shutdown-and-cleanup.md). Deletion is deliberate; no global prune command is part of this lab.
+
+## Observation and cleanup controls
+
+Full-lab restart is `./lab restart`. To stop the configured dedicated guest as well, use `./lab poweroff`; full `./lab start` starts it again. `./lab resources` reads the last cleanup report without starting anything. The operator's printed origin serves an independent control page. Additional reads: `GET /api/v1/resources` and `GET /api/v1/activity?correlationId=<uuid>`. These are bounded observations with timestamps and availability markers.
+
+`pnpm test` and `pnpm test:coverage` regenerate the complete [test inventory](test-inventory.md). `pnpm test:inventory` regenerates from the latest private result file. Detailed workflow and retained-resource semantics: [observation guide](runtime-observation.md).

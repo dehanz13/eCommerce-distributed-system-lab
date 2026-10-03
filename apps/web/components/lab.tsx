@@ -11,16 +11,17 @@ import {
   RefreshCw,
   Play,
   Pause,
-  Terminal,
   ArrowRight,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
-import { request, ApiError, browserMetrics } from '@lab/client';
+import { request, ApiError, browserMetrics, browserActivity } from '@lab/client';
 import type { Product, Cart, Order, Preview, CheckoutInput } from '@lab/contracts';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Architecture } from './architecture';
+import { SystemControls } from './system-controls';
+import { Help } from './ui/help';
 import { LearningControls } from './learning-controls';
 type RecordData = Record<string, unknown>;
 type SystemData = {
@@ -34,6 +35,25 @@ type SystemData = {
   database?: RecordData;
 };
 type Pending = { body: CheckoutInput; key: string; correlationId: string };
+const dashboardHelp: Record<string, string> = {
+  Overview: 'Owner state and availability at the last successful sample.',
+  Architecture: 'Trace recorded requests and events across the ecosystem.',
+  Cache: 'Observe catalog lookup, SQL fallback and cache fill.',
+  Shoppers: 'Run bounded fictional shopping journeys with reproducible choices.',
+  'Failure Lab': 'Engage a scoped fault and compare before, during and restored state.',
+  Records: 'Inspect durable jobs, attempts and outbox records.',
+  Timeline: 'Inspect input, processing and output records under a correlation ID.',
+  Metrics: 'Read process counters and scoped host/broker measurements.',
+  Controls: 'Start, stop, restart, verify cleanup and recover from the operator.',
+};
+const systemHelp: Record<string, string> = {
+  status:
+    'Readiness is observed by probing owner APIs. Reachability does not establish that all dependencies are healthy.',
+  ordering: 'Ordering owns catalog, carts, checkout, orders, inbox and outbox.',
+  fulfillment: 'Fulfillment owns jobs, attempts, settings, inbox and outbox.',
+  broker: 'RabbitMQ management samples include only lab queues.',
+  host: 'Operator host measurements include unrelated workloads. They are not container or remote-guest measurements.',
+};
 const dollars = (cents: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 const display = (x: unknown) => JSON.stringify(x, null, 2);
@@ -83,7 +103,8 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
     >({}),
     [poll, setPoll] = useState(true),
     [tab, setTab] = useState('Overview'),
-    [correlation, setCorrelation] = useState('');
+    [correlation, setCorrelation] = useState(''),
+    [collected, setCollected] = useState<unknown>(null);
   useEffect(() => {
     const id = localStorage.getItem('lab.shopper') ?? newId();
     localStorage.setItem('lab.shopper', id);
@@ -123,7 +144,9 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
   useEffect(() => {
     if (view !== 'shop' || !shopper) return;
     const t = setInterval(() => {
-      request<Order[]>('/api/v1/orders?shopperId=' + shopper)
+      request<Order[]>('/api/v1/orders?shopperId=' + shopper, {
+        headers: { 'x-lab-observation': 'poll' },
+      })
         .then((r) => setOrders(r.data))
         .catch(() => {});
     }, 2000);
@@ -216,6 +239,7 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
         broker: '/operator/api/v1/broker',
         host: '/operator/api/v1/host',
         actions: '/operator/api/v1/actions',
+        resources: '/operator/api/v1/resources',
         orderingLogs: '/ordering/activity',
         fulfillmentLogs: '/fulfillment/activity',
         operatorLogs: '/operator/activity',
@@ -764,6 +788,8 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
                   <Button
                     key={x}
                     variant={tab === x ? 'default' : 'ghost'}
+                    hint={dashboardHelp[x]}
+                    aria-pressed={tab === x}
                     onClick={() => setTab(x)}
                   >
                     {x}
@@ -811,7 +837,13 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
                   {['status', 'ordering', 'fulfillment', 'broker', 'host'].map((key) => (
                     <section key={key} className="panel p-5 mb-3">
                       <div className="flex justify-between">
-                        <h2 className="font-semibold capitalize">{key}</h2>
+                        <div className="flex gap-2 items-center">
+                          <h2 className="font-semibold capitalize">{key}</h2>
+                          <Help label={key}>
+                            {systemHelp[key] ??
+                              'Inspect the last recorded response, its source and sample time.'}
+                          </Help>
+                        </div>
                         <Status value={systems[key]?.error ? 'unavailable' : 'ready'} />
                       </div>
                       {systems[key]?.error && (
@@ -874,6 +906,42 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
               )}
               {tab === 'Timeline' && (
                 <>
+                  <div className="panel p-5 mb-4">
+                    <div className="control-heading">
+                      <h2 className="font-semibold">Collect recent owner activity</h2>
+                      <Help label="Activity collection">
+                        Collect up to 200 recent matching records from each owner. Missing producers
+                        are labeled unavailable. Full retained logs remain on each owning host.
+                      </Help>
+                    </div>
+                    <p className="hint">
+                      One bounded report with source availability and ordered timestamps. Use a
+                      valid correlation UUID below, or leave it empty.
+                    </p>
+                    <Button
+                      className="mt-3"
+                      variant="outline"
+                      disabled={busy}
+                      hint="Read the recent owner windows once. This does not copy full log archives or run a lifecycle command."
+                      onClick={() =>
+                        void mutate(async () => {
+                          const result = await request(
+                            '/operator/api/v1/activity' +
+                              (correlation
+                                ? '?correlationId=' + encodeURIComponent(correlation)
+                                : ''),
+                          );
+                          setCollected(result.data);
+                        })
+                      }
+                    >
+                      Collect activity
+                    </Button>
+                    <Details
+                      data={collected}
+                      label="Inspect collected evidence and missing sources"
+                    />
+                  </div>
                   <label className="block mb-4">
                     Filter by correlation ID
                     <Input
@@ -882,6 +950,20 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
                       onChange={(e) => setCorrelation(e.target.value)}
                     />
                   </label>
+                  <section className="panel p-4 mb-3">
+                    <h2 className="font-semibold">Current browser activity</h2>
+                    <p className="hint">
+                      Bounded to 200 entries in this tab; reload clears it. These observations are
+                      not collected from other browsers.
+                    </p>
+                    <Details
+                      data={browserActivity
+                        .filter((x) => !correlation || x.correlationId === correlation)
+                        .slice(-30)
+                        .reverse()}
+                      label="Inspect browser input / process / output"
+                    />
+                  </section>
                   {['orderingLogs', 'fulfillmentLogs', 'operatorLogs'].map((key) => (
                     <section key={key} className="panel p-4 mb-3">
                       <h2 className="font-semibold mb-3">{key.replace('Logs', ' activity')}</h2>
@@ -933,108 +1015,7 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
                 </>
               )}
               {tab === 'Controls' && (
-                <>
-                  <div className="panel p-5 mb-4">
-                    <h2 className="font-semibold text-lg">Fulfillment</h2>
-                    <p className="hint mt-2">
-                      Existing jobs keep their recorded preset. Pausing finishes the current
-                      attempt.
-                    </p>
-                    <div className="flex flex-wrap gap-3 mt-4">
-                      <label>
-                        Preset for new jobs
-                        <select
-                          aria-label="Preset for new jobs"
-                          value={fulfillment?.settings?.preset ?? 'success'}
-                          disabled={busy}
-                          onChange={(e) => void control('preset', undefined, e.target.value)}
-                          className="block border rounded-md p-2 bg-background mt-1"
-                        >
-                          {['success', 'slow', 'retry', 'fail'].map((x) => (
-                            <option key={x}>{x}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <Button
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() =>
-                          void control(fulfillment?.settings?.paused ? 'resume' : 'pause')
-                        }
-                      >
-                        {fulfillment?.settings?.paused ? 'Resume fulfillment' : 'Pause fulfillment'}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="panel p-5 mb-4">
-                    <h2 className="font-semibold text-lg">Named service controls</h2>
-                    <p className="hint mt-2">
-                      Stop and restart terminate immediately. The terminal remains your recovery
-                      entry point.
-                    </p>
-                    {['ordering', 'fulfillment', 'postgres', 'rabbitmq', 'web'].map((s) => (
-                      <div key={s} className="flex flex-wrap justify-between gap-3 py-3 border-b">
-                        <strong>{s}</strong>
-                        <div className="flex gap-2">
-                          {['start', 'stop', 'restart'].map((a) => (
-                            <Button
-                              key={a}
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => void control(a, s)}
-                            >
-                              {a}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="panel p-5 mb-4">
-                    <h2 className="font-semibold">Lab data</h2>
-                    <div className="flex gap-3 mt-4">
-                      <Button
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() => void control('seed')}
-                      >
-                        Seed fresh catalog
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        disabled={busy}
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              'Erase lab data, queues, activity and state, then reseed?',
-                            )
-                          )
-                            void control('reset');
-                        }}
-                      >
-                        Reset lab
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="panel p-5">
-                    <h2 className="font-semibold flex gap-2">
-                      <Terminal size={16} />
-                      Action outcomes
-                    </h2>
-                    {((systems.actions?.data ?? []) as RecordData[]).slice(0, 10).map((a) => (
-                      <div key={String(a.id)} className="py-3 border-b">
-                        <div className="flex gap-3">
-                          <strong>
-                            {String(a.name)} {String(a.service ?? '')}
-                          </strong>
-                          <Status value={String(a.status)} />
-                        </div>
-                        {a.error != null && <p className="text-red-500">{String(a.error)}</p>}
-                        <Details data={a} />
-                      </div>
-                    ))}
-                  </div>
-                </>
+                <SystemControls samples={systems} busy={busy} control={control} />
               )}
             </>
           )}

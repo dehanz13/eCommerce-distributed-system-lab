@@ -58,3 +58,5 @@ With the disposable lab running, execute `pnpm test:integration`, `pnpm test:rec
 The business line gate is 91%. Overall coverage retains startup, HTTP assembly, UI and operational tools, including untested files. Both badges link to the [per-system report](docs/coverage-report.md); these are committed measurements, not general correctness percentages. [Quality and monitoring](docs/code-quality.md) explains the measured scope and report locations.
 
 `develop` is the default integration branch. Release branches target it through pull requests. Configuration, key files, runtime state, generated results and personal root guidance are excluded by ignore rules. Shared documentation belongs under `docs/`; check staged files because ignore rules do not remove already tracked files.
+
+Transaction logs, full-lab controls and cleanup evidence: [observation and control guide](docs/runtime-observation.md). Every collected unit/module test and its dated status: [test inventory](docs/test-inventory.md). Local root instruction documents, including `STANDARDS.md`, apply to all descendant folders and stay ignored.

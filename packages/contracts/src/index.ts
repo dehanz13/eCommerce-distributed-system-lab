@@ -1,3 +1,4 @@
+import { ActionSchema, CleanupReportSchema } from './lifecycle';
 import { Type, type Static, type TSchema } from '@sinclair/typebox';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
@@ -244,7 +245,11 @@ export function httpSchema(path: string, method: string) {
     /^\/(operator|ordering|fulfillment)(?=\/)/,
     '',
   );
-  if (route === '/api/v1/cache') data = CacheSchema;
+  if (route === '/api/v1/resources') data = Type.Union([CleanupReportSchema, Type.Null()]);
+  else if (route === '/api/v1/actions')
+    data = method === 'GET' ? Type.Array(ActionSchema) : ActionSchema;
+  else if (route.startsWith('/api/v1/actions/')) data = ActionSchema;
+  else if (route === '/api/v1/cache') data = CacheSchema;
   else if (
     route === '/api/v1/feeder' ||
     route === '/api/v1/feeder/stop' ||
@@ -287,3 +292,7 @@ export function validateReply(path: string, method: string, value: unknown) {
 }
 
 export * from './experiments';
+
+export * from './lifecycle';
+
+export * from './observation';

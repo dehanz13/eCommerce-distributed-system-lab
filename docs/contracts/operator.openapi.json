@@ -89,6 +89,99 @@
       }
     },
     "/openapi.json": { "get": { "responses": { "200": { "description": "Default Response" } } } },
+    "/": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "query",
+            "name": "correlationId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "properties": {
+                          "id": { "format": "uuid", "type": "string" },
+                          "owner": { "type": "string" },
+                          "type": { "type": "string" },
+                          "occurredAt": { "format": "date-time", "type": "string" },
+                          "correlationId": { "format": "uuid", "type": "string" },
+                          "requestId": { "format": "uuid", "type": "string" },
+                          "eventId": { "format": "uuid", "type": "string" },
+                          "eventType": { "type": "string" },
+                          "orderId": { "format": "uuid", "type": "string" },
+                          "jobId": { "format": "uuid", "type": "string" },
+                          "attemptId": { "format": "uuid", "type": "string" },
+                          "attemptNumber": { "minimum": 1, "type": "integer" },
+                          "durationMs": { "minimum": 0, "type": "number" },
+                          "method": { "type": "string" },
+                          "route": { "type": "string" },
+                          "status": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
+                          "outcome": { "type": "string" },
+                          "key": { "type": "string" }
+                        },
+                        "required": ["id", "owner", "type", "occurredAt"]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "responses": {
@@ -100,6 +193,144 @@
                   "type": "object",
                   "properties": {
                     "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/resources": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "action": { "type": "string" },
+                        "sampledAt": { "format": "date-time", "type": "string" },
+                        "verified": { "type": "boolean" },
+                        "baselineRestored": { "type": "object", "nullable": true, "enum": [null] },
+                        "hosts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "scope": { "type": "string" },
+                              "before": {
+                                "type": "object",
+                                "properties": {
+                                  "scope": { "type": "string" },
+                                  "source": { "type": "string" },
+                                  "sampledAt": { "format": "date-time", "type": "string" },
+                                  "available": { "type": "boolean" },
+                                  "totalMemoryBytes": { "type": "number", "nullable": true },
+                                  "freeMemoryBytes": { "type": "number", "nullable": true },
+                                  "diskFreeBytes": { "type": "number", "nullable": true },
+                                  "loadAverage": {
+                                    "type": "array",
+                                    "items": { "type": "number" },
+                                    "nullable": true
+                                  },
+                                  "managedResidentBytes": { "type": "number", "nullable": true },
+                                  "error": { "type": "string", "nullable": true }
+                                },
+                                "required": [
+                                  "scope",
+                                  "source",
+                                  "sampledAt",
+                                  "available",
+                                  "totalMemoryBytes",
+                                  "freeMemoryBytes",
+                                  "diskFreeBytes",
+                                  "loadAverage",
+                                  "managedResidentBytes",
+                                  "error"
+                                ],
+                                "nullable": true
+                              },
+                              "after": {
+                                "type": "object",
+                                "properties": {
+                                  "scope": { "type": "string" },
+                                  "source": { "type": "string" },
+                                  "sampledAt": { "format": "date-time", "type": "string" },
+                                  "available": { "type": "boolean" },
+                                  "totalMemoryBytes": { "type": "number", "nullable": true },
+                                  "freeMemoryBytes": { "type": "number", "nullable": true },
+                                  "diskFreeBytes": { "type": "number", "nullable": true },
+                                  "loadAverage": {
+                                    "type": "array",
+                                    "items": { "type": "number" },
+                                    "nullable": true
+                                  },
+                                  "managedResidentBytes": { "type": "number", "nullable": true },
+                                  "error": { "type": "string", "nullable": true }
+                                },
+                                "required": [
+                                  "scope",
+                                  "source",
+                                  "sampledAt",
+                                  "available",
+                                  "totalMemoryBytes",
+                                  "freeMemoryBytes",
+                                  "diskFreeBytes",
+                                  "loadAverage",
+                                  "managedResidentBytes",
+                                  "error"
+                                ]
+                              },
+                              "freeMemoryDeltaBytes": { "type": "number", "nullable": true }
+                            },
+                            "required": ["scope", "before", "after", "freeMemoryDeltaBytes"]
+                          }
+                        },
+                        "services": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": { "type": "string" },
+                              "running": { "type": "boolean", "nullable": true },
+                              "error": { "type": "string" }
+                            },
+                            "required": ["name", "running"]
+                          }
+                        },
+                        "errors": { "type": "array", "items": { "type": "string" } },
+                        "retained": { "type": "array", "items": { "type": "string" } }
+                      },
+                      "required": [
+                        "id",
+                        "action",
+                        "sampledAt",
+                        "verified",
+                        "baselineRestored",
+                        "hosts",
+                        "services",
+                        "errors",
+                        "retained"
+                      ],
+                      "nullable": true
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {
@@ -154,42 +385,78 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "anyOf": [
-                      { "type": "string", "enum": ["start"] },
-                      { "type": "string", "enum": ["stop"] },
-                      { "type": "string", "enum": ["restart"] },
-                      { "type": "string", "enum": ["seed"] },
-                      { "type": "string", "enum": ["reset"] },
-                      { "type": "string", "enum": ["pause"] },
-                      { "type": "string", "enum": ["resume"] },
-                      { "type": "string", "enum": ["preset"] }
-                    ]
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "anyOf": [
+                          { "type": "string", "enum": ["start"] },
+                          { "type": "string", "enum": ["stop"] },
+                          { "type": "string", "enum": ["restart"] }
+                        ]
+                      },
+                      "service": {
+                        "anyOf": [
+                          { "type": "string", "enum": ["web"] },
+                          { "type": "string", "enum": ["ordering"] },
+                          { "type": "string", "enum": ["fulfillment"] },
+                          { "type": "string", "enum": ["postgres"] },
+                          { "type": "string", "enum": ["rabbitmq"] },
+                          { "type": "string", "enum": ["redis"] },
+                          { "type": "string", "enum": ["toxiproxy"] }
+                        ]
+                      }
+                    },
+                    "required": ["name"]
                   },
-                  "service": {
-                    "anyOf": [
-                      { "type": "string", "enum": ["web"] },
-                      { "type": "string", "enum": ["ordering"] },
-                      { "type": "string", "enum": ["fulfillment"] },
-                      { "type": "string", "enum": ["postgres"] },
-                      { "type": "string", "enum": ["rabbitmq"] },
-                      { "type": "string", "enum": ["redis"] },
-                      { "type": "string", "enum": ["toxiproxy"] }
-                    ]
+                  {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "anyOf": [
+                          { "type": "string", "enum": ["seed"] },
+                          { "type": "string", "enum": ["reset"] },
+                          { "type": "string", "enum": ["poweroff"] }
+                        ]
+                      }
+                    },
+                    "required": ["name"]
                   },
-                  "preset": {
-                    "anyOf": [
-                      { "type": "string", "enum": ["success"] },
-                      { "type": "string", "enum": ["slow"] },
-                      { "type": "string", "enum": ["retry"] },
-                      { "type": "string", "enum": ["fail"] }
-                    ]
+                  {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "anyOf": [
+                          { "type": "string", "enum": ["pause"] },
+                          { "type": "string", "enum": ["resume"] }
+                        ]
+                      },
+                      "service": { "type": "string", "enum": ["fulfillment"] }
+                    },
+                    "required": ["name"]
+                  },
+                  {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string", "enum": ["preset"] },
+                      "preset": {
+                        "anyOf": [
+                          { "type": "string", "enum": ["success"] },
+                          { "type": "string", "enum": ["slow"] },
+                          { "type": "string", "enum": ["retry"] },
+                          { "type": "string", "enum": ["fail"] }
+                        ]
+                      },
+                      "service": { "type": "string", "enum": ["fulfillment"] }
+                    },
+                    "required": ["name", "preset"]
                   }
-                },
-                "required": ["name"]
+                ]
               }
             }
           }
@@ -202,7 +469,156 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {},
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "name": { "type": "string" },
+                        "service": { "type": "string" },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["requested"] },
+                            { "type": "string", "enum": ["running"] },
+                            { "type": "string", "enum": ["completed"] },
+                            { "type": "string", "enum": ["failed"] }
+                          ]
+                        },
+                        "requestedAt": { "format": "date-time", "type": "string" },
+                        "startedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "finishedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "error": { "type": "string", "nullable": true },
+                        "progress": { "type": "string" },
+                        "cleanup": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "format": "uuid", "type": "string" },
+                            "action": { "type": "string" },
+                            "sampledAt": { "format": "date-time", "type": "string" },
+                            "verified": { "type": "boolean" },
+                            "baselineRestored": {
+                              "type": "object",
+                              "nullable": true,
+                              "enum": [null]
+                            },
+                            "hosts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "scope": { "type": "string" },
+                                  "before": {
+                                    "type": "object",
+                                    "properties": {
+                                      "scope": { "type": "string" },
+                                      "source": { "type": "string" },
+                                      "sampledAt": { "format": "date-time", "type": "string" },
+                                      "available": { "type": "boolean" },
+                                      "totalMemoryBytes": { "type": "number", "nullable": true },
+                                      "freeMemoryBytes": { "type": "number", "nullable": true },
+                                      "diskFreeBytes": { "type": "number", "nullable": true },
+                                      "loadAverage": {
+                                        "type": "array",
+                                        "items": { "type": "number" },
+                                        "nullable": true
+                                      },
+                                      "managedResidentBytes": {
+                                        "type": "number",
+                                        "nullable": true
+                                      },
+                                      "error": { "type": "string", "nullable": true }
+                                    },
+                                    "required": [
+                                      "scope",
+                                      "source",
+                                      "sampledAt",
+                                      "available",
+                                      "totalMemoryBytes",
+                                      "freeMemoryBytes",
+                                      "diskFreeBytes",
+                                      "loadAverage",
+                                      "managedResidentBytes",
+                                      "error"
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "after": {
+                                    "type": "object",
+                                    "properties": {
+                                      "scope": { "type": "string" },
+                                      "source": { "type": "string" },
+                                      "sampledAt": { "format": "date-time", "type": "string" },
+                                      "available": { "type": "boolean" },
+                                      "totalMemoryBytes": { "type": "number", "nullable": true },
+                                      "freeMemoryBytes": { "type": "number", "nullable": true },
+                                      "diskFreeBytes": { "type": "number", "nullable": true },
+                                      "loadAverage": {
+                                        "type": "array",
+                                        "items": { "type": "number" },
+                                        "nullable": true
+                                      },
+                                      "managedResidentBytes": {
+                                        "type": "number",
+                                        "nullable": true
+                                      },
+                                      "error": { "type": "string", "nullable": true }
+                                    },
+                                    "required": [
+                                      "scope",
+                                      "source",
+                                      "sampledAt",
+                                      "available",
+                                      "totalMemoryBytes",
+                                      "freeMemoryBytes",
+                                      "diskFreeBytes",
+                                      "loadAverage",
+                                      "managedResidentBytes",
+                                      "error"
+                                    ]
+                                  },
+                                  "freeMemoryDeltaBytes": { "type": "number", "nullable": true }
+                                },
+                                "required": ["scope", "before", "after", "freeMemoryDeltaBytes"]
+                              }
+                            },
+                            "services": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": { "type": "string" },
+                                  "running": { "type": "boolean", "nullable": true },
+                                  "error": { "type": "string" }
+                                },
+                                "required": ["name", "running"]
+                              }
+                            },
+                            "errors": { "type": "array", "items": { "type": "string" } },
+                            "retained": { "type": "array", "items": { "type": "string" } }
+                          },
+                          "required": [
+                            "id",
+                            "action",
+                            "sampledAt",
+                            "verified",
+                            "baselineRestored",
+                            "hosts",
+                            "services",
+                            "errors",
+                            "retained"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "requestedAt",
+                        "startedAt",
+                        "finishedAt",
+                        "error",
+                        "progress"
+                      ]
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {
@@ -229,7 +645,167 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {},
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "format": "uuid", "type": "string" },
+                          "name": { "type": "string" },
+                          "service": { "type": "string" },
+                          "status": {
+                            "anyOf": [
+                              { "type": "string", "enum": ["requested"] },
+                              { "type": "string", "enum": ["running"] },
+                              { "type": "string", "enum": ["completed"] },
+                              { "type": "string", "enum": ["failed"] }
+                            ]
+                          },
+                          "requestedAt": { "format": "date-time", "type": "string" },
+                          "startedAt": {
+                            "format": "date-time",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "finishedAt": {
+                            "format": "date-time",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "error": { "type": "string", "nullable": true },
+                          "progress": { "type": "string" },
+                          "cleanup": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "format": "uuid", "type": "string" },
+                              "action": { "type": "string" },
+                              "sampledAt": { "format": "date-time", "type": "string" },
+                              "verified": { "type": "boolean" },
+                              "baselineRestored": {
+                                "type": "object",
+                                "nullable": true,
+                                "enum": [null]
+                              },
+                              "hosts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "scope": { "type": "string" },
+                                    "before": {
+                                      "type": "object",
+                                      "properties": {
+                                        "scope": { "type": "string" },
+                                        "source": { "type": "string" },
+                                        "sampledAt": { "format": "date-time", "type": "string" },
+                                        "available": { "type": "boolean" },
+                                        "totalMemoryBytes": { "type": "number", "nullable": true },
+                                        "freeMemoryBytes": { "type": "number", "nullable": true },
+                                        "diskFreeBytes": { "type": "number", "nullable": true },
+                                        "loadAverage": {
+                                          "type": "array",
+                                          "items": { "type": "number" },
+                                          "nullable": true
+                                        },
+                                        "managedResidentBytes": {
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "error": { "type": "string", "nullable": true }
+                                      },
+                                      "required": [
+                                        "scope",
+                                        "source",
+                                        "sampledAt",
+                                        "available",
+                                        "totalMemoryBytes",
+                                        "freeMemoryBytes",
+                                        "diskFreeBytes",
+                                        "loadAverage",
+                                        "managedResidentBytes",
+                                        "error"
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "after": {
+                                      "type": "object",
+                                      "properties": {
+                                        "scope": { "type": "string" },
+                                        "source": { "type": "string" },
+                                        "sampledAt": { "format": "date-time", "type": "string" },
+                                        "available": { "type": "boolean" },
+                                        "totalMemoryBytes": { "type": "number", "nullable": true },
+                                        "freeMemoryBytes": { "type": "number", "nullable": true },
+                                        "diskFreeBytes": { "type": "number", "nullable": true },
+                                        "loadAverage": {
+                                          "type": "array",
+                                          "items": { "type": "number" },
+                                          "nullable": true
+                                        },
+                                        "managedResidentBytes": {
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "error": { "type": "string", "nullable": true }
+                                      },
+                                      "required": [
+                                        "scope",
+                                        "source",
+                                        "sampledAt",
+                                        "available",
+                                        "totalMemoryBytes",
+                                        "freeMemoryBytes",
+                                        "diskFreeBytes",
+                                        "loadAverage",
+                                        "managedResidentBytes",
+                                        "error"
+                                      ]
+                                    },
+                                    "freeMemoryDeltaBytes": { "type": "number", "nullable": true }
+                                  },
+                                  "required": ["scope", "before", "after", "freeMemoryDeltaBytes"]
+                                }
+                              },
+                              "services": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": { "type": "string" },
+                                    "running": { "type": "boolean", "nullable": true },
+                                    "error": { "type": "string" }
+                                  },
+                                  "required": ["name", "running"]
+                                }
+                              },
+                              "errors": { "type": "array", "items": { "type": "string" } },
+                              "retained": { "type": "array", "items": { "type": "string" } }
+                            },
+                            "required": [
+                              "id",
+                              "action",
+                              "sampledAt",
+                              "verified",
+                              "baselineRestored",
+                              "hosts",
+                              "services",
+                              "errors",
+                              "retained"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "status",
+                          "requestedAt",
+                          "startedAt",
+                          "finishedAt",
+                          "error",
+                          "progress"
+                        ]
+                      }
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {
@@ -266,7 +842,156 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {},
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "format": "uuid", "type": "string" },
+                        "name": { "type": "string" },
+                        "service": { "type": "string" },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["requested"] },
+                            { "type": "string", "enum": ["running"] },
+                            { "type": "string", "enum": ["completed"] },
+                            { "type": "string", "enum": ["failed"] }
+                          ]
+                        },
+                        "requestedAt": { "format": "date-time", "type": "string" },
+                        "startedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "finishedAt": { "format": "date-time", "type": "string", "nullable": true },
+                        "error": { "type": "string", "nullable": true },
+                        "progress": { "type": "string" },
+                        "cleanup": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "format": "uuid", "type": "string" },
+                            "action": { "type": "string" },
+                            "sampledAt": { "format": "date-time", "type": "string" },
+                            "verified": { "type": "boolean" },
+                            "baselineRestored": {
+                              "type": "object",
+                              "nullable": true,
+                              "enum": [null]
+                            },
+                            "hosts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "scope": { "type": "string" },
+                                  "before": {
+                                    "type": "object",
+                                    "properties": {
+                                      "scope": { "type": "string" },
+                                      "source": { "type": "string" },
+                                      "sampledAt": { "format": "date-time", "type": "string" },
+                                      "available": { "type": "boolean" },
+                                      "totalMemoryBytes": { "type": "number", "nullable": true },
+                                      "freeMemoryBytes": { "type": "number", "nullable": true },
+                                      "diskFreeBytes": { "type": "number", "nullable": true },
+                                      "loadAverage": {
+                                        "type": "array",
+                                        "items": { "type": "number" },
+                                        "nullable": true
+                                      },
+                                      "managedResidentBytes": {
+                                        "type": "number",
+                                        "nullable": true
+                                      },
+                                      "error": { "type": "string", "nullable": true }
+                                    },
+                                    "required": [
+                                      "scope",
+                                      "source",
+                                      "sampledAt",
+                                      "available",
+                                      "totalMemoryBytes",
+                                      "freeMemoryBytes",
+                                      "diskFreeBytes",
+                                      "loadAverage",
+                                      "managedResidentBytes",
+                                      "error"
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "after": {
+                                    "type": "object",
+                                    "properties": {
+                                      "scope": { "type": "string" },
+                                      "source": { "type": "string" },
+                                      "sampledAt": { "format": "date-time", "type": "string" },
+                                      "available": { "type": "boolean" },
+                                      "totalMemoryBytes": { "type": "number", "nullable": true },
+                                      "freeMemoryBytes": { "type": "number", "nullable": true },
+                                      "diskFreeBytes": { "type": "number", "nullable": true },
+                                      "loadAverage": {
+                                        "type": "array",
+                                        "items": { "type": "number" },
+                                        "nullable": true
+                                      },
+                                      "managedResidentBytes": {
+                                        "type": "number",
+                                        "nullable": true
+                                      },
+                                      "error": { "type": "string", "nullable": true }
+                                    },
+                                    "required": [
+                                      "scope",
+                                      "source",
+                                      "sampledAt",
+                                      "available",
+                                      "totalMemoryBytes",
+                                      "freeMemoryBytes",
+                                      "diskFreeBytes",
+                                      "loadAverage",
+                                      "managedResidentBytes",
+                                      "error"
+                                    ]
+                                  },
+                                  "freeMemoryDeltaBytes": { "type": "number", "nullable": true }
+                                },
+                                "required": ["scope", "before", "after", "freeMemoryDeltaBytes"]
+                              }
+                            },
+                            "services": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": { "type": "string" },
+                                  "running": { "type": "boolean", "nullable": true },
+                                  "error": { "type": "string" }
+                                },
+                                "required": ["name", "running"]
+                              }
+                            },
+                            "errors": { "type": "array", "items": { "type": "string" } },
+                            "retained": { "type": "array", "items": { "type": "string" } }
+                          },
+                          "required": [
+                            "id",
+                            "action",
+                            "sampledAt",
+                            "verified",
+                            "baselineRestored",
+                            "hosts",
+                            "services",
+                            "errors",
+                            "retained"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "requestedAt",
+                        "startedAt",
+                        "finishedAt",
+                        "error",
+                        "progress"
+                      ]
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {

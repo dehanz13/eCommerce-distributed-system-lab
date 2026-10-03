@@ -19,7 +19,7 @@ test('shop through recorded fulfillment and navigate admin', async ({ page }) =>
   await page.getByRole('link', { name: 'System Dashboard' }).click();
   await expect(page.getByRole('heading', { name: 'The data journey' })).toBeVisible();
   await page.getByRole('button', { name: 'Controls', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Named service controls' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Individual services' })).toBeVisible();
 });
 test('changed prices require reconfirmation and leave the cart intact', async ({ page }) => {
   const specimenName = 'Browser reconfirmation specimen ' + randomUUID().slice(0, 8);

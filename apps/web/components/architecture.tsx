@@ -81,11 +81,19 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
   const recent = flows.slice(0, 40);
   const options = chosen && !recent.some((x) => x.id === chosen.id) ? [chosen, ...recent] : recent;
   const hops = chosen ? journeyHops(chosen) : [];
-  const shown = replay && chosen ? chosen.logs.slice(0, replay.index + 1) : (chosen?.logs ?? []);
+  // Replay recorded milestones; detailed SQL observations remain in the timeline.
+  const replayObservations = hops
+    .flatMap((hop) => (hop.observation ? [hop.observation] : []))
+    .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
+  const cursor = replay ? replayObservations[replay.index] : undefined;
+  const shown =
+    replay && chosen && cursor
+      ? chosen.logs.slice(0, chosen.logs.findIndex((item) => item.id === cursor.id) + 1)
+      : (chosen?.logs ?? []);
   const shownIds = new Set(shown.map((x) => x.id));
   const completed = hops.filter((x) => x.observation && shownIds.has(x.observation.id)).length;
   const percentage = hops.length ? Math.round((completed / hops.length) * 100) : 0;
-  const replayLength = chosen?.logs.length ?? 0;
+  const replayLength = replayObservations.length;
   useEffect(() => {
     if (!replay || !replayLength) return;
     const length = replayLength;
@@ -101,7 +109,7 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
     shown
       .filter((x) =>
         replay
-          ? x.id === shown.at(-1)?.id
+          ? x.id === cursor?.id
           : polling && now - Date.parse(x.occurredAt) >= 0 && now - Date.parse(x.occurredAt) < 4000,
       )
       .map(activityEdge),

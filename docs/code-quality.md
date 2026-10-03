@@ -31,3 +31,7 @@ A separate Dependency and publication checks job runs `pnpm security`: current-f
 Sources: [Vitest coverage](https://vitest.dev/guide/coverage), [JSX accessibility rules](https://github.com/jsx-eslint/eslint-plugin-jsx-a11y), [Codecov action](https://github.com/codecov/codecov-action), [btop](https://github.com/aristocratos/btop).
 
 Coverage collected after the Vitest 4 upgrade uses its current V8 reporting semantics. Percentages from earlier tool versions are historical measurements and should not be interpreted as a direct coverage trend without rerunning both versions on the same source.
+
+## Per-case test evidence
+
+Every full unit run generates [one checklist](test-inventory.md) plus [relative-path JSON](test-inventory.json). Cases are checked only when Vitest reports passed; failed, skipped and pending remain unchecked with their actual status. `pnpm test:inventory` uses the latest private result, while `pnpm test` and `pnpm test:coverage` execute and regenerate. A dated checklist does not certify current runtime readiness. Boundary fixtures and measurement limits are explained in the [observation guide](runtime-observation.md#test-evidence).

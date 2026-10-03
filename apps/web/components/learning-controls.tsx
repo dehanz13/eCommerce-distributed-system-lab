@@ -245,6 +245,8 @@ export function LearningControls({
             </div>
             <div className="flex gap-2 mt-4">
               <Button
+                operation="script"
+                hint="Run bounded fictional shoppers; follow accepted, rejected, abandoned and unknown results below."
                 disabled={busy || ['running', 'stopping'].includes(run?.status ?? '')}
                 onClick={() =>
                   void act(() =>
@@ -382,6 +384,8 @@ export function LearningControls({
             </p>
             <div className="flex gap-2 mt-4 flex-wrap">
               <Button
+                operation="script"
+                hint="Run the selected scoped fault, capture before/during/after snapshots and restore the changed dependency."
                 disabled={
                   busy ||
                   experiment?.run?.status === 'running' ||
@@ -396,6 +400,8 @@ export function LearningControls({
                 Engage exercise
               </Button>
               <Button
+                operation="script"
+                hint="Restore owner settings and lab dependency defaults after an interrupted exercise. Active work must finish first."
                 variant="outline"
                 disabled={busy || experiment?.run?.status === 'running'}
                 onClick={() => void act(() => post('/operator/api/v1/experiments/restore'))}
