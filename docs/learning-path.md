@@ -35,7 +35,7 @@ Work from the repository root on the **application host** unless a step names an
    ./lab status
    ```
 
-   Startup applies both owner migrations, seeds an empty catalog and builds the web application. An action result must show `status: completed`. Readiness means owners can reach their dependencies; it does not mean an order is fulfilled. Missing settings print `[configuration]`, the variable names and the root file to check. See [configuration](configuration.md).
+   Startup applies both owner migrations and builds the web application. Seeding inserts four default products when the catalog has no products; an existing catalog is preserved. An action result must show `status: completed`. Readiness means owners can reach their dependencies; it does not mean an order is fulfilled. Missing settings print `[configuration]`, the variable names and the root file to check. See [configuration](configuration.md).
 
 3. Open Shop, Catalog Admin and System Dashboard at ports 4310, paths `/`, `/catalog`, `/system`. Observe the Architecture tab. Its animated progress represents recorded milestones polled every two seconds. It does not measure packet position or prove a response reached the browser.
 
@@ -72,7 +72,7 @@ Work from the repository root on the **application host** unless a step names an
 
 2. Inspect `id`, `createdAt`, `updatedAt`, cents and stock. Try a stock delta larger than availability: expect a conflict and unchanged stock. Non-integer quantities/cents are rejected. In Catalog Admin repeat the operations and compare its request flow with the terminal request.
 
-3. Deactivation uses `DELETE /api/v1/products/:id`. Perform it **after** completing the checkout lesson, since an inactive product cannot be purchased. Historical order items retain purchased name/price snapshots. Deactivation preserves references rather than removing rows.
+3. Deactivation uses `DELETE /api/v1/products/:id`. Perform it **after sections 3 and 4**, which both purchase this product. Keep it active through the failed-fulfillment and recovery exercises; an inactive product cannot be purchased. Historical order items retain purchased name/price snapshots. Deactivation preserves references rather than removing rows.
 
 ## 3. Preview and accept one checkout
 
@@ -108,7 +108,7 @@ Work from the repository root on the **application host** unless a step names an
 
    The original order returns without another reservation. Reusing that key with changed submission contents is a conflict. A timeout cannot establish whether the transaction committed: preserve both file and key, inspect the order, then explicitly replay. The UI calls this recovery of an unknown outcome. Do not generate a replacement key automatically.
 
-4. Repeat with a new cart. Change the cart quantity or product price **between preview and acceptance**. Expect `CART_CHANGED` or `PRICE_CHANGED`; obtain a new preview and confirm it. Reduce stock below the requested quantity: acceptance preserves the cart and creates no partial order.
+4. Repeat with a new cart. Change the cart quantity or product price **between preview and acceptance**. Expect `CART_CHANGED` or `PRICE_CHANGED`; obtain a new preview and confirm it. Reduce stock below the requested quantity: acceptance preserves the cart and creates no partial order. Restore available stock in Catalog Admin before section 4 so its new checkout can be accepted.
 
 5. Follow activity in the Architecture/Timeline tabs or request it directly:
 

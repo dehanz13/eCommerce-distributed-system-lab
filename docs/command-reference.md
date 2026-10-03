@@ -125,31 +125,31 @@ The tables below come from committed owner OpenAPI paths. `:id`/`:productId` are
 
 ### Ordering
 
-| Method | Path                                   | Required input                                                                                                               |
-| ------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/metrics`                             | None                                                                                                                         |
-| GET    | `/activity`                            | None                                                                                                                         |
-| GET    | `/openapi.json`                        | None                                                                                                                         |
-| GET    | `/health`                              | None                                                                                                                         |
-| GET    | `/api/v1/products`                     | None                                                                                                                         |
-| POST   | `/api/v1/products`                     | body: name, description, priceCents, availableStock                                                                          |
-| GET    | `/api/v1/products/{id}`                | path: id (required)                                                                                                          |
-| PATCH  | `/api/v1/products/{id}`                | path: id (required); body: name (optional), description (optional), priceCents (optional)                                    |
-| DELETE | `/api/v1/products/{id}`                | path: id (required)                                                                                                          |
-| POST   | `/api/v1/products/{id}/stock`          | path: id (required); body: delta                                                                                             |
-| POST   | `/api/v1/carts`                        | body: shopperId                                                                                                              |
-| GET    | `/api/v1/carts/{id}`                   | path: id (required)                                                                                                          |
-| PUT    | `/api/v1/carts/{id}/items/{productId}` | path: id (required); path: productId (required); body: quantity                                                              |
-| DELETE | `/api/v1/carts/{id}/items/{productId}` | path: id (required); path: productId (required)                                                                              |
-| GET    | `/api/v1/carts/{id}/preview`           | path: id (required)                                                                                                          |
-| POST   | `/api/v1/checkouts`                    | header: idempotency-key (required); body: cartId, revision, priceFingerprint; header: idempotency-key (required, ≤120 chars) |
-| GET    | `/api/v1/orders`                       | query: shopperId (optional)                                                                                                  |
-| GET    | `/api/v1/orders/{id}`                  | path: id (required)                                                                                                          |
-| POST   | `/api/v1/orders/{id}/recover`          | path: id (required)                                                                                                          |
-| GET    | `/api/v1/system`                       | None                                                                                                                         |
-| GET    | `/api/v1/cache`                        | None                                                                                                                         |
-| POST   | `/api/v1/cache/clear`                  | None                                                                                                                         |
-| POST   | `/api/v1/cache/actions`                | body: action                                                                                                                 |
+| Method | Path                                   | Required input                                                                            |
+| ------ | -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| GET    | `/metrics`                             | None                                                                                      |
+| GET    | `/activity`                            | None                                                                                      |
+| GET    | `/openapi.json`                        | None                                                                                      |
+| GET    | `/health`                              | None                                                                                      |
+| GET    | `/api/v1/products`                     | None                                                                                      |
+| POST   | `/api/v1/products`                     | body: name, description, priceCents, availableStock                                       |
+| GET    | `/api/v1/products/{id}`                | path: id (required)                                                                       |
+| PATCH  | `/api/v1/products/{id}`                | path: id (required); body: name (optional), description (optional), priceCents (optional) |
+| DELETE | `/api/v1/products/{id}`                | path: id (required)                                                                       |
+| POST   | `/api/v1/products/{id}/stock`          | path: id (required); body: delta                                                          |
+| POST   | `/api/v1/carts`                        | body: shopperId                                                                           |
+| GET    | `/api/v1/carts/{id}`                   | path: id (required)                                                                       |
+| PUT    | `/api/v1/carts/{id}/items/{productId}` | path: id (required); path: productId (required); body: quantity                           |
+| DELETE | `/api/v1/carts/{id}/items/{productId}` | path: id (required); path: productId (required)                                           |
+| GET    | `/api/v1/carts/{id}/preview`           | path: id (required)                                                                       |
+| POST   | `/api/v1/checkouts`                    | header: idempotency-key (required, ≤120 chars); body: cartId, revision, priceFingerprint  |
+| GET    | `/api/v1/orders`                       | query: shopperId (optional)                                                               |
+| GET    | `/api/v1/orders/{id}`                  | path: id (required)                                                                       |
+| POST   | `/api/v1/orders/{id}/recover`          | path: id (required)                                                                       |
+| GET    | `/api/v1/system`                       | None                                                                                      |
+| GET    | `/api/v1/cache`                        | None                                                                                      |
+| POST   | `/api/v1/cache/clear`                  | None                                                                                      |
+| POST   | `/api/v1/cache/actions`                | body: action                                                                              |
 
 ### Fulfillment
 
