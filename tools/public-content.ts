@@ -23,7 +23,22 @@ export function inspectPublicFile(file: string, contents: string) {
   if (/\b100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}\b/.test(contents))
     issues.push('private overlay-network address');
   if (file === 'README.md' || file.startsWith('docs/')) {
-    if (/\b(?:codex|claude|ai|mbp19)\b/i.test(contents) || /mbp19/i.test(file))
+    let documentation = contents;
+    if (file.endsWith('.excalidraw')) {
+      try {
+        const scene = JSON.parse(contents) as {
+          elements: { text?: string; originalText?: string }[];
+        };
+        documentation = scene.elements
+          .map((element) => [element.text, element.originalText].filter(Boolean).join(' '))
+          .join('\n');
+      } catch {
+        issues.push('invalid editable diagram');
+      }
+    }
+    // Fractional element-order tokens are editor metadata, not published language.
+    // Credential and private-path checks above still inspect the complete scene.
+    if (/\b(?:codex|claude|ai|mbp19)\b/i.test(documentation) || /mbp19/i.test(file))
       issues.push('documentation terminology outside the project scope');
   }
   return issues.map((category) => `${file}: ${category}`);

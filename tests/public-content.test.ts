@@ -20,3 +20,24 @@ it('accepts the fictional environment example and public project URL', () => {
   ).toEqual([]);
   expect(inspectPublicFile('README.md', 'https://github.com/example/project')).toEqual([]);
 });
+
+it('checks visible diagram labels without interpreting editor ordering tokens as documentation', () => {
+  const contents = JSON.stringify({
+    elements: [{ index: 'a' + 'I', text: 'Ordering database', originalText: 'Ordering database' }],
+  });
+  expect(inspectPublicFile('docs/diagrams/scene.excalidraw', contents)).toEqual([]);
+  const prohibited = JSON.stringify({ elements: [{ index: 'a0', text: ['A', 'I'].join('') }] });
+  expect(inspectPublicFile('docs/diagrams/scene.excalidraw', prohibited)).toContain(
+    'docs/diagrams/scene.excalidraw: documentation terminology outside the project scope',
+  );
+});
+it('continues scanning all diagram metadata for private paths and rejects malformed scenes', () => {
+  const location = ['/', 'Users', '/', 'fixture-user', '/project'].join('');
+  const contents = JSON.stringify({ elements: [{ text: 'Ordering' }], source: location });
+  expect(inspectPublicFile('docs/diagrams/scene.excalidraw', contents)).toContain(
+    'docs/diagrams/scene.excalidraw: machine-specific home path',
+  );
+  expect(inspectPublicFile('docs/diagrams/scene.excalidraw', '{broken')).toContain(
+    'docs/diagrams/scene.excalidraw: invalid editable diagram',
+  );
+});

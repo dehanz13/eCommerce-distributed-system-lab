@@ -31,6 +31,22 @@ function setup() {
   };
 }
 describe('revisioned catalog cache', () => {
+  it('returns authoritative catalog data when a cache fill fails', async () => {
+    const observe = vi.fn();
+    const cache = catalogCache({
+      revision: async () => '1',
+      load: async () => [{ name: 'database value' }] as Product[],
+      get: async () => null,
+      set: async () => {
+        throw Error('cache offline');
+      },
+      remove: async () => {},
+      valid: (value): value is Product[] => Array.isArray(value),
+      observe,
+    });
+    expect((await cache.read('request'))[0]?.name).toBe('database value');
+    expect(cache.inspect()).toMatchObject({ activeFills: 0, counts: { fill_failed: 1 } });
+  });
   it('fills a cold key and serves a hit without another catalog load', async () => {
     const s = setup();
     await s.cache.read('first');

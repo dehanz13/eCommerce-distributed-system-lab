@@ -37,3 +37,17 @@ Start the disposable lab, then run integration, recovery, learning and browser s
 For a new measurement, record topology, workload, timestamp and scope. Compare btop host/guest readings, `docker stats --no-stream`, and dashboard process metrics. Do not add guest allocation, container limits and host free memory as if they were independent capacity.
 
 The runner result does not establish a complete remote interactive deployment, physical-host capacity, or every production failure mode. The nine exercise scenarios are a finite test set. Security scans have their own scope, tool version and advisory timestamp in [security checks](security.md).
+
+## Learning guides and business coverage update
+
+Local checks used Node 24.21.0, pnpm 10.21.0 and Vitest 4.1.11 with two unit workers. The measured business-module scope is explicit in `coverage-scope.mjs` and requires 91% lines. The [per-system report](coverage-report.md) and [per-file snapshot](coverage-snapshot.json) retain untested runtime, route assembly, JSX and terminal code in overall coverage.
+
+The updated suite has 113 checks in 14 files. Checkout and fulfillment module tests execute the real owner migrations in PGlite 0.5.8. Tests include rollback after outgoing-event storage failure, accepted idempotency replay before empty-cart validation, conflicts, historical snapshots, duplicate/contradictory outcomes, compensation once, durable attempt resumption, retry deadlines/budget and dependency preservation. Fault-policy tests simulate named host operations; shopper tests exercise the real typed HTTP client against transport fixtures. Reporting tests reject below-gate or missing-module data and preserve separate overall/system figures.
+
+Measured locally: business lines 581/594 (97.81%); business branches 92.84%; overall lines 809/1801 (44.91%). Baseline on the parent source with the same coverage engine was 512/1794 lines (28.53%). The overall denominator increased because the publication scanner now understands editable diagram metadata. Coverage is execution evidence, not a correctness score or a replacement for real multi-connection and broker tests.
+
+TypeScript, lint, formatting, unit coverage and production web build passed locally. Locked installation succeeded with the exact PGlite addition. Dependency advisory and redacted Git-history secret scans reported no matches; public-file checks passed. Existing container-package findings remain documented in [security](security.md); no new clean-image claim is made.
+
+Seven Excalidraw 0.18.1 scenes were restored after JSON serialization and exported with its SVG API. Scene element IDs and matching exports were checked; rendered layouts were visually inspected. The VM drawing distinguishes private host forwarding, container ports, owner databases, AMQP through Toxiproxy, SQL, cache and SSH controls. Capacity values shown are configured allocations. No physical-host or guest allocation was changed, and no new live resource benchmark was collected for this documentation/test change.
+
+Real-server integration/recovery/browser results for this release belong to its fresh CI run. Earlier release results are not presented as validation of this revision. Tutorials describe fault/deletion commands for the named disposable lab; they were reviewed against shipped command handlers and owner contracts, not executed against either machine as a documentation check.

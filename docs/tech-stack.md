@@ -86,7 +86,7 @@ Docker and Compose are host prerequisites; their installed versions can differ b
 | `prettier`                  | 3.6.2                                              | Formatting checks                                                            |
 | `tsx`                       | 4.20.6                                             | Execute TypeScript service/tool/test entry points                            |
 | `typescript`                | 5.9.3                                              | Strict static checking                                                       |
-| `typescript-eslint`         | 8.46.3                                             | TypeScript lint rules                                                        |
+| `typescript-eslint`         | 8.71.0                                             | TypeScript lint rules                                                        |
 | `vitest`                    | 4.1.11                                             | Unit and contract tests                                                      |
 | `@types/react`              | 19.2.2                                             | Frontend TypeScript declarations                                             |
 | `@types/react-dom`          | 19.2.2                                             | Frontend TypeScript declarations                                             |
@@ -97,3 +97,7 @@ Docker and Compose are host prerequisites; their installed versions can differ b
 | btop                        | Host installation; guest template pins its version | Interactive host or guest CPU, memory, process and supported device readings |
 
 CI uses separate quality, ecosystem and security jobs. Coverage measures the configured unit-test scope; container scans are a separately timestamped audit, not part of that percentage. See [quality](code-quality.md), [security](security.md) and [verification](verification.md) for commands, recorded results and limits.
+
+## Test-only database engine
+
+PGlite 0.5.8 runs owner migrations and transactional domain checks in isolated unit fixtures. It is a development dependency, not a running backend service. Its single embedded connection does not establish real-server concurrency behavior; container integration checks retain that responsibility. Excalidraw 0.18.1 produced the editable documentation scenes and SVG exports; it is not an application runtime dependency.

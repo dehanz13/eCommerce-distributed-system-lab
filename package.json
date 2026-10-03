@@ -48,6 +48,7 @@
     "pg": "8.23.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@playwright/test": "1.56.1",
     "@types/amqplib": "0.10.7",
     "@types/node": "24.10.0",
@@ -60,7 +61,7 @@
     "prettier": "3.6.2",
     "tsx": "4.20.6",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.46.3",
+    "typescript-eslint": "8.71.0",
     "vitest": "4.1.11"
   },
   "pnpm": {
