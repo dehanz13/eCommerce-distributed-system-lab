@@ -8,6 +8,8 @@ On October 2, 2026, `pnpm audit --json` reported one critical and two moderate a
 
 References: [test-server advisory](https://github.com/advisories/GHSA-5xrq-8626-4rwp), [redirect-mock advisory](https://github.com/advisories/GHSA-82fw-gwwq-j7x9).
 
+On October 3, 2026 UTC, hosted scanning found high-severity [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) in `braces` 3.0.3, reached through `typescript-eslint` 8.46.3 → `typescript-estree` → `fast-glob` → `micromatch`. The advisory had been reviewed on October 2 and listed no patched `braces` version. Earlier local audit output had reported zero advisories; the later hosted result is retained as a separate observation. Updating the exact TypeScript linter pin to 8.71.0 removes that dependency chain, using `tinyglobby` instead. Local audit, quality and build checks passed against the updated lockfile at 01:13 UTC; no advisory suppression was added. Hosted checks for the updated commit remain separate evidence.
+
 ## File and history checks
 
 Gitleaks 8.30.1 scanned reachable Git history across local refs, including merge diffs, with redacted output. It reported no configured secret-rule matches. The current-file policy checks tracked files and nonignored additions for private configuration/key files, home paths, email addresses requiring review, overlay-network addresses and documentation terminology. Its latest run reported no matches. Those checks are pattern-based; they do not prove that every possible credential or personal detail is absent.

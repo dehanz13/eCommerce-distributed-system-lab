@@ -86,7 +86,7 @@ Docker and Compose are host prerequisites; their installed versions can differ b
 | `prettier`                  | 3.6.2                                              | Formatting checks                                                            |
 | `tsx`                       | 4.20.6                                             | Execute TypeScript service/tool/test entry points                            |
 | `typescript`                | 5.9.3                                              | Strict static checking                                                       |
-| `typescript-eslint`         | 8.46.3                                             | TypeScript lint rules                                                        |
+| `typescript-eslint`         | 8.71.0                                             | TypeScript lint rules                                                        |
 | `vitest`                    | 4.1.11                                             | Unit and contract tests                                                      |
 | `@types/react`              | 19.2.2                                             | Frontend TypeScript declarations                                             |
 | `@types/react-dom`          | 19.2.2                                             | Frontend TypeScript declarations                                             |
