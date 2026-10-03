@@ -23,9 +23,9 @@
     "branches": { "total": 447, "covered": 415, "pct": 92.84 }
   },
   "overall": {
-    "lines": { "total": 1801, "covered": 809, "skipped": 0, "pct": 44.91 },
-    "statements": { "total": 2007, "covered": 881, "skipped": 0, "pct": 43.89 },
-    "functions": { "total": 493, "covered": 177, "skipped": 0, "pct": 35.9 },
+    "lines": { "total": 1803, "covered": 816, "skipped": 0, "pct": 45.25 },
+    "statements": { "total": 2010, "covered": 889, "skipped": 0, "pct": 44.22 },
+    "functions": { "total": 495, "covered": 182, "skipped": 0, "pct": 36.76 },
     "branches": { "total": 1339, "covered": 559, "skipped": 0, "pct": 41.74 },
     "branchesTrue": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
   },
@@ -67,9 +67,9 @@
       "branches": { "total": 43, "covered": 37, "pct": 86.04 }
     },
     "packages/runtime": {
-      "lines": { "total": 249, "covered": 135, "pct": 54.21 },
-      "statements": { "total": 271, "covered": 144, "pct": 53.13 },
-      "functions": { "total": 64, "covered": 33, "pct": 51.56 },
+      "lines": { "total": 251, "covered": 142, "pct": 56.57 },
+      "statements": { "total": 274, "covered": 152, "pct": 55.47 },
+      "functions": { "total": 66, "covered": 38, "pct": 57.57 },
       "branches": { "total": 131, "covered": 78, "pct": 59.54 }
     },
     "tools": {
@@ -225,9 +225,9 @@
       "branches": { "total": 39, "covered": 35, "skipped": 0, "pct": 89.74 }
     },
     "packages/runtime/src/index.ts": {
-      "lines": { "total": 100, "covered": 82, "skipped": 0, "pct": 82 },
-      "functions": { "total": 33, "covered": 21, "skipped": 0, "pct": 63.63 },
-      "statements": { "total": 109, "covered": 84, "skipped": 0, "pct": 77.06 },
+      "lines": { "total": 102, "covered": 89, "skipped": 0, "pct": 87.25 },
+      "functions": { "total": 35, "covered": 26, "skipped": 0, "pct": 74.28 },
+      "statements": { "total": 112, "covered": 92, "skipped": 0, "pct": 82.14 },
       "branches": { "total": 52, "covered": 37, "skipped": 0, "pct": 71.15 }
     },
     "packages/runtime/src/rows.ts": {
