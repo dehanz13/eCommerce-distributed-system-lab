@@ -1,0 +1,633 @@
+{
+  "recordedAt": "2026-10-03T03:58:49.918902+00:00",
+  "status": "physical two-host verification completed; dedicated guest stopped",
+  "runtimeSourceRevision": "d866e4b029298f1b98b33cc52c467d3421aca343",
+  "testChange": "Browser reconfirmation test now establishes the 500-cent preview before writing the 600-cent catalog price.",
+  "topology": "two",
+  "guest": {
+    "configuredCpus": 4,
+    "configuredMemoryGiB": 4,
+    "configuredDiskGiB": 40,
+    "os": "Ubuntu 24.04 x86_64",
+    "docker": "29.8.2",
+    "compose": "5.5.1"
+  },
+  "runtime": {
+    "applicationNode": "v24.11.0",
+    "remoteFulfillmentNode": "24.21.0 (pinned container)",
+    "pnpm": "10.21.0",
+    "browser": "Chromium in pinned Playwright 1.56.1 Linux image"
+  },
+  "btopObservations": [
+    {
+      "phase": "guest-only baseline",
+      "scope": "remote physical host",
+      "version": "1.4.7",
+      "captureFinishedAt": "2026-10-03T03:30:04.232364+00:00",
+      "method": "Final frame from bounded SSH terminal capture; rounded btop readings",
+      "memory": {
+        "total": {
+          "value": 32.0,
+          "unit": "GiB"
+        },
+        "used": {
+          "value": 16.2,
+          "unit": "GiB"
+        },
+        "available": {
+          "value": 15.7,
+          "unit": "GiB"
+        },
+        "cached": {
+          "value": 8.2,
+          "unit": "GiB"
+        },
+        "free": {
+          "value": 42.0,
+          "unit": "MiB"
+        }
+      }
+    },
+    {
+      "phase": "guest-only baseline",
+      "scope": "dedicated guest",
+      "version": "1.3.0",
+      "captureFinishedAt": "2026-10-03T03:30:27.310852+00:00",
+      "method": "Final frame from bounded SSH terminal capture; rounded btop readings",
+      "memory": {
+        "total": {
+          "value": 3.82,
+          "unit": "GiB"
+        },
+        "used": {
+          "value": 476.0,
+          "unit": "MiB"
+        },
+        "available": {
+          "value": 3.35,
+          "unit": "GiB"
+        },
+        "cached": {
+          "value": 1.06,
+          "unit": "GiB"
+        },
+        "free": {
+          "value": 2.44,
+          "unit": "GiB"
+        }
+      }
+    },
+    {
+      "phase": "after fixed shopper workload",
+      "scope": "remote physical host",
+      "version": "1.4.7",
+      "captureFinishedAt": "2026-10-03T03:39:43.294017+00:00",
+      "method": "Final frame from bounded SSH terminal capture; rounded btop readings",
+      "memory": {
+        "total": {
+          "value": 32.0,
+          "unit": "GiB"
+        },
+        "used": {
+          "value": 15.7,
+          "unit": "GiB"
+        },
+        "available": {
+          "value": 16.2,
+          "unit": "GiB"
+        },
+        "cached": {
+          "value": 8.34,
+          "unit": "GiB"
+        },
+        "free": {
+          "value": 362.0,
+          "unit": "MiB"
+        }
+      }
+    },
+    {
+      "phase": "after fixed shopper workload",
+      "scope": "dedicated guest",
+      "version": "1.3.0",
+      "captureFinishedAt": "2026-10-03T03:39:56.408958+00:00",
+      "method": "Final frame from bounded SSH terminal capture; rounded btop readings",
+      "memory": {
+        "total": {
+          "value": 3.82,
+          "unit": "GiB"
+        },
+        "used": {
+          "value": 926.0,
+          "unit": "MiB"
+        },
+        "available": {
+          "value": 2.91,
+          "unit": "GiB"
+        },
+        "cached": {
+          "value": 2.64,
+          "unit": "GiB"
+        },
+        "free": {
+          "value": 202.0,
+          "unit": "MiB"
+        }
+      }
+    },
+    {
+      "phase": "after guest poweroff",
+      "scope": "remote physical host",
+      "version": "1.4.7",
+      "captureFinishedAt": "2026-10-03T03:57:39.836646+00:00",
+      "method": "Final frame from bounded SSH terminal capture; rounded btop readings",
+      "memory": {
+        "total": {
+          "value": 32.0,
+          "unit": "GiB"
+        },
+        "used": {
+          "value": 12.6,
+          "unit": "GiB"
+        },
+        "available": {
+          "value": 19.3,
+          "unit": "GiB"
+        },
+        "cached": {
+          "value": 8.69,
+          "unit": "GiB"
+        },
+        "free": {
+          "value": 4.67,
+          "unit": "GiB"
+        }
+      }
+    }
+  ],
+  "containerObservation": {
+    "sampledAt": "2026-10-03T03:39:19Z",
+    "source": "docker compose stats --no-stream --format json inside dedicated guest",
+    "services": [
+      {
+        "service": "fulfillment",
+        "memory": "133.7MiB / 512MiB",
+        "cpuPercent": 8.18,
+        "processCount": 42
+      },
+      {
+        "service": "rabbitmq",
+        "memory": "126.5MiB / 768MiB",
+        "cpuPercent": 7.14,
+        "processCount": 32
+      },
+      {
+        "service": "redis",
+        "memory": "6.461MiB / 128MiB",
+        "cpuPercent": 0.27,
+        "processCount": 6
+      },
+      {
+        "service": "postgres",
+        "memory": "63.84MiB / 1GiB",
+        "cpuPercent": 8.56,
+        "processCount": 16
+      },
+      {
+        "service": "toxiproxy",
+        "memory": "2.801MiB / 64MiB",
+        "cpuPercent": 0.73,
+        "processCount": 8
+      }
+    ],
+    "approximateTotalMemoryMiB": 333.302,
+    "note": "One rounded current-use sample during shopper traffic; excludes guest/native/build/browser overhead; not a measured peak."
+  },
+  "workload": {
+    "runId": "295c3d26-5195-4322-9a72-5fe4d6bb0e40",
+    "options": {
+      "shoppers": 60,
+      "concurrency": 4,
+      "seed": 42,
+      "thinkMs": 300
+    },
+    "requestedAt": "2026-10-03T03:39:14.099Z",
+    "finishedAt": "2026-10-03T03:39:26.341Z",
+    "shoppersFinished": 60,
+    "accepted": 51,
+    "abandoned": 9,
+    "rejected": 0,
+    "unknown": 0,
+    "requestCount": 285,
+    "requestErrors": 0,
+    "totalRequestMs": 37673.10136799983,
+    "meanRequestMs": 132.18632058947307,
+    "fulfilledOrders": 51,
+    "lastFulfilledAt": "2026-10-03T03:39:30.680Z",
+    "resourceSamples": 5
+  },
+  "observationLimits": {
+    "exhaustive": false,
+    "limitPerOwner": 200,
+    "recentBytesPerDailyFile": 524288,
+    "firstAcceptedJourneySources": [
+      {
+        "owner": "ordering",
+        "available": true,
+        "records": 0
+      },
+      {
+        "owner": "fulfillment",
+        "available": true,
+        "records": 20
+      },
+      {
+        "owner": "operator",
+        "available": true,
+        "records": 0
+      }
+    ],
+    "latestAcceptedJourneySources": [
+      {
+        "owner": "ordering",
+        "available": true,
+        "records": 105
+      },
+      {
+        "owner": "fulfillment",
+        "available": true,
+        "records": 20
+      },
+      {
+        "owner": "operator",
+        "available": true,
+        "records": 0
+      }
+    ],
+    "note": "Initial script asserted early journey retention and failed after business completion. The bounded recent window can omit early journeys. Latest accepted journey retained both owners; this follow-up did not rerun traffic."
+  },
+  "verification": {
+    "transactionIntegration": {
+      "exitCode": 0,
+      "result": "Concurrent checkout, preservation, replay/conflicts, last-write-wins, compensation and recovery passed"
+    },
+    "recovery": {
+      "exitCode": 0
+    },
+    "learning": {
+      "exitCode": 0,
+      "scenarios": 9
+    },
+    "firstBrowserRun": {
+      "exitCode": 1,
+      "passed": 11,
+      "failed": 1
+    },
+    "targetedBrowserAfterFix": {
+      "exitCode": 0,
+      "passed": 3
+    },
+    "quality": {
+      "exitCode": 0,
+      "tests": 140,
+      "files": 21,
+      "businessCoveredLines": 617,
+      "businessTotalLines": 630,
+      "overallCoveredLines": 1070,
+      "overallTotalLines": 2108
+    },
+    "security": {
+      "exitCode": 0
+    },
+    "fullBrowserAfterFix": {
+      "exitCode": 0,
+      "passed": 12,
+      "failed": 0,
+      "duration": "1.4 minutes"
+    }
+  },
+  "lifecycle": {
+    "initialStart": {
+      "id": "1e021a5d-7d0c-4d0e-848d-6427e33b5fd6",
+      "name": "start",
+      "status": "completed",
+      "requestedAt": "2026-10-03T03:36:01.657Z",
+      "startedAt": "2026-10-03T03:36:01.710Z",
+      "finishedAt": "2026-10-03T03:38:10.200Z",
+      "error": null
+    },
+    "stop": {
+      "id": "cffd6d02-e906-4189-bcbd-904af4a37380",
+      "name": "stop",
+      "status": "completed",
+      "requestedAt": "2026-10-03T03:53:34.383Z",
+      "startedAt": "2026-10-03T03:53:34.437Z",
+      "finishedAt": "2026-10-03T03:53:43.157Z",
+      "error": null
+    },
+    "restartStart": {
+      "id": "23ccd9ee-139f-4450-9cac-76f19fc70475",
+      "name": "start",
+      "status": "completed",
+      "requestedAt": "2026-10-03T03:54:02.031Z",
+      "startedAt": "2026-10-03T03:54:02.084Z",
+      "finishedAt": "2026-10-03T03:55:23.656Z",
+      "error": null
+    },
+    "recordedAttempt": {
+      "orderId": "91315a12-38e5-4bbe-bafe-2981f315d367",
+      "jobId": "263bae1e-25d1-4811-b417-e2b18b626544",
+      "attemptId": "d9e1efb4-d9fa-4598-b4b7-7c55ac600c2b",
+      "startedAt": "2026-10-03T03:53:34.196Z",
+      "finishedAt": "2026-10-03T03:55:19.018Z",
+      "attemptCountAfter": 1,
+      "completionAfterStopVerified": true,
+      "orderAfterStatus": "fulfilled"
+    },
+    "stopCleanup": {
+      "id": "e9676000-6bab-4ed0-812e-438d075f9e4f",
+      "action": "stop",
+      "sampledAt": "2026-10-03T03:53:43.153Z",
+      "verified": true,
+      "baselineRestored": null,
+      "hosts": [
+        {
+          "scope": "operator host",
+          "before": {
+            "scope": "operator host",
+            "source": "Node os + statfs + owned-process ps RSS (OS free memory)",
+            "sampledAt": "2026-10-03T03:53:35.121Z",
+            "available": true,
+            "totalMemoryBytes": 38654705664,
+            "freeMemoryBytes": 121438208,
+            "diskFreeBytes": 1027210854400,
+            "loadAverage": [3.86181640625, 4.85400390625, 5.36083984375],
+            "managedResidentBytes": 156483584,
+            "error": null
+          },
+          "after": {
+            "scope": "operator host",
+            "source": "Node os + statfs + owned-process ps RSS (OS free memory)",
+            "sampledAt": "2026-10-03T03:53:42.126Z",
+            "available": true,
+            "totalMemoryBytes": 38654705664,
+            "freeMemoryBytes": 120094720,
+            "diskFreeBytes": 1027209379840,
+            "loadAverage": [4.22216796875, 4.892578125, 5.36767578125],
+            "managedResidentBytes": 0,
+            "error": null
+          },
+          "freeMemoryDeltaBytes": -1343488
+        },
+        {
+          "scope": "remote host",
+          "before": {
+            "scope": "remote host",
+            "source": "SSH Python 3 + OS counters (Linux available or macOS free + inactive memory)",
+            "sampledAt": "2026-10-03T03:53:35.683Z",
+            "available": true,
+            "totalMemoryBytes": 34359738368,
+            "freeMemoryBytes": 12950822912,
+            "diskFreeBytes": 372862943232,
+            "loadAverage": [1.8955078125, 2.166015625, 2.10693359375],
+            "managedResidentBytes": null,
+            "error": null
+          },
+          "after": {
+            "scope": "remote host",
+            "source": "SSH Python 3 + OS counters (Linux available or macOS free + inactive memory)",
+            "sampledAt": "2026-10-03T03:53:42.579Z",
+            "available": true,
+            "totalMemoryBytes": 34359738368,
+            "freeMemoryBytes": 12995121152,
+            "diskFreeBytes": 372866629632,
+            "loadAverage": [1.82373046875, 2.146484375, 2.10009765625],
+            "managedResidentBytes": null,
+            "error": null
+          },
+          "freeMemoryDeltaBytes": 44298240
+        },
+        {
+          "scope": "lab guest",
+          "before": {
+            "scope": "lab guest",
+            "source": "SSH Python 3 + OS counters (Linux available or macOS free + inactive memory)",
+            "sampledAt": "2026-10-03T03:53:36.204Z",
+            "available": true,
+            "totalMemoryBytes": 4103397376,
+            "freeMemoryBytes": 3093725184,
+            "diskFreeBytes": 34608246784,
+            "loadAverage": [1.09521484375, 0.79150390625, 0.60791015625],
+            "managedResidentBytes": null,
+            "error": null
+          },
+          "after": {
+            "scope": "lab guest",
+            "source": "SSH Python 3 + OS counters (Linux available or macOS free + inactive memory)",
+            "sampledAt": "2026-10-03T03:53:43.152Z",
+            "available": true,
+            "totalMemoryBytes": 4103397376,
+            "freeMemoryBytes": 3459219456,
+            "diskFreeBytes": 34609201152,
+            "loadAverage": [1.328125, 0.84521484375, 0.62646484375],
+            "managedResidentBytes": null,
+            "error": null
+          },
+          "freeMemoryDeltaBytes": 365494272
+        }
+      ],
+      "services": [
+        {
+          "name": "web",
+          "running": false
+        },
+        {
+          "name": "ordering",
+          "running": false
+        },
+        {
+          "name": "postgres",
+          "running": false
+        },
+        {
+          "name": "rabbitmq",
+          "running": false
+        },
+        {
+          "name": "redis",
+          "running": false
+        },
+        {
+          "name": "toxiproxy",
+          "running": false
+        },
+        {
+          "name": "fulfillment",
+          "running": false
+        }
+      ],
+      "errors": [],
+      "retained": [
+        "Operator stays running for control and recovery.",
+        "Database volumes, images, build caches and retained logs stay on disk.",
+        "Free-memory changes include operating-system caches and unrelated workloads; no idle baseline has been certified.",
+        "Configured lab guest remains allocated. Use poweroff to release its CPU and memory allocation."
+      ]
+    },
+    "poweroff": {
+      "id": "0cdffc56-9530-47d7-9850-85e32f9fc2a9",
+      "name": "poweroff",
+      "status": "completed",
+      "requestedAt": "2026-10-03T03:55:49.687Z",
+      "startedAt": "2026-10-03T03:55:49.740Z",
+      "finishedAt": "2026-10-03T03:56:00.931Z",
+      "error": null
+    },
+    "poweroffCleanup": {
+      "id": "9e5dd770-9d78-4592-96f8-1faa5470f9a4",
+      "action": "poweroff",
+      "sampledAt": "2026-10-03T03:56:00.926Z",
+      "verified": true,
+      "baselineRestored": null,
+      "hosts": [
+        {
+          "scope": "operator host",
+          "before": {
+            "scope": "operator host",
+            "source": "Node os + statfs + owned-process ps RSS (OS free memory)",
+            "sampledAt": "2026-10-03T03:55:50.431Z",
+            "available": true,
+            "totalMemoryBytes": 38654705664,
+            "freeMemoryBytes": 158646272,
+            "diskFreeBytes": 1027205402624,
+            "loadAverage": [4.279296875, 4.9287109375, 5.33056640625],
+            "managedResidentBytes": 125599744,
+            "error": null
+          },
+          "after": {
+            "scope": "operator host",
+            "source": "Node os + statfs + owned-process ps RSS (OS free memory)",
+            "sampledAt": "2026-10-03T03:56:00.034Z",
+            "available": true,
+            "totalMemoryBytes": 38654705664,
+            "freeMemoryBytes": 111263744,
+            "diskFreeBytes": 1027205341184,
+            "loadAverage": [4.1494140625, 4.880859375, 5.30908203125],
+            "managedResidentBytes": 0,
+            "error": null
+          },
+          "freeMemoryDeltaBytes": -47382528
+        },
+        {
+          "scope": "remote host",
+          "before": {
+            "scope": "remote host",
+            "source": "SSH Python 3 + OS counters (Linux available or macOS free + inactive memory)",
+            "sampledAt": "2026-10-03T03:55:51.031Z",
+            "available": true,
+            "totalMemoryBytes": 34359738368,
+            "freeMemoryBytes": 12133642240,
+            "diskFreeBytes": 371872108544,
+            "loadAverage": [1.74853515625, 2.0849609375, 2.0810546875],
+            "managedResidentBytes": null,
+            "error": null
+          },
+          "after": {
+            "scope": "remote host",
+            "source": "SSH Python 3 + OS counters (Linux available or macOS free + inactive memory)",
+            "sampledAt": "2026-10-03T03:56:00.478Z",
+            "available": true,
+            "totalMemoryBytes": 34359738368,
+            "freeMemoryBytes": 15810715648,
+            "diskFreeBytes": 371882926080,
+            "loadAverage": [1.55322265625, 2.0322265625, 2.0625],
+            "managedResidentBytes": null,
+            "error": null
+          },
+          "freeMemoryDeltaBytes": 3677073408
+        }
+      ],
+      "services": [
+        {
+          "name": "web",
+          "running": false
+        },
+        {
+          "name": "ordering",
+          "running": false
+        },
+        {
+          "name": "postgres",
+          "running": false
+        },
+        {
+          "name": "rabbitmq",
+          "running": false
+        },
+        {
+          "name": "redis",
+          "running": false
+        },
+        {
+          "name": "toxiproxy",
+          "running": false
+        },
+        {
+          "name": "fulfillment",
+          "running": false
+        }
+      ],
+      "errors": [],
+      "retained": [
+        "Operator stays running for control and recovery.",
+        "Database volumes, images, build caches and retained logs stay on disk.",
+        "Free-memory changes include operating-system caches and unrelated workloads; no idle baseline has been certified.",
+        "Configured lab guest is stopped; its virtual disk remains on disk."
+      ]
+    }
+  },
+  "finalState": {
+    "dedicatedGuest": "Stopped",
+    "otherGuest": "Running (observed before and after; not modified)",
+    "managedServices": [
+      {
+        "name": "web",
+        "running": false
+      },
+      {
+        "name": "ordering",
+        "running": false
+      },
+      {
+        "name": "postgres",
+        "running": false
+      },
+      {
+        "name": "rabbitmq",
+        "running": false
+      },
+      {
+        "name": "redis",
+        "running": false
+      },
+      {
+        "name": "toxiproxy",
+        "running": false
+      },
+      {
+        "name": "fulfillment",
+        "running": false
+      }
+    ],
+    "operator": "ready; retained for control",
+    "volumesImagesAndGuestDisk": "retained",
+    "baselineRestored": null,
+    "eightGiBWholeLabBudget": "not established"
+  },
+  "methodLimits": [
+    "Host methods differ: local OS free memory, remote free plus inactive pages, guest MemAvailable; compare within one scope/method.",
+    "btop frames are sequential observations after workload; only the container stats sample was taken during fixed shopper traffic.",
+    "The initial observer script failed on early trace retention after business completion; follow-up checked saved results without repeating traffic.",
+    "Raw process listings, private configuration, addresses and captures stay outside publication."
+  ]
+}

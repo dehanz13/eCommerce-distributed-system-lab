@@ -34,8 +34,17 @@ test('changed prices require reconfirmation and leave the cart intact', async ({
   const product = (await created.json()).data;
   await page.goto('/');
   await page.getByRole('button', { name: `Add ${specimenName} to cart`, exact: true }).click();
+  // Establish the old-price preview before the independent catalog write can overtake it.
+  const previewResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/preview'),
+  );
   await page.getByRole('button', { name: 'Review checkout', exact: true }).click();
-  await page.request.patch('/api/v1/products/' + product.id, { data: { priceCents: 600 } });
+  expect((await (await previewResponse).json()).data.totalCents).toBe(500);
+  await expect(page.getByRole('heading', { name: 'Confirm current prices' })).toBeVisible();
+  const changed = await page.request.patch('/api/v1/products/' + product.id, {
+    data: { priceCents: 600 },
+  });
+  expect(changed.ok()).toBeTruthy();
   await page.getByRole('button', { name: 'Confirm order', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Prices changed');
   await expect(

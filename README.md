@@ -34,16 +34,17 @@ The dashboard provides Overview, Architecture, Cache, Shoppers, Failure Lab, Rec
 
 Start with the [step-by-step learning path](docs/learning-path.md). Keep the [complete command reference](docs/command-reference.md) alongside it, and use the [capacity guide](docs/resource-capacity.md) for CPU, memory, disk and shopper-traffic parameters. [Editable Excalidraw scenes and SVG diagrams](docs/diagrams/README.md) show the whole ecosystem, each data path and the dedicated guest.
 
-| Topic                                                 | Reference                                                                 |
-| ----------------------------------------------------- | ------------------------------------------------------------------------- |
-| Per-system tools, dependencies and infrastructure     | [Technology inventory](docs/tech-stack.md)                                |
-| Ownership, transactions, events and state transitions | [Architecture](docs/architecture.md)                                      |
-| Records, commands, facts and observations             | [Ontology and learning map](docs/ontology-and-learning.md)                |
-| Local and remote operation                            | [Operations](docs/operations.md), [remote guest](docs/remote-lab-vm.md)   |
-| Recorded activity and animation limits                | [Architecture dashboard](docs/architecture-dashboard.md)                  |
-| Cache, shopper traffic and failure exercises          | [Learning labs](docs/learning-labs.md)                                    |
-| Measured checks and their limits                      | [Verification](docs/verification.md), [security checks](docs/security.md) |
-| Review and release process                            | [Git workflow](docs/git-workflow.md)                                      |
+| Topic                                                  | Reference                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Per-system tools, dependencies and infrastructure      | [Technology inventory](docs/tech-stack.md)                                |
+| Ownership, transactions, events and state transitions  | [Architecture](docs/architecture.md)                                      |
+| Records, commands, facts and observations              | [Ontology and learning map](docs/ontology-and-learning.md)                |
+| Local and remote operation                             | [Operations](docs/operations.md), [remote guest](docs/remote-lab-vm.md)   |
+| Recorded activity and animation limits                 | [Architecture dashboard](docs/architecture-dashboard.md)                  |
+| Cache, shopper traffic and failure exercises           | [Learning labs](docs/learning-labs.md)                                    |
+| Measured checks and their limits                       | [Verification](docs/verification.md), [security checks](docs/security.md) |
+| Physical two-host deployment and resource observations | [Two-host verification](docs/two-host-verification.md)                    |
+| Review and release process                             | [Git workflow](docs/git-workflow.md)                                      |
 
 ## Check changes
 
