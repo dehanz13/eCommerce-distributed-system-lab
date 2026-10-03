@@ -2,7 +2,7 @@ import './runtime-fixture';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterAll, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 const state = vi.hoisted(() => ({
   folder: '',
@@ -16,9 +16,13 @@ vi.mock('@lab/runtime', async (original) => ({
 }));
 
 const { feeder } = await import('../tools/feeder');
+beforeEach(() => {
+  state.fetch.mockReset();
+  vi.stubGlobal('fetch', state.fetch);
+});
+afterEach(() => vi.unstubAllGlobals());
 afterAll(() => {
   fs.rmSync(state.folder, { recursive: true, force: true });
-  vi.unstubAllGlobals();
 });
 const at = new Date().toISOString();
 const product = {
@@ -84,7 +88,6 @@ function healthy(url: string, options?: RequestInit) {
 }
 it('preserves an unknown checkout and recovers its original submission before another run', async () => {
   let lost = true;
-  vi.stubGlobal('fetch', state.fetch);
   state.fetch.mockImplementation(async (url: string, options?: RequestInit) => {
     const route = new URL(url).pathname;
     if (route === '/api/v1/checkouts') {
