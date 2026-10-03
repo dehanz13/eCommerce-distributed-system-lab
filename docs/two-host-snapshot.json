@@ -14,6 +14,9 @@
   },
   "runtime": {
     "applicationNode": "v24.11.0",
+    "requiredApplicationNode": "24.21.0 (.nvmrc at runtimeSourceRevision)",
+    "applicationRuntimeMatchesPin": false,
+    "verificationQualification": "The application-host processes and native verification commands used Node 24.11.0. These physical two-host results do not verify the required Node 24.21.0 application-host setup; no pinned-runtime physical rerun is recorded.",
     "remoteFulfillmentNode": "24.21.0 (pinned container)",
     "pnpm": "10.21.0",
     "browser": "Chromium in pinned Playwright 1.56.1 Linux image"
@@ -625,6 +628,7 @@
     "eightGiBWholeLabBudget": "not established"
   },
   "methodLimits": [
+    "Application-host Node 24.11.0 differed from the required 24.21.0 pin; physical application-host verification under the pinned runtime remains unperformed.",
     "Host methods differ: local OS free memory, remote free plus inactive pages, guest MemAvailable; compare within one scope/method.",
     "btop frames are sequential observations after workload; only the container stats sample was taken during fixed shopper traffic.",
     "The initial observer script failed on early trace retention after business completion; follow-up checked saved results without repeating traffic.",

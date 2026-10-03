@@ -2,6 +2,8 @@
 
 Physical two-host verification completed on October 3, 2026 UTC. The application ran with web, ordering and operator on the application host, and PostgreSQL, RabbitMQ, Redis, Toxiproxy and fulfillment in the dedicated Linux guest. The [snapshot](two-host-snapshot.json) contains UTC action times, workload results, separate measurement sources and cleanup evidence. Application source was `d866e4b`; this release also corrects a browser-test ordering assumption. Other workloads remained running.
 
+Runtime qualification: the application-host processes and native verification commands ran under Node **24.11.0**, although `.nvmrc` at `d866e4b` requires **24.21.0**. Fulfillment used the pinned 24.21.0 container. Keep the observed version in the snapshot: these results demonstrate the recorded deployment, but do not verify the required pinned application-host setup. No physical rerun under that pin is recorded. For a new run, install/select 24.21.0 before bootstrapping the operator and all application processes, and capture their actual runtime versions separately from container versions.
+
 ## Observed baseline
 
 The pinned Ubuntu 24.04 x86_64 image provisioned successfully. The dedicated guest has configured allocations of four CPUs, 4 GiB RAM and a 40 GiB disk limit. Docker 29.8.2, Compose 5.5.1 and guest btop 1.3.0 were observed installed. SSH reached the remote host, and Docker access worked through the guest without elevation.
@@ -21,10 +23,14 @@ These are rounded values from separate SSH terminal captures, not simultaneous r
 From the application-host checkout, preserve the root configuration before editing it. Follow [the dedicated guest guide](remote-lab-vm.md) for the required settings and [configuration](configuration.md) for diagnostics. Keep private addresses, SSH material and configuration out of reports.
 
 ```sh
+nvm install
 nvm use
+node --version
 pnpm install --frozen-lockfile
 pnpm exec tsx tools/vm-template.ts
 ```
+
+Require `node --version` to print `v24.21.0`. This setup procedure describes the required runtime; it is not a claim that the dated physical run followed that pin. Stop existing application processes before bootstrapping from the corrected shell; changing the shell runtime does not change already-running processes.
 
 On the remote physical host, privately transfer the generated template, inspect existing guests, and create only the missing dedicated guest:
 
@@ -107,7 +113,128 @@ pnpm test:learning
 
 Record the exit status and actual assertion results, including failures. Verify correlated activity from ordering, fulfillment and operator through the dashboard. A passing mock or CI run on one host does not establish this physical two-host deployment.
 
-## 5. Stop, restart and release the guest
+## 5. Interrupt a persisted attempt and verify restart
+
+Stop the feeder and finish or restore active experiments first; keep the lab ready for one controlled order. Do not drain this new order before stopping. The `slow` preset records a five-second deadline, so manual clicks can miss the interruption window. The following script submits the full-lab stop immediately after observing and saving the active attempt. It needs Bash, curl, jq and the selected Node runtime. Run from the application-host checkout root; the existing configuration loader supplies the three configured origins without publishing root configuration.
+
+```sh
+./lab feeder stop
+./lab experiment status
+mkdir -p .lab
+pnpm exec tsx -e 'import {cfg} from "@lab/runtime"; console.log(JSON.stringify({ordering:cfg.ORDERING_URL,fulfillment:cfg.FULFILLMENT_URL,operator:cfg.OPERATOR_URL}))' > .lab/recovery-origins.json
+cat > .lab/interrupt-attempt.sh <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+ordering=$(jq -er '.ordering' .lab/recovery-origins.json)
+fulfillment=$(jq -er '.fulfillment' .lab/recovery-origins.json)
+operator=$(jq -er '.operator' .lab/recovery-origins.json)
+api() { curl --fail-with-body -sS --max-time 5 "$@"; }
+json=(-H 'Content-Type: application/json')
+api -X PUT "$fulfillment/api/v1/settings" "${json[@]}" \
+  -d '{"preset":"slow","paused":false}' > .lab/recovery-settings.json
+api "$ordering/api/v1/products" "${json[@]}" \
+  -d '{"name":"Restart specimen","description":"Fictional interrupted work","priceCents":100,"availableStock":1}' > .lab/recovery-product.json
+product=$(jq -er '.data.id' .lab/recovery-product.json)
+shopper=$(node -p 'crypto.randomUUID()')
+api "$ordering/api/v1/carts" "${json[@]}" \
+  -d "$(jq -nc --arg shopper "$shopper" '{shopperId:$shopper}')" > .lab/recovery-cart.json
+cart=$(jq -er '.data.id' .lab/recovery-cart.json)
+api -X PUT "$ordering/api/v1/carts/$cart/items/$product" "${json[@]}" \
+  -d '{"quantity":1}' > .lab/recovery-item.json
+api "$ordering/api/v1/carts/$cart/preview" > .lab/recovery-preview.json
+jq --arg cart "$cart" '.data | {cartId:$cart,revision,priceFingerprint}' \
+  .lab/recovery-preview.json > .lab/recovery-submission.json
+node -p 'crypto.randomUUID()' > .lab/recovery-key.txt
+api "$ordering/api/v1/checkouts" "${json[@]}" \
+  -H "idempotency-key: $(cat .lab/recovery-key.txt)" \
+  --data-binary @.lab/recovery-submission.json > .lab/recovery-order.json
+order=$(jq -er '.data.id' .lab/recovery-order.json)
+deadline=$((SECONDS + 20))
+while :; do
+  api "$fulfillment/api/v1/system" > .lab/recovery-system.json
+  if jq -e --arg order "$order" \
+    '.data.jobs[] | select(.orderId==$order and .status=="processing")' \
+    .lab/recovery-system.json > .lab/recovery-job-before.json; then
+    job=$(jq -er '.id' .lab/recovery-job-before.json)
+    if jq -e --arg job "$job" \
+      '.data.attempts[] | select(.jobId==$job and .status=="processing")' \
+      .lab/recovery-system.json > .lab/recovery-attempt-before.json; then
+      break
+    fi
+  fi
+  if (( SECONDS >= deadline )); then
+    echo 'No active attempt observed; inspect the recorded order before retrying.' >&2
+    exit 1
+  fi
+  sleep 0.1
+done
+api "$operator/api/v1/actions" "${json[@]}" \
+  -d '{"name":"stop"}' > .lab/recovery-stop-submission.json
+action=$(jq -er '.data.id' .lab/recovery-stop-submission.json)
+deadline=$((SECONDS + 180))
+while :; do
+  api "$operator/api/v1/actions/$action" > .lab/recovery-stop.json
+  state=$(jq -er '.data.status' .lab/recovery-stop.json)
+  if [[ "$state" == completed || "$state" == failed ]]; then break; fi
+  if (( SECONDS >= deadline )); then
+    echo 'Stop action still pending; inspect its saved ID, do not resubmit.' >&2
+    exit 1
+  fi
+  sleep 0.5
+done
+jq -e '.data.status=="completed" and .data.cleanup.verified==true' .lab/recovery-stop.json
+SH
+bash .lab/interrupt-attempt.sh
+./lab status
+./lab resources
+```
+
+Require a completed stop with verified cleanup and all seven managed services observed off. Keep the saved order/job/attempt IDs, `startedAt`, `dueAt`, and stop action's requested/started/finished times in the ignored `.lab` evidence. If checkout times out, its outcome is unknown: recover the saved submission with the saved key rather than generating another order. If stop fails or times out, inspect that action before proceeding.
+
+Restart with retained volumes, then verify the same attempt and the order. The next block polls for up to 30 seconds after startup readiness and exits on a failed assertion. It does not submit checkout again.
+
+```sh
+./lab start
+./lab status
+cat > .lab/check-resumed-attempt.sh <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+ordering=$(jq -er '.ordering' .lab/recovery-origins.json)
+fulfillment=$(jq -er '.fulfillment' .lab/recovery-origins.json)
+job=$(jq -er '.id' .lab/recovery-job-before.json)
+order=$(jq -er '.data.id' .lab/recovery-order.json)
+deadline=$((SECONDS + 30))
+while :; do
+  curl --fail-with-body -sS --max-time 5 "$fulfillment/api/v1/jobs/$job" > .lab/recovery-job-after.json
+  curl --fail-with-body -sS --max-time 5 "$ordering/api/v1/orders/$order" > .lab/recovery-order-after.json
+  if jq -e '.data.status=="fulfilled"' .lab/recovery-order-after.json >/dev/null; then break; fi
+  if (( SECONDS >= deadline )); then echo 'Order did not fulfill before the deadline.' >&2; exit 1; fi
+  sleep 0.25
+done
+jq -e --slurpfile before .lab/recovery-attempt-before.json \
+  --slurpfile stopped .lab/recovery-stop.json '
+  .data.attempts as $attempts |
+  ($attempts | length)==1 and
+  $attempts[0].id==$before[0].id and
+  $attempts[0].startedAt==$before[0].startedAt and
+  $attempts[0].status=="completed" and
+  ($attempts[0].finishedAt | type)=="string" and
+  ($stopped[0].data.finishedAt | type)=="string" and
+  $attempts[0].finishedAt > $stopped[0].data.finishedAt
+  ' .lab/recovery-job-after.json
+curl --fail-with-body -sS --max-time 5 -X PUT "$fulfillment/api/v1/settings" \
+  -H 'Content-Type: application/json' -d '{"preset":"success","paused":false}' > .lab/recovery-restored-settings.json
+SH
+bash .lab/check-resumed-attempt.sh
+```
+
+Both assertions must succeed: the order is fulfilled, and exactly one completed attempt retains its original ID and start time, with `finishedAt` later than the completed stop action. API timestamps use UTC ISO strings, so this comparison uses the common format. If the attempt completed before stop finished, the interruption was missed; do not count that run as recovery proof. Inspect the evidence, restore the success preset with `./lab preset fulfillment success` if the script exited early, and repeat with a new fictional order. The five-second preset cannot guarantee interruption on every host. These commands describe a reproducible exercise; their new shell form was checked separately from the dated physical run below.
+
+The documented shell scripts passed Bash syntax checks and ShellCheck. A local HTTP fixture accepted the same persisted attempt and rejected six invalid cases: a replacement ID, an additional attempt, completion before stop, a missing completion time, a changed start time, and unverified stop cleanup. These fixture checks validate the command assertions; they do not establish another physical run or close the runtime-pin gap.
+
+## 6. Stop and release the guest
 
 Finish traffic and exercises first. From the application host:
 
@@ -116,8 +243,6 @@ Finish traffic and exercises first. From the application host:
 ./lab experiment status
 ./lab stop
 ./lab resources
-./lab start
-./lab status
 ./lab poweroff
 ./lab resources
 ```
