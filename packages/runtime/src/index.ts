@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { projectRoot, loadConfiguration } from './configuration';
 export { projectRoot } from './configuration';
@@ -9,8 +7,15 @@ import swagger from '@fastify/swagger';
 import { httpSchema } from '@lab/contracts';
 import * as metrics from '@prometheus-io/client';
 import { telemetry } from './telemetry';
+import { activity, readActivity, trace, safeObservation, redactValues } from './observation';
+export { activity, readActivity, pruneLogs, trace } from './observation';
 export const root = projectRoot();
 export const cfg = loadConfiguration();
+redactValues(
+  Object.entries(cfg)
+    .filter(([key]) => /PASSWORD|SECRET|TOKEN/.test(key))
+    .map(([, value]) => value),
+);
 export function pool(owner: 'ordering' | 'fulfillment') {
   const name = owner.toUpperCase() as 'ORDERING' | 'FULFILLMENT';
   const p = new pg.Pool({
@@ -35,15 +40,60 @@ export async function transaction<T>(
   run: (c: pg.PoolClient) => Promise<T>,
 ): Promise<T> {
   const c = await p.connect();
+  const context = trace.getStore();
+  const transactionId = randomUUID();
+  const original = c.query;
+  let step = 0;
+  if (context)
+    c.query = (async (...args: unknown[]) => {
+      const statement =
+        typeof args[0] === 'string' ? args[0] : ((args[0] as { text?: string })?.text ?? '');
+      const started = performance.now();
+      const number = ++step;
+      activity(context.owner, 'transaction.step', {
+        transactionId,
+        step: number,
+        statement: statement.replace(/\s+/g, ' ').trim(),
+        stage: 'process',
+      });
+      try {
+        const result = await Reflect.apply(original, c, args);
+        activity(context.owner, 'transaction.step_result', {
+          transactionId,
+          step: number,
+          rowCount: result.rowCount,
+          durationMs: performance.now() - started,
+          stage: 'process',
+        });
+        return result;
+      } catch (error) {
+        activity(context.owner, 'transaction.step_failed', {
+          transactionId,
+          step: number,
+          error,
+          stage: 'process',
+        });
+        throw error;
+      }
+    }) as typeof c.query;
   try {
     await c.query('BEGIN');
     const result = await run(c);
     await c.query('COMMIT');
+    if (context) activity(context.owner, 'transaction.committed', { transactionId, steps: step });
     return result;
   } catch (e) {
     await c.query('ROLLBACK').catch(() => {});
+    if (context)
+      activity(context.owner, 'transaction.rolled_back', {
+        transactionId,
+        steps: step,
+        stage: 'output',
+        error: e,
+      });
     throw e;
   } finally {
+    c.query = original;
     c.release();
   }
 }
@@ -71,68 +121,6 @@ export function identifiers(req: FastifyRequest) {
 export function response<T>(req: FastifyRequest, data: T) {
   return { data, meta: { ...identifiers(req), respondedAt: new Date().toISOString() } };
 }
-const logDir = path.join(root, '.lab/logs');
-export function activity(owner: string, type: string, data: Record<string, unknown> = {}) {
-  fs.mkdirSync(logDir, { recursive: true });
-  const file = path.join(logDir, `${owner}-${new Date().toISOString().slice(0, 10)}.ndjson`);
-  fs.appendFileSync(
-    file,
-    JSON.stringify({
-      id: randomUUID(),
-      owner,
-      type,
-      occurredAt: new Date().toISOString(),
-      ...data,
-    }) + '\n',
-  );
-  pruneLogs();
-}
-export function pruneLogs() {
-  if (!fs.existsSync(logDir)) return;
-  const files = fs
-    .readdirSync(logDir)
-    .map((n) => ({ p: path.join(logDir, n), s: fs.statSync(path.join(logDir, n)) }))
-    .sort((a, b) => a.s.mtimeMs - b.s.mtimeMs);
-  let size = files.reduce((s, f) => s + f.s.size, 0);
-  for (const f of files)
-    if (Date.now() - f.s.mtimeMs > 7 * 86400000 || size > 100 * 1024 * 1024) {
-      fs.rmSync(f.p, { force: true });
-      size -= f.s.size;
-    }
-}
-export function readActivity(owner: string, correlationId?: string) {
-  if (!fs.existsSync(logDir)) return [];
-  const files = fs
-    .readdirSync(logDir)
-    .filter((f) => f.startsWith(owner + '-'))
-    .sort()
-    .slice(-2);
-  return files
-    .flatMap((f) => {
-      const p = path.join(logDir, f);
-      const s = fs.statSync(p);
-      const fd = fs.openSync(p, 'r');
-      try {
-        const start = Math.max(0, s.size - 512 * 1024);
-        const b = Buffer.alloc(s.size - start);
-        fs.readSync(fd, b, 0, b.length, start);
-        const lines = b.toString().split('\n');
-        if (start > 0) lines.shift();
-        return lines.filter(Boolean).flatMap((l) => {
-          try {
-            return [JSON.parse(l) as Record<string, unknown>];
-          } catch {
-            return [];
-          }
-        });
-      } finally {
-        fs.closeSync(fd);
-      }
-    })
-    .filter((x) => !correlationId || x.correlationId === correlationId)
-    .slice(-200)
-    .reverse();
-}
 export async function server(owner: string) {
   const app = Fastify({
     logger: false,
@@ -144,7 +132,7 @@ export async function server(owner: string) {
     openapi: { info: { title: owner + ' learning API', version: '1.0.0' } },
   });
   app.addHook('onRoute', (options) => {
-    if (options.url === '/openapi.json') return;
+    if (options.url === '/openapi.json' || options.schema?.response) return;
     const method = Array.isArray(options.method) ? options.method[0]! : options.method;
     options.schema = { ...options.schema, response: { '2xx': httpSchema(options.url, method) } };
   });
@@ -163,17 +151,66 @@ export async function server(owner: string) {
     registers: [register],
   });
   const times = new WeakMap<object, number>();
-  const traced = (route: string) =>
-    /^\/api\/v1\/(products|carts|checkouts|orders|jobs|settings|actions)(?:\/|$)/.test(route);
-  app.addHook('onRequest', async (req) => {
+  const traced = (route: string, method: string, polling = false) =>
+    !polling &&
+    (/^\/api\/v1\/(products|carts|checkouts|orders|jobs)(?:\/|$)/.test(route) ||
+      (method !== 'GET' && route.startsWith('/api/v1/')));
+  app.addHook('onRequest', (req, _reply, done) => {
     times.set(req, performance.now());
     const route = req.routeOptions.url ?? 'unmatched';
-    if (traced(route))
+    if (
+      traced(route, req.method, req.method === 'GET' && req.headers['x-lab-observation'] === 'poll')
+    )
       activity(owner, 'http.received', {
         ...identifiers(req),
         method: req.method,
         route,
+        stage: 'input',
       });
+    trace.run({ owner, ...identifiers(req) }, done);
+  });
+  app.addHook('preValidation', async (req) => {
+    const route = req.routeOptions.url ?? 'unmatched';
+    if (
+      traced(route, req.method, req.method === 'GET' && req.headers['x-lab-observation'] === 'poll')
+    )
+      activity(owner, 'http.input', {
+        ...identifiers(req),
+        stage: 'input',
+        input: { params: req.params, query: req.query, body: req.body },
+      });
+  });
+  app.addHook('preHandler', async (req) => {
+    if (
+      traced(
+        req.routeOptions.url ?? '',
+        req.method,
+        req.method === 'GET' && req.headers['x-lab-observation'] === 'poll',
+      )
+    )
+      activity(owner, 'http.processing', {
+        ...identifiers(req),
+        stage: 'process',
+        step: 'validated request; invoke owner handler',
+      });
+  });
+  const outputs = new WeakMap<object, unknown>();
+  app.addHook('onSend', async (req, _reply, payload) => {
+    if (
+      traced(
+        req.routeOptions.url ?? '',
+        req.method,
+        req.method === 'GET' && req.headers['x-lab-observation'] === 'poll',
+      ) &&
+      typeof payload === 'string'
+    ) {
+      try {
+        outputs.set(req, safeObservation(JSON.parse(payload)));
+      } catch {
+        outputs.set(req, '[non-JSON response]');
+      }
+    }
+    return payload;
   });
   app.addHook('onResponse', async (req, reply) => {
     const route = req.routeOptions.url ?? 'unmatched';
@@ -182,12 +219,16 @@ export async function server(owner: string) {
       { route },
       (performance.now() - (times.get(req) ?? performance.now())) / 1000,
     );
-    if (traced(route))
+    if (
+      traced(route, req.method, req.method === 'GET' && req.headers['x-lab-observation'] === 'poll')
+    )
       activity(owner, 'http.completed', {
         ...identifiers(req),
         method: req.method,
         route,
         status: reply.statusCode,
+        stage: 'output',
+        output: outputs.get(req),
         durationMs: Math.max(0, performance.now() - (times.get(req) ?? performance.now())),
       });
   });
@@ -205,8 +246,15 @@ export async function server(owner: string) {
                 'DEPENDENCY_UNAVAILABLE',
                 'The operation could not complete; inspect system status',
               );
-    if (!(e instanceof Problem) && !e.validation)
-      activity(owner, 'operation.failed', { ...identifiers(req), message: e.message });
+    activity(owner, 'operation.failed', {
+      ...identifiers(req),
+      stage: 'output',
+      status: p.status,
+      code: p.code,
+      message: p.message,
+      details: p.details,
+      cause: { name: e.name, code: e.code, message: e.message },
+    });
     reply
       .code(p.status)
       .type('application/problem+json')
@@ -240,11 +288,27 @@ export async function listen(app: FastifyInstance, url: string) {
 }
 export function loop(owner: string, task: () => Promise<void>, ms = 500) {
   let busy = false;
+  let lastFailure = '';
+  let lastLogged = 0;
+  let suppressed = 0;
   const t = setInterval(() => {
     if (busy) return;
     busy = true;
     task()
-      .catch((e) => activity(owner, 'dependency.waiting', { message: String(e) }))
+      .then(() => {
+        if (lastFailure) activity(owner, 'dependency.recovered', { suppressed });
+        lastFailure = '';
+        suppressed = 0;
+      })
+      .catch((e) => {
+        const message = String(e);
+        if (message !== lastFailure || Date.now() - lastLogged >= 30000) {
+          activity(owner, 'dependency.waiting', { message, suppressed });
+          lastLogged = Date.now();
+          suppressed = 0;
+        } else suppressed++;
+        lastFailure = message;
+      })
       .finally(() => {
         busy = false;
       });

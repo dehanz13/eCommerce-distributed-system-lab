@@ -3,7 +3,7 @@ import amqp from 'amqplib';
 import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import { parseEvent, type DomainEvent } from '@lab/contracts';
-import { cfg, activity } from './index';
+import { cfg, activity, trace } from './index';
 export const queues = { ordering: 'lab.outcomes', fulfillment: 'lab.accepted' };
 export function event(
   type: DomainEvent['type'],
@@ -37,6 +37,9 @@ export function broker(
   let ready = false;
   let publishing = false;
   let retryAt = 0;
+  let lastWaiting = 0;
+  let waitingMessage = '';
+  let suppressedWaiting = 0;
   async function connect() {
     if (channel || connecting || Date.now() < retryAt) return;
     connecting = true;
@@ -99,8 +102,19 @@ export function broker(
               eventType: e.type,
               orderId: e.data.orderId,
               correlationId: e.correlationId,
+              causationId: e.causationId,
+              input: e,
             });
-            await consume(e);
+            await trace.run(
+              {
+                owner,
+                eventId: e.id,
+                orderId: e.data.orderId,
+                correlationId: e.correlationId,
+                causationId: e.causationId,
+              },
+              () => consume(e),
+            );
             ch.ack(msg);
             activity(owner, 'event.acknowledged', {
               eventId: e.id,
@@ -121,14 +135,22 @@ export function broker(
         { noAck: false },
       );
       ready = true;
-      activity(owner, 'broker.connected');
+      activity(owner, 'broker.connected', { suppressed: suppressedWaiting });
+      waitingMessage = '';
+      suppressedWaiting = 0;
     } catch (e) {
       retryAt = Date.now() + 1000;
       await connection?.close().catch(() => {});
       connection = null;
       channel = null;
       ready = false;
-      activity(owner, 'broker.waiting', { message: String(e) });
+      const message = String(e);
+      if (message !== waitingMessage || Date.now() - lastWaiting >= 30000) {
+        activity(owner, 'broker.waiting', { message, suppressed: suppressedWaiting });
+        lastWaiting = Date.now();
+        suppressedWaiting = 0;
+      } else suppressedWaiting++;
+      waitingMessage = message;
     } finally {
       connecting = false;
     }
@@ -156,6 +178,15 @@ export function broker(
         const ch = channel;
         if (!ch) break;
         const q = e.type === 'order.accepted' ? queues.fulfillment : queues.ordering;
+        activity(owner, 'event.publishing', {
+          eventId: e.id,
+          correlationId: e.correlationId,
+          causationId: e.causationId,
+          eventType: e.type,
+          input: e,
+          destinationQueue: q,
+          stage: 'process',
+        });
         await new Promise<void>((resolve, reject) => {
           let returned = false;
           const onReturn = () => {
@@ -180,6 +211,9 @@ export function broker(
           correlationId: e.correlationId,
           eventType: e.type,
           orderId: e.data.orderId,
+          causationId: e.causationId,
+          destinationQueue: q,
+          output: { confirmed: true, outboxRecorded: true },
         });
       }
     } catch (error) {

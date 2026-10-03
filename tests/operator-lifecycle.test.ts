@@ -12,6 +12,8 @@ const state = vi.hoisted(() => ({
   spawned: [] as string[][],
   hiddenOwner: false,
   retiringSocket: false,
+  commands: [] as { file: string; args: string[] }[],
+  failCompose: false,
 }));
 state.root = fs.mkdtempSync(path.join(os.tmpdir(), 'learning-lifecycle-'));
 vi.mock('@lab/runtime', async (original) => ({
@@ -19,9 +21,31 @@ vi.mock('@lab/runtime', async (original) => ({
   root: state.root,
 }));
 vi.mock('node:child_process', async (original) => {
-  const actual = await original<object>();
+  const actual = await original<typeof import('node:child_process')>();
   const execFile = Object.assign(vi.fn(), {
     [promisify.custom]: async (file: string, args: string[]) => {
+      state.commands.push({ file, args });
+      if (file === 'docker') {
+        if (state.failCompose && args.includes('down')) throw new Error('fixture teardown failure');
+        return { stdout: '', stderr: '' };
+      }
+      if (file === 'ps') return { stdout: '128\n', stderr: '' };
+      if (file === 'ssh') {
+        // Parse the real forwarded command; a canned SSH reply must not hide broken quoting.
+        actual.execFileSync('/bin/sh', ['-n', '-c', args.at(-1)!]);
+        return {
+          stdout: args.at(-1)?.includes('python3')
+            ? JSON.stringify({
+                totalMemoryBytes: 1000,
+                freeMemoryBytes: 500,
+                diskFreeBytes: 2000,
+                loadAverage: [0, 0, 0],
+                managedResidentBytes: null,
+              })
+            : '',
+          stderr: '',
+        };
+      }
       if (file === 'ss') {
         if (state.retiringSocket && !state.listeners.length) {
           state.retiringSocket = false;
@@ -61,12 +85,16 @@ vi.mock('node:child_process', async (original) => {
     },
   };
 });
-const { startService, stopService } = await import('../tools/operations');
+const { startService, stopService, stopLab, readCleanup, execute } = await import(
+  '../tools/operations'
+);
 const kill = vi.spyOn(process, 'kill');
 beforeEach(() => {
   state.listeners = [];
   state.cwd.clear();
   state.spawned = [];
+  state.commands = [];
+  state.failCompose = false;
   state.hiddenOwner = false;
   state.retiringSocket = false;
   fs.rmSync(path.join(state.root, '.lab/operator.pid'), { force: true });
@@ -140,5 +168,74 @@ it('waits for a retiring Linux socket after its owned process has stopped', asyn
     expect(state.listeners).toEqual([]);
   } finally {
     platform.mockRestore();
+  }
+});
+
+it('tears down only the lab project without deleting volumes and saves measured shutdown evidence', async () => {
+  const report = await stopLab();
+  expect(report.verified).toBe(true);
+  expect(report.services).toHaveLength(7);
+  expect(report.services.every((x) => x.running === false)).toBe(true);
+  const teardown = state.commands.find((x) => x.args.includes('down'))!;
+  expect(teardown.args).toContain('--remove-orphans');
+  expect(teardown.args).not.toContain('-v');
+  expect(readCleanup()?.id).toBe(report.id);
+  expect(report.hosts[0]?.after.totalMemoryBytes).toBeGreaterThan(0);
+});
+it('continues container cleanup after an unowned local listener and never certifies it as stopped', async () => {
+  state.listeners = [85021];
+  state.cwd.set(85021, '/another/checkout');
+  await expect(stopLab()).rejects.toThrow('could not be verified');
+  expect(state.commands.some((x) => x.args.includes('down'))).toBe(true);
+  expect(kill).not.toHaveBeenCalled();
+  expect(readCleanup()?.verified).toBe(false);
+  expect(readCleanup()?.services.some((x) => x.running)).toBe(true);
+});
+it('persists an unverified report when the container host fails cleanup', async () => {
+  state.failCompose = true;
+  await expect(stopLab()).rejects.toThrow('could not be verified');
+  expect(readCleanup()?.errors).toEqual([
+    'Compose teardown failed; inspect the configured container host.',
+  ]);
+});
+it('restarts the entire lab only after verified teardown and returns its stop report', async () => {
+  const fetch = vi
+    .spyOn(globalThis, 'fetch')
+    .mockImplementation(async () => new Response(JSON.stringify({ data: { ready: true } })));
+  try {
+    const report = await execute('restart');
+    expect(report?.action).toBe('restart');
+    const down = state.commands.findIndex((x) => x.args.includes('down'));
+    const up = state.commands.findIndex((x) => x.args.includes('up'));
+    expect(down).toBeGreaterThanOrEqual(0);
+    expect(up).toBeGreaterThan(down);
+  } finally {
+    fetch.mockRestore();
+  }
+});
+it('releases only the configured dedicated guest and reports its retained disk', async () => {
+  const { cfg } = await import('@lab/runtime');
+  const previous = { ...cfg };
+  Object.assign(cfg, {
+    TOPOLOGY: 'two',
+    REMOTE_USER: 'fixture',
+    REMOTE_HOST: 'fixture-host',
+    REMOTE_DIR: '/lab',
+    REMOTE_VM: 'lab-fixture',
+  });
+  try {
+    const report = await execute('poweroff');
+    expect(report?.verified).toBe(true);
+    expect(
+      state.commands.some(
+        (x) => x.file === 'ssh' && x.args.at(-1) === "limactl stop 'lab-fixture'",
+      ),
+    ).toBe(true);
+    expect(report?.hosts.map((x) => x.scope)).toEqual(['operator host', 'remote host']);
+    expect(report?.retained).toContain(
+      'Configured lab guest is stopped; its virtual disk remains on disk.',
+    );
+  } finally {
+    Object.assign(cfg, previous);
   }
 });

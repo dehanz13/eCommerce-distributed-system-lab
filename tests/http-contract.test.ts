@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, expect, it } from 'vitest';
 import {
   ProductWrite,
+  ActionInput,
   CheckoutWrite,
   validateReply,
   FeederInput,
@@ -32,6 +33,18 @@ app.post('/api/v1/feeder', { schema: { body: FeederInput } }, (req) => response(
 app.post('/api/v1/experiments', { schema: { body: ExperimentInput } }, () => {
   throw new Problem(409, 'EXERCISE_FIXTURE', 'Fixture only');
 });
+app.post('/api/v1/actions', { schema: { body: ActionInput } }, (req) =>
+  response(req, {
+    id: randomUUID(),
+    name: (req.body as { name: string }).name,
+    status: 'requested',
+    requestedAt: new Date().toISOString(),
+    startedAt: null,
+    finishedAt: null,
+    error: null,
+    progress: 'Waiting to start',
+  }),
+);
 afterAll(() => app.close());
 it('serializes a product response matching the shared runtime contract', async () => {
   const correlationId = randomUUID();
@@ -127,4 +140,27 @@ it('rejects excessive shopper traffic and unknown fault scenarios at the contrac
   });
   expect(valid.statusCode).toBe(200);
   expect(() => validateReply('/operator/api/v1/feeder', 'POST', valid.json())).not.toThrow();
+});
+
+it('requires preset values and rejects ignored or misdirected control parameters before accepting an action', async () => {
+  for (const payload of [
+    { name: 'preset' },
+    { name: 'reset', service: 'postgres' },
+    { name: 'poweroff', service: 'web' },
+    { name: 'pause', service: 'redis' },
+    { name: 'start', script: 'arbitrary shell' },
+  ]) {
+    const response = await app.inject({ method: 'POST', url: '/api/v1/actions', payload });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().code).toBe('VALIDATION_FAILED');
+  }
+  for (const payload of [
+    { name: 'restart' },
+    { name: 'preset', service: 'fulfillment', preset: 'retry' },
+    { name: 'start', service: 'redis' },
+  ]) {
+    const response = await app.inject({ method: 'POST', url: '/api/v1/actions', payload });
+    expect(response.statusCode).toBe(200);
+    expect(() => validateReply('/api/v1/actions', 'POST', response.json())).not.toThrow();
+  }
 });

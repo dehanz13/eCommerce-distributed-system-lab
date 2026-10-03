@@ -8,7 +8,7 @@
   },
   "scripts": {
     "check": "tsc --noEmit && eslint . && vitest run",
-    "test": "vitest run",
+    "test": "node tools/test-unit.mjs",
     "test:integration": "tsx tests/integration.ts",
     "test:e2e": "playwright test",
     "build": "pnpm --filter @lab/web build",
@@ -21,14 +21,15 @@
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:coverage": "vitest run --coverage && node tools/coverage-badge.mjs",
+    "test:coverage": "node tools/test-unit.mjs --coverage && node tools/coverage-badge.mjs",
     "quality": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage",
     "monitor": "./scripts/monitor",
     "test:recovery": "tsx tests/recovery.ts",
     "test:learning": "tsx tests/learning-integration.ts",
     "check:public": "tsx tools/public-content.ts",
     "security": "./scripts/security-check",
-    "security:images": "node tools/image-audit.mjs"
+    "security:images": "node tools/image-audit.mjs",
+    "test:inventory": "node tools/test-inventory.mjs"
   },
   "dependencies": {
     "@clack/prompts": "0.11.0",

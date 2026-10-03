@@ -1,3 +1,4 @@
+import { ActionSchema, CleanupReportSchema } from './lifecycle';
 import { Type, type Static, type TSchema } from '@sinclair/typebox';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
@@ -238,13 +239,35 @@ export const ActivitySchema = Type.Object(
   { additionalProperties: true },
 );
 export type ActivityRecord = Static<typeof ActivitySchema>;
+/** Bounded owner collection; unavailable sources carry diagnostics rather than invented records. */
+export const ActivityCollectionSchema = Type.Object({
+  sampledAt: Time,
+  exhaustive: Type.Literal(false),
+  limitPerOwner: Type.Integer({ minimum: 1 }),
+  retentionDays: Type.Integer({ minimum: 1 }),
+  sources: Type.Array(
+    Type.Object({
+      owner: Type.String(),
+      available: Type.Boolean(),
+      sampledAt: Time,
+      records: Type.Array(ActivitySchema),
+      error: Type.Union([Type.String(), Type.Null()]),
+    }),
+  ),
+  records: Type.Array(ActivitySchema),
+});
+export type ActivityCollection = Static<typeof ActivityCollectionSchema>;
 export function httpSchema(path: string, method: string) {
   let data: TSchema = Type.Unknown();
   const route = (path.split('?')[0] ?? path).replace(
     /^\/(operator|ordering|fulfillment)(?=\/)/,
     '',
   );
-  if (route === '/api/v1/cache') data = CacheSchema;
+  if (route === '/api/v1/resources') data = Type.Union([CleanupReportSchema, Type.Null()]);
+  else if (route === '/api/v1/actions')
+    data = method === 'GET' ? Type.Array(ActionSchema) : ActionSchema;
+  else if (route.startsWith('/api/v1/actions/')) data = ActionSchema;
+  else if (route === '/api/v1/cache') data = CacheSchema;
   else if (
     route === '/api/v1/feeder' ||
     route === '/api/v1/feeder/stop' ||
@@ -259,6 +282,7 @@ export function httpSchema(path: string, method: string) {
             run: Type.Union([ExperimentRunSchema, Type.Null()]),
           })
         : ExperimentRunSchema;
+  else if (route === '/api/v1/activity') data = ActivityCollectionSchema;
   else if (route === '/activity' || route.endsWith('/activity')) data = Type.Array(ActivitySchema);
   else if (/^\/api\/v1\/products(?:\/|$)/.test(route))
     data =
@@ -287,3 +311,7 @@ export function validateReply(path: string, method: string, value: unknown) {
 }
 
 export * from './experiments';
+
+export * from './lifecycle';
+
+export * from './observation';

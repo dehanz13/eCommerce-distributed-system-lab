@@ -24,9 +24,9 @@ In application host Terminal, from the checkout:
 ./lab stop
 ```
 
-Wait for the action to report `status: completed`. If it reports a failure, inspect that error before proceeding. This stops the managed applications and dependencies; the operator remains running so its action result can be retrieved.
+Wait for the action to report `status: completed`. Save the measured cleanup evidence with `./lab resources`, or inspect the operator control page at the origin printed by `./lab operator`. `./lab stop` now tears down this lab Compose project itself, preserving volumes. If the dedicated guest should release its allocation too, use `./lab poweroff`; its next full start starts the guest again. If it reports a failure, inspect that error before proceeding. This stops the managed applications and dependencies; the operator remains running so its action result can be retrieved.
 
-Then stop the remaining operator and remove any local lab containers:
+Then stop the remaining operator. The extra local Compose teardown below is an idempotent manual verification/fallback for a local topology; in two-host mode the operator already targeted its configured remote container host:
 
 ```sh
 ./scripts/cleanup-startup

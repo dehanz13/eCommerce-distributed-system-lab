@@ -2,7 +2,18 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { cfg, pool } from '@lab/runtime';
 import { request, ApiError } from '@lab/client';
-import type { Product, Cart, Preview, Order } from '@lab/contracts';
+import type { Product, Cart, Preview, Order, ActivityCollection } from '@lab/contracts';
+const controlPage = await fetch(cfg.OPERATOR_URL + '/');
+assert.equal(controlPage.status, 200);
+assert.match(controlPage.headers.get('content-type') ?? '', /text\/html/);
+assert.match(await controlPage.text(), /Lab control centre/);
+const collected = await request<ActivityCollection>('/api/v1/activity', {}, cfg.OPERATOR_URL);
+assert.equal(collected.data.exhaustive, false);
+assert.equal(collected.data.sources.length, 3);
+assert(
+  collected.data.sources.every((source) => source.available),
+  'all ready owner sources satisfy the collection contract',
+);
 const api = <T>(path: string, method = 'GET', body?: unknown, headers?: Record<string, string>) =>
   request<T>(
     '/api/v1' + path,

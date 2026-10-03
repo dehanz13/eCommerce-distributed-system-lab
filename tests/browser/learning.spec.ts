@@ -93,3 +93,24 @@ test('failure lab records and restores a scoped network interruption', async ({ 
   await expect(page.getByText('After restoration', { exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/failure-lab.png', fullPage: true });
 });
+
+test('control groups distinguish scripts, expose all services, and explain recovery on keyboard focus', async ({
+  page,
+}) => {
+  await page.goto('/system');
+  await page.getByRole('button', { name: 'Controls', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Entire lab', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'script Start lab', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'restart redis', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'restart toxiproxy', exact: true })).toBeVisible();
+  const help = page.getByRole('button', { name: 'Help: Cleanup evidence', exact: true });
+  await help.focus();
+  await expect(
+    page.getByRole('tooltip').filter({ hasText: 'No idle baseline is assumed' }),
+  ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open operator control centre ↗' })).toHaveAttribute(
+    'target',
+    '_blank',
+  );
+  await page.screenshot({ path: 'test-results/system-controls.png', fullPage: true });
+});

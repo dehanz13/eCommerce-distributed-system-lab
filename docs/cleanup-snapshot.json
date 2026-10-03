@@ -1,0 +1,52 @@
+{
+  "id": "bfd35d6c-f6fe-4adf-b882-33eb6749bf4b",
+  "action": "stop",
+  "sampledAt": "2026-10-03T00:59:39.810Z",
+  "verified": true,
+  "baselineRestored": null,
+  "hosts": [
+    {
+      "scope": "operator host",
+      "before": {
+        "scope": "operator host",
+        "source": "Node os + statfs + owned-process ps RSS (OS free memory)",
+        "sampledAt": "2026-10-03T00:59:34.671Z",
+        "available": true,
+        "totalMemoryBytes": 38654705664,
+        "freeMemoryBytes": 93732864,
+        "diskFreeBytes": 1028734869504,
+        "loadAverage": [7.5263671875, 12.95458984375, 11.34033203125],
+        "managedResidentBytes": null,
+        "error": null
+      },
+      "after": {
+        "scope": "operator host",
+        "source": "Node os + statfs + owned-process ps RSS (OS free memory)",
+        "sampledAt": "2026-10-03T00:59:39.810Z",
+        "available": true,
+        "totalMemoryBytes": 38654705664,
+        "freeMemoryBytes": 156106752,
+        "diskFreeBytes": 1028736851968,
+        "loadAverage": [7.00341796875, 12.755859375, 11.279296875],
+        "managedResidentBytes": 0,
+        "error": null
+      },
+      "freeMemoryDeltaBytes": 62373888
+    }
+  ],
+  "services": [
+    { "name": "web", "running": false },
+    { "name": "ordering", "running": false },
+    { "name": "fulfillment", "running": false },
+    { "name": "postgres", "running": false },
+    { "name": "rabbitmq", "running": false },
+    { "name": "redis", "running": false },
+    { "name": "toxiproxy", "running": false }
+  ],
+  "errors": [],
+  "retained": [
+    "Operator stays running for control and recovery.",
+    "Database volumes, images, build caches and retained logs stay on disk.",
+    "Free-memory changes include operating-system caches and unrelated workloads; no idle baseline has been certified."
+  ]
+}

@@ -1,4 +1,7 @@
+'use client';
 import * as React from 'react';
+import { Terminal, FileCode } from 'lucide-react';
+import { Tooltip } from 'radix-ui';
 import { Slot } from 'radix-ui';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
@@ -21,8 +24,51 @@ export function Button({
   className,
   variant,
   asChild = false,
+  hint,
+  operation,
+  children,
   ...props
-}: React.ComponentProps<'button'> & VariantProps<typeof styles> & { asChild?: boolean }) {
+}: React.ComponentProps<'button'> &
+  VariantProps<typeof styles> & {
+    asChild?: boolean;
+    hint?: string;
+    operation?: 'command' | 'script';
+  }) {
   const Comp = asChild ? Slot.Root : 'button';
-  return <Comp className={twMerge(clsx(styles({ variant }), className))} {...props} />;
+  const content = (
+    <Comp
+      className={twMerge(
+        clsx(styles({ variant }), operation && `operation-${operation}`, className),
+      )}
+      {...props}
+    >
+      {!asChild && operation && (
+        <>
+          <span className="operation-kind">
+            {operation === 'command' ? (
+              <Terminal size={13} aria-hidden="true" />
+            ) : (
+              <FileCode size={13} aria-hidden="true" />
+            )}
+            {operation}
+          </span>
+        </>
+      )}
+      {children}
+    </Comp>
+  );
+  if (!hint) return content;
+  return (
+    <Tooltip.Provider delayDuration={200}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>{content}</Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content className="help-tooltip" sideOffset={8}>
+            {hint}
+            <Tooltip.Arrow className="help-tooltip-arrow" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
 }
