@@ -115,13 +115,53 @@ Record the exit status and actual assertion results, including failures. Verify 
 
 ## 5. Interrupt a persisted attempt and verify restart
 
-Stop the feeder and finish or restore active experiments first; keep the lab ready for one controlled order. Do not drain this new order before stopping. The `slow` preset records a five-second deadline, so manual clicks can miss the interruption window. The following script submits the full-lab stop immediately after observing and saving the active attempt. It needs Bash, curl, jq and the selected Node runtime. Run from the application-host checkout root; the existing configuration loader supplies the three configured origins without publishing root configuration.
+Stop the feeder and finish or restore active experiments first; keep the lab ready for one controlled order. A feeder stop response can still report `stopping`, and an experiment can remain `running` while restoration completes. The idle helper below polls until the feeder is absent or terminal, the experiment is absent or terminal with completed restoration, and no lifecycle action is requested/running. After active work ends, it invokes explicit restoration for a failed/unknown restoration and rechecks the result. A timeout, unavailable endpoint or failed restoration exits before creating the controlled order. Allow this exercise exclusive use of the controls; another client can otherwise start new work after these observations.
+
+Do not drain the controlled order before stopping. The `slow` preset records a five-second deadline, so manual clicks can miss the interruption window. The interruption script runs the idle helper first, then submits full-lab stop immediately after observing and saving the active attempt. It needs Bash, curl, jq and the selected Node runtime. Run from the application-host checkout root; the existing configuration loader supplies the three configured origins without publishing root configuration.
 
 ```sh
-./lab feeder stop
-./lab experiment status
 mkdir -p .lab
 pnpm exec tsx -e 'import {cfg} from "@lab/runtime"; console.log(JSON.stringify({ordering:cfg.ORDERING_URL,fulfillment:cfg.FULFILLMENT_URL,operator:cfg.OPERATOR_URL}))' > .lab/recovery-origins.json
+cat > .lab/wait-for-idle.sh <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+operator=$(jq -er '.operator' .lab/recovery-origins.json)
+api() { curl --fail-with-body -sS --max-time 30 "$@"; }
+timeout=${LAB_IDLE_TIMEOUT_SECONDS:-180}
+if [[ ! "$timeout" =~ ^[1-9][0-9]{0,2}$ ]]; then
+  echo 'LAB_IDLE_TIMEOUT_SECONDS must be an integer from 1 to 999.' >&2
+  exit 1
+fi
+api -X POST "$operator/api/v1/feeder/stop" > .lab/recovery-feeder-stop.json
+deadline=$((SECONDS + timeout))
+while :; do
+  api "$operator/api/v1/feeder" > .lab/recovery-feeder-idle.json
+  api "$operator/api/v1/experiments" > .lab/recovery-experiment-idle.json
+  api "$operator/api/v1/actions" > .lab/recovery-actions-idle.json
+  if jq -e '.data==null or (.data.status | IN("completed","stopped","interrupted"))' \
+      .lab/recovery-feeder-idle.json >/dev/null &&
+    jq -e '(.data | type)=="array" and all(.data[]; .status!="requested" and .status!="running")' \
+      .lab/recovery-actions-idle.json >/dev/null; then
+    if jq -e '.data.run!=null and (.data.run.status | IN("completed","failed","interrupted")) and
+        (.data.run.restoration | IN("failed","unknown"))' \
+        .lab/recovery-experiment-idle.json >/dev/null; then
+      api -X POST "$operator/api/v1/experiments/restore" > .lab/recovery-experiment-restore.json
+      # Re-read status; a restoration response alone is not the idle assertion.
+    elif jq -e '.data.run==null or
+        ((.data.run.status | IN("completed","failed","interrupted")) and .data.run.restoration=="completed")' \
+        .lab/recovery-experiment-idle.json >/dev/null; then
+      break
+    fi
+  fi
+  if (( SECONDS >= deadline )); then
+    echo 'Lab is not idle; inspect saved feeder, experiment and action status before proceeding.' >&2
+    exit 1
+  fi
+  sleep 0.5
+done
+echo 'Feeder is terminal, experiment restoration is complete, and no lifecycle action is active.'
+SH
 cat > .lab/interrupt-attempt.sh <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -131,6 +171,7 @@ fulfillment=$(jq -er '.fulfillment' .lab/recovery-origins.json)
 operator=$(jq -er '.operator' .lab/recovery-origins.json)
 api() { curl --fail-with-body -sS --max-time 5 "$@"; }
 json=(-H 'Content-Type: application/json')
+bash .lab/wait-for-idle.sh
 api -X PUT "$fulfillment/api/v1/settings" "${json[@]}" \
   -d '{"preset":"slow","paused":false}' > .lab/recovery-settings.json
 api "$ordering/api/v1/products" "${json[@]}" \
@@ -190,6 +231,8 @@ bash .lab/interrupt-attempt.sh
 ./lab resources
 ```
 
+The idle helper uses a 180-second polling deadline by default, checked between observations; each HTTP call has its own 30-second limit. Set `LAB_IDLE_TIMEOUT_SECONDS=300 bash .lab/interrupt-attempt.sh` for a longer polling deadline (1–999 seconds). It does not cancel pending work when the deadline expires. A terminal feeder can retain unknown submissions; inspect/recover those original submissions using the [command reference](command-reference.md) before starting another traffic run. Do not treat terminal status as successful checkout recovery.
+
 Require a completed stop with verified cleanup and all seven managed services observed off. Keep the saved order/job/attempt IDs, `startedAt`, `dueAt`, and stop action's requested/started/finished times in the ignored `.lab` evidence. If checkout times out, its outcome is unknown: recover the saved submission with the saved key rather than generating another order. If stop fails or times out, inspect that action before proceeding.
 
 Restart with retained volumes, then verify the same attempt and the order. The next block polls for up to 30 seconds after startup readiness and exits on a failed assertion. It does not submit checkout again.
@@ -232,15 +275,14 @@ bash .lab/check-resumed-attempt.sh
 
 Both assertions must succeed: the order is fulfilled, and exactly one completed attempt retains its original ID and start time, with `finishedAt` later than the completed stop action. API timestamps use UTC ISO strings, so this comparison uses the common format. If the attempt completed before stop finished, the interruption was missed; do not count that run as recovery proof. Inspect the evidence, restore the success preset with `./lab preset fulfillment success` if the script exited early, and repeat with a new fictional order. The five-second preset cannot guarantee interruption on every host. These commands describe a reproducible exercise; their new shell form was checked separately from the dated physical run below.
 
-The documented shell scripts passed Bash syntax checks and ShellCheck. A local HTTP fixture accepted the same persisted attempt and rejected six invalid cases: a replacement ID, an additional attempt, completion before stop, a missing completion time, a changed start time, and unverified stop cleanup. These fixture checks validate the command assertions; they do not establish another physical run or close the runtime-pin gap.
+The documented shell scripts passed Bash syntax checks and ShellCheck. Local HTTP fixtures verified waiting for feeder completion, experiment restoration and lifecycle completion, including explicit restoration after failed/unknown restoration and rejection when restoration fails or work remains active. They also accepted the same persisted attempt and rejected six invalid cases: a replacement ID, an additional attempt, completion before stop, a missing completion time, a changed start time, and unverified stop cleanup. These fixture checks validate the command assertions; they do not establish another physical run or close the runtime-pin gap.
 
 ## 6. Stop and release the guest
 
-Finish traffic and exercises first. From the application host:
+Finish traffic and exercises first. From the application host, reuse the idle helper and configured origins created in section 5 before submitting shutdown:
 
 ```sh
-./lab feeder stop
-./lab experiment status
+bash .lab/wait-for-idle.sh
 ./lab stop
 ./lab resources
 ./lab poweroff
