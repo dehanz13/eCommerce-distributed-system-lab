@@ -44,6 +44,30 @@ These are three separate commands/terminals, not one script. You can stop one wi
 
 The API processes are independent of web, but still need their own data/broker dependencies. The web warning describes ordering request availability, not a complete diagnosis of fulfillment: ordering can accept an order while asynchronous fulfillment is waiting for recovery. The dashboard shows each owner separately.
 
+### Move managed owners into foreground terminals
+
+The deployment can start each owner as a recorded background process while preserving its stdout in `.lab/`. For interactive development, stop those instances from the backend checkout before launching foreground replacements. Run lifecycle commands on the machine that owns the processes; the client checkout runs web only. The legacy whole-lab `start` command still includes web on the controller host, so use named backend controls or the individual development commands for this split.
+
+If the backend host uses the isolated lab toolchain rather than nvm, set its path in each new terminal:
+
+```sh
+export PATH="$HOME/.local/share/ecommerce-lab/node-v24.21.0-darwin-x64/bin:$HOME/.local/share/ecommerce-lab/bin:/usr/local/bin:$PATH"
+node --version # expected: v24.21.0
+pnpm --version # expected: 10.21.0
+```
+
+From the backend repository root, stop the managed API instances while operator is still available, then stop operator itself:
+
+```sh
+./lab stop ordering
+./lab stop fulfillment
+node --import tsx --input-type=module -e "import {stopService} from './tools/operations.ts'; await stopService('operator');"
+```
+
+Now run `pnpm dev:ordering`, `pnpm dev:fulfillment` and `pnpm dev:operator` in three separate backend terminals. Use a fourth for `pnpm logs all`. Start/restart one foreground owner by stopping it with Ctrl+C and rerunning its command. On the client machine, the equivalent web transition is to stop its recorded web process with the same `stopService('web')` helper, then run `pnpm dev:web`. Do not launch both managed and foreground processes on the same port.
+
+Open the shopper on the client at port 4310 and the independent diagram at the backend's reachable operator origin plus `/architecture`, on port 4313. Private `.env.web` contains that operator origin. Reloading backend logic does not require restarting web when its HTTP contract and origin remain compatible. Changing a proxy origin requires restarting development web or rebuilding production web.
+
 ## Follow requests and responses in terminals
 
 On the machine running the owner, open another terminal:
@@ -59,6 +83,14 @@ pnpm logs all <correlation-UUID-or-checkout-key-reference>
 Each command is an alternative viewer. It prints structured input/process/output records every half second from bounded local owner windows, including HTTP input/output, transaction observations, received/published envelopes and processing outcomes. It prints the initial retained window once, then newly observed IDs. It does not collect remote files automatically or guarantee an exhaustive high-volume audit trail. For a guest process, run the viewer in that guest checkout or follow its mounted `.lab/logs` there. Use the dashboard Timeline for browser-side request observations; the web terminal shows Next.js startup/proxy diagnostics.
 
 Ctrl+C stops the viewer without stopping its APIs. A quiet window is not proof of health. Use owner `/health` and the dashboard sampled states alongside it. Raw idempotency keys remain excluded from activity; follow their shopper-scoped submission references.
+
+On the backend host, use `btop` for physical-host counters and `limactl shell ecommerce-lab btop` for guest counters. For native dependency stdout, enter the dedicated guest with `limactl shell ecommerce-lab`, change to the mounted backend checkout, and run:
+
+```sh
+docker compose --env-file .lab/remote.env logs --follow --tail 100 postgres rabbitmq redis toxiproxy
+```
+
+These viewers observe different layers: owner logs explain business decisions, container stdout explains dependency behavior, and btop measures resource use in its selected host or guest. Stopping a viewer leaves those systems running.
 
 ## Memory, shutdown and generated files
 

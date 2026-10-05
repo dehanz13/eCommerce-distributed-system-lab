@@ -28,8 +28,8 @@ Private evidence is retained in `.lab/reports/`, including `live-api-availabilit
 
 ## Remaining boundaries
 
-- Running the entire backend group independently on the backend machine requires its own checkout and private configuration. Follow [independent development](independent-development.md) and the [guest runbook](remote-lab-vm.md); use one lifecycle owner per process.
-- This checkpoint is uncommitted local work. A fresh Git clone only obtains changes after they are committed and pushed.
+- At the original checkpoint, the entire backend group had not moved to its own backend checkout. The later cutover below establishes that placement. Follow [independent development](independent-development.md) and the [guest runbook](remote-lab-vm.md); use one lifecycle owner per process.
+- The original checkpoint was uncommitted local work. The published revisions and completed cutover are recorded below; clone the named release branch to obtain them.
 - Stripe payments and a distributable client package are design work described in [the reusable API plan](reusable-ecommerce-api.md), not implemented checkout capabilities.
 - The console uses a lightweight live SVG renderer and offers an editable Excalidraw scene. Scene structure is tested; importing it in the external Excalidraw editor was not verified in this session.
 - Native container stdout and per-container/guest resource counters are not collected by the console. Use the scoped terminal commands in [the console guide](backend-console.md).
@@ -55,4 +55,18 @@ The final working-tree check completed on October 5, 2026 UTC (October 4 locally
 
 After the browser failure scenarios, the live status check at `2026-10-05T04:12:11Z` reported ordering, fulfillment, operator and shopper web ready. Both APIs reported database and broker connectivity. At `2026-10-05T04:12:18Z`, all ten backend-console observations were available; both owned database cards showed Connected and the accepted-order queue showed Available. The refreshed screenshot is `test-results/backend-console-complete-ecosystem.png`.
 
-The integration, recovery and nine learning-control results above remain the earlier backend deployment checks. This closing run reran the complete browser suite against the expanded diagram and kept the lab running. Records, diagnostic reports and running build artifacts remain retained. The work is still a local, uncommitted checkpoint; cloning the remote repository will not include it until it is committed and pushed.
+The integration, recovery and nine learning-control results above remain the earlier backend deployment checks. This closing run reran the complete browser suite against the expanded diagram and kept the lab running. Records, diagnostic reports and running build artifacts remained retained. That checkpoint was still uncommitted; the publication and cutover below followed it.
+
+## Published backend-host cutover
+
+On October 5, 2026 UTC (October 4 locally), checkpoint `ea53a0d` and the tested local-Lima adapter `546c279` were pushed to `release/0.4.0-two-host-verification`. The backend machine obtained that branch in the existing mounted lab directory. Its previous deployed source was backed up privately before establishing the Git checkout. The host uses an isolated Node 24.21.0 and pnpm 10.21.0 toolchain; its system Node installation was preserved.
+
+Ordering, fulfillment and operator now run as separately owned Node processes on the backend host. PostgreSQL, RabbitMQ, Redis and Toxiproxy remain in the existing dedicated guest, using the same Compose project and retained volumes. The former fulfillment container was stopped before starting the host process. The client machine runs only shopper web on port 4310; no API or operator listeners remain on its ports 4311–4313. Its private web configuration points to backend HTTP origins, and its production frontend was rebuilt and restarted for those origins. Other guests were left running.
+
+The local-Lima adapter passed type checking, lint and all 157 unit tests. Its new lifecycle case covers guest-scoped Compose commands, retained volumes, guest resource samples, failed teardown reporting and explicit poweroff. The dependency audit reported no known vulnerabilities; staged-content and complete Git-history secret scans passed.
+
+After deployment, integration, recovery, all nine learning fault controls and all 18 browser tests passed against this split. A separate real ordering stop/restart showed the shopper warning, backend-console unavailability and recovery without reloading the shopper; named cleanup was verified. A real fictional checkout finished fulfilled, and its diagram captured 85 hops across both owners, their database paths and both broker work queues. Both queue deliveries replayed before their acknowledgments. These live checks used no transport fixtures and retained the fictional records.
+
+Private evidence is in `.lab/reports/backend-cutover.json`, `live-api-availability.json` and the dated `checkout-replay-*.json` receipts. Original private configuration and the previous availability receipt remain backed up. No business reset, volume deletion, image prune or guest shutdown was performed. The migration runner verified both owners against their existing databases.
+
+For hands-on development, follow the foreground-terminal transition and log-viewer commands in [independent development](independent-development.md). The legacy whole-lab start still includes web on its controller host; this deployment uses individually scoped backend owners and an independent client web process. Changes to backend logic can be restarted independently; contract changes still require the [schema-change runbook](schema-change-guide.md).

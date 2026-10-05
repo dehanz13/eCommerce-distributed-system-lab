@@ -10,6 +10,8 @@ A local monorepo with four applications: web, ordering, fulfillment and operator
 
 To run web on one machine and foreground APIs on another, use [independent development, terminal logs and cleanup](docs/independent-development.md). The web-only configuration contains HTTP origins, without backend credentials.
 
+The [dated verification report](docs/local-verification.md) records the published backend-host cutover, live failure/recovery checks and deployment boundaries.
+
 Install the Node version in `.nvmrc`, pnpm 10.21.0 and Docker with Compose. Native lifecycle checks use lsof on macOS and ss from iproute2 on Linux. Run these commands from the repository root:
 
 ```sh
