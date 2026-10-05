@@ -28,6 +28,10 @@ const lessons = [
       'Resume paused processing, or manually restart a crashed process. A stale dashboard alone does not prove a crash.',
   },
 ];
+/** Explain the current lab’s guarantees and recovery exercises.
+ * Input: no arguments; uses its current owner state, from React props, current browser state and explicit user actions.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function LearningGuide() {
   return (
     <section className="panel p-5">

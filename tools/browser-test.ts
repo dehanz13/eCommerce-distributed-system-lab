@@ -2,6 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { cfg, root } from '@lab/runtime';
+/** Run the named browser-verification Docker operation.
+ * Input: args, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function docker(args: string[]) {
   await new Promise<void>((resolve, reject) => {
     const child = spawn('docker', args, { cwd: root, stdio: 'inherit' });
@@ -13,6 +17,10 @@ async function docker(args: string[]) {
     );
   });
 }
+/** Run isolated browser verification using a private configuration projection.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function runBrowserTests() {
   const web = new URL(cfg.WEB_URL);
   if (['localhost', '127.0.0.1', '[::1]'].includes(web.hostname))

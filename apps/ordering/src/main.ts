@@ -26,6 +26,7 @@ import {
 } from '@lab/runtime';
 import { row } from '@lab/runtime/rows';
 import { broker } from '@lab/runtime/broker';
+import { installShutdown } from '@lab/runtime/lifecycle';
 import { ordering } from './domain';
 import { catalogCache } from './catalog-cache';
 import { createClient } from '@redis/client';
@@ -39,6 +40,10 @@ const redis = createClient({
     host: cfg.REDIS_HOST,
     port: +cfg.REDIS_PORT,
     connectTimeout: 600,
+    /** Delay cache reconnect attempts without spending business-processing attempts.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */
     reconnectStrategy: () => 1000,
   },
   disableOfflineQueue: true,
@@ -49,6 +54,10 @@ void redis.connect().catch(() => {});
 const ajv = new Ajv();
 addFormats(ajv);
 const validateProducts = ajv.compile(Type.Array(ProductSchema));
+/** Bound a Redis operation deadline and reject unavailable connections.
+ * Input: run, from validated HTTP input and owner configuration.
+ * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+ */
 async function cacheCommand<T>(run: () => Promise<T>): Promise<T> {
   if (!redis.isReady) throw new Error('Cache unavailable');
   let timer: ReturnType<typeof setTimeout>;
@@ -64,16 +73,40 @@ async function cacheCommand<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 const catalog = catalogCache({
+  /** Read the authoritative catalog revision from ordering SQL.
+   * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+   * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+   */
   revision: async () =>
     String(
       (await p.query('SELECT revision FROM catalog_revision WHERE singleton=true')).rows[0]
         .revision,
     ),
   load: domain.products,
+  /** Read one revisioned cache key.
+   * Input: key, from validated HTTP input and owner configuration.
+   * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+   */
   get: (key) => cacheCommand(() => redis.get(key)),
+  /** Fill one revisioned cache key with expiry.
+   * Input: key, value, ttl, from validated HTTP input and owner configuration.
+   * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+   */
   set: (key, value, ttl) => cacheCommand(() => redis.set(key, value, { EX: ttl })),
+  /** Delete an invalid revisioned cache key.
+   * Input: key, from validated HTTP input and owner configuration.
+   * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+   */
   remove: (key) => cacheCommand(() => redis.del(key)),
+  /** Check cached data against the product response contract.
+   * Input: value, from validated HTTP input and owner configuration.
+   * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+   */
   valid: (value): value is Product[] => !!validateProducts(value),
+  /** Record a bounded diagnostic observation.
+   * Input: outcome, details, from validated HTTP input and owner configuration.
+   * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+   */
   observe: (outcome, details) => {
     activity('ordering', 'cache.' + outcome, details);
     telemetry('ordering').operations.inc({ operation: 'catalog_cache', outcome });
@@ -81,7 +114,7 @@ const catalog = catalogCache({
 });
 const app = await server('ordering');
 const io = broker('ordering', p, domain.consume);
-loop('ordering', io.tick);
+const stopPublishing = loop('ordering', io.tick);
 const one = Type.Object({ id: Id });
 const itemParams = Type.Object({ id: Id, productId: Id });
 app.get('/health', async (req, reply) => {
@@ -340,3 +373,50 @@ app.post(
   },
 );
 await listen(app, cfg.ORDERING_URL);
+installShutdown('ordering', [
+  { name: 'publication timer', close: stopPublishing },
+  {
+    name: 'HTTP listener and active requests' /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */,
+    /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */
+    close: () => app.close(),
+  },
+  {
+    name: 'broker connection' /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */,
+    /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */
+    close: () => io.close(),
+  },
+  {
+    name: 'cache connection' /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */,
+    /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */
+    close: () => redis.destroy(),
+  },
+  {
+    name: 'database pool' /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */,
+    /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+     * Communicates with ordering SQL, Redis, RabbitMQ and its HTTP clients.
+     */
+    close: () => p.end(),
+  },
+]);

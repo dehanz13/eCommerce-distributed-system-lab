@@ -21,6 +21,7 @@ import {
 } from '../../../tools/operations';
 import { feeder } from '../../../tools/feeder';
 import { experiments, explanations } from '../../../tools/experiments';
+import { installShutdown } from '@lab/runtime/lifecycle';
 const app = await server('operator');
 const actions = new Map<string, Action>();
 for (const a of readActions()) {
@@ -180,3 +181,26 @@ app.post('/api/v1/experiments/restore', async (req) => {
   }
 });
 await listen(app, cfg.OPERATOR_URL);
+installShutdown('operator', [
+  {
+    name: 'HTTP listener and active requests' /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated control/inspection requests and retained operator state.
+     * Communicates with owner HTTP endpoints and named local/remote lab operations.
+     */,
+    /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated control/inspection requests and retained operator state.
+     * Communicates with owner HTTP endpoints and named local/remote lab operations.
+     */
+    close: () => app.close(),
+  },
+  {
+    name: 'new shopper scheduling (retained work survives restart)',
+    /** Release the concrete caller-owned connection registered for shutdown.
+     * Input: no arguments; uses its current owner state, from validated control/inspection requests and retained operator state.
+     * Communicates with owner HTTP endpoints and named local/remote lab operations.
+     */
+    close: () => {
+      feeder.stop();
+    },
+  },
+]);

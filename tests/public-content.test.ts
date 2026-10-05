@@ -16,6 +16,9 @@ it('rejects private files and identifying values without echoing their contents'
 
 it('accepts the fictional environment example and public project URL', () => {
   expect(
+    inspectPublicFile('.env.web.example', 'ORDERING_URL=http://backend-host.local:4311'),
+  ).toEqual([]);
+  expect(
     inspectPublicFile('.env.example', 'PG_HOST=127.0.0.1\nPG_ADMIN_PASSWORD=dummy_local_admin'),
   ).toEqual([]);
   expect(inspectPublicFile('README.md', 'https://github.com/example/project')).toEqual([]);

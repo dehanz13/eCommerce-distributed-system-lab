@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type { CleanupReport, ResourceSnapshot } from '@lab/contracts';
 export type { ResourceSnapshot } from '@lab/contracts';
-/** Compare observed snapshots only; an unknown baseline is never reported as restored. */
+/** Compare observed snapshots only; an unknown baseline is never reported as restored.
+ * Input: action, before, after, services, errors, from measured before/after probes and cleanup outcomes.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function cleanupReport(
   action: string,
   before: ResourceSnapshot[],
@@ -32,6 +35,23 @@ export function cleanupReport(
     }),
     services,
     errors,
+    lessons: [
+      'A stopped application does not establish that its dependency containers or guest stopped.',
+      'Unavailable probes leave cleanup unverified; do not infer success from missing measurements.',
+      'Free-memory changes include unrelated workloads and operating-system caches.',
+    ],
+    recoverySteps:
+      errors.length ||
+      services.some((service) => service.running !== false) ||
+      after.some((sample) => !sample.available)
+        ? [
+            'Inspect services, errors and unavailable host samples in this report.',
+            'Verify the configured Docker context, guest state and SSH reachability on the dependency host.',
+            'Check listener ownership and owner activity before retrying the scoped stop action.',
+          ]
+        : [
+            'Retained records support restart. Use explicit reset only when you intend to erase business data.',
+          ],
     retained: [
       'Operator stays running for control and recovery.',
       'Database volumes, images, build caches and retained logs stay on disk.',

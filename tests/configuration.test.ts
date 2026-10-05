@@ -5,11 +5,35 @@ import dotenv from 'dotenv';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
   loadConfiguration,
+  loadWebConfiguration,
   requireSettings,
   validateConfiguration,
 } from '../packages/runtime/src/configuration';
 
 const example = dotenv.parse(fs.readFileSync('.env.example'));
+it('starts web configuration with only public origins and prefers .env.web over backend settings', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'web-origins-'));
+  try {
+    fs.writeFileSync(
+      path.join(root, '.env.web'),
+      'ORDERING_URL=http://api.local:4311\nFULFILLMENT_URL=http://api.local:4312\nOPERATOR_URL=http://api.local:4313\n',
+    );
+    fs.writeFileSync(path.join(root, '.env'), 'ORDERING_URL=broken\n');
+    expect(loadWebConfiguration(root)).toEqual({
+      ORDERING_URL: 'http://api.local:4311',
+      FULFILLMENT_URL: 'http://api.local:4312',
+      OPERATOR_URL: 'http://api.local:4313',
+    });
+    fs.writeFileSync(
+      path.join(root, '.env.web'),
+      'ORDERING_URL=http://user:private-fixture@127.0.0.1:4311\n',
+    );
+    expect(() => loadWebConfiguration(root)).toThrow('ORDERING_URL must be an HTTP origin');
+    expect(() => loadWebConfiguration(root)).not.toThrow('private-fixture');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}));
 afterEach(() => vi.restoreAllMocks());
 

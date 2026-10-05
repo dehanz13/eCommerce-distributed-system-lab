@@ -25,6 +25,7 @@ coverage/
 # Private configuration and key material.
 .env.*
 !.env.example
+!.env.web.example
 .ssh/
 .aws/
 *.pem

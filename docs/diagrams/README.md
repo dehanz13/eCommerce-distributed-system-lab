@@ -1,5 +1,7 @@
 # Architecture drawings
 
+The [independent backend console](../backend-console.md) also provides an [editable backend-only scene](08-backend-console.excalidraw), generated from its shared layout registry with embedded local icons. Its SVG/HTML live renderer is separate from the exports below.
+
 Read the drawings in this order. Each has an editable Excalidraw scene and an SVG exported with Excalidraw 0.18.1. They describe implemented systems, with source anchors below. Planned enrichment/file-transfer systems are outside these drawings because they are not running services.
 
 | Drawing                                                | SVG                              | Editable scene                          | Implementation                                                                     |

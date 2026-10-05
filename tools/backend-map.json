@@ -1,0 +1,511 @@
+{
+  "width": 1720,
+  "height": 1950,
+  "nodes": [
+    {
+      "id": "client",
+      "name": "Shopper client",
+      "stack": "External HTTP caller",
+      "x": 24,
+      "y": 240,
+      "icon": null,
+      "role": "Runs independently on the client machine; outside the backend host.",
+      "value": "Lets shoppers browse, build a cart and recover checkout.",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "ordering",
+      "name": "Ordering API",
+      "stack": "Node.js · Fastify",
+      "x": 320,
+      "y": 240,
+      "icon": "nodedotjs",
+      "role": "Owns catalog, cart, checkout, stock and order records.",
+      "value": "Protects stock and prices; records each purchase once.",
+      "owner": "ordering",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "toxiproxy",
+      "name": "Toxiproxy",
+      "stack": "AMQP fault proxy",
+      "x": 785,
+      "y": 240,
+      "icon": null,
+      "role": "Introduces scoped latency or interrupted broker connectivity for learning.",
+      "value": "Makes network failures repeatable and easy to study.",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "rabbitmq",
+      "name": "RabbitMQ broker",
+      "stack": "Durable event delivery",
+      "x": 785,
+      "y": 500,
+      "icon": "rabbitmq",
+      "role": "Physical AMQP broker. Its logical routing, queues and API roles appear below.",
+      "value": "One broker carries events between two producers and two consumers.",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "fulfillment",
+      "name": "Fulfillment API",
+      "stack": "Node.js · Fastify",
+      "x": 1270,
+      "y": 240,
+      "icon": "nodedotjs",
+      "role": "Owns resumable jobs, attempts and terminal processing outcomes.",
+      "value": "Resumes interrupted work and records the final outcome.",
+      "owner": "fulfillment",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "stack": "Two owner databases",
+      "x": 785,
+      "y": 820,
+      "icon": "postgresql",
+      "role": "Aggregate connectivity from both owner probes; not a third application database.",
+      "value": "One physical server hosts two isolated owner databases.",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "redis",
+      "name": "Redis",
+      "stack": "Catalog read cache",
+      "x": 320,
+      "y": 500,
+      "icon": "redis",
+      "role": "Caches versioned catalog reads. Checkout uses authoritative ordering SQL.",
+      "value": "Speeds up catalog reads; SQL remains authoritative.",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "operator",
+      "name": "Operator API",
+      "stack": "Node.js · Fastify",
+      "x": 785,
+      "y": 24,
+      "icon": "nodedotjs",
+      "role": "Serves this console, observes owner APIs and runs allowlisted controls.",
+      "value": "Shows evidence and provides scoped recovery controls.",
+      "owner": "operator",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "ordering-db",
+      "name": "Ordering database",
+      "stack": "PostgreSQL · owner isolation",
+      "x": 320,
+      "y": 820,
+      "value": "Catalog, carts, orders, inbox and transactional outbox.",
+      "role": "Owned only by Ordering API. Connectivity comes from its database probe.",
+      "icon": "postgresql",
+      "owner": "",
+      "databaseOwner": "ordering",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "fulfillment-db",
+      "name": "Fulfillment database",
+      "stack": "PostgreSQL · owner isolation",
+      "x": 1270,
+      "y": 820,
+      "value": "Jobs, attempts, inbox and transactional outbox.",
+      "role": "Owned only by Fulfillment API. Connectivity comes from its database probe.",
+      "icon": "postgresql",
+      "owner": "",
+      "databaseOwner": "fulfillment",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "ordering-publisher",
+      "name": "Ordering API",
+      "stack": "Producer · committed outbox",
+      "x": 320,
+      "y": 1150,
+      "value": "Publishes order.accepted after the purchase commits.",
+      "role": "Publisher role of the same Ordering API above; not another process.",
+      "icon": "nodedotjs",
+      "owner": "ordering",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "fulfillment-publisher",
+      "name": "Fulfillment API",
+      "stack": "Producer · committed outbox",
+      "x": 320,
+      "y": 1400,
+      "value": "Publishes fulfillment outcomes after durable processing.",
+      "role": "Publisher role of the same Fulfillment API above; not another process.",
+      "icon": "nodedotjs",
+      "owner": "fulfillment",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "exchange",
+      "name": "Default exchange",
+      "stack": "AMQP direct · unnamed",
+      "x": 660,
+      "y": 1275,
+      "value": "Routes by queue name through automatic bindings.",
+      "role": "Built-in direct exchange. Broker reachability is sampled; exchange internals are not traced.",
+      "icon": "rabbitmq",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": true
+    },
+    {
+      "id": "accepted",
+      "name": "lab.accepted",
+      "stack": "Durable queue · accepted orders",
+      "x": 1000,
+      "y": 1150,
+      "value": "Buffers purchases until fulfillment can process them.",
+      "role": "Ordering publishes; fulfillment consumes with prefetch one and explicit acknowledgment.",
+      "icon": "rabbitmq",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "lab.accepted",
+      "brokerRole": true
+    },
+    {
+      "id": "outcomes",
+      "name": "lab.outcomes",
+      "stack": "Durable queue · outcomes",
+      "x": 1000,
+      "y": 1400,
+      "value": "Returns fulfillment results for ordering to apply once.",
+      "role": "Fulfillment publishes; ordering consumes and deduplicates the result.",
+      "icon": "rabbitmq",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "lab.outcomes",
+      "brokerRole": true
+    },
+    {
+      "id": "fulfillment-consumer",
+      "name": "Fulfillment API",
+      "stack": "Consumer · prefetch 1",
+      "x": 1360,
+      "y": 1150,
+      "value": "Records the job, deduplicates and acknowledges delivery.",
+      "role": "Consumer role of the same Fulfillment API above. Jobs resume from its database.",
+      "icon": "nodedotjs",
+      "owner": "fulfillment",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "ordering-consumer",
+      "name": "Ordering API",
+      "stack": "Consumer · prefetch 1",
+      "x": 1360,
+      "y": 1400,
+      "value": "Applies outcomes and compensates failed orders once.",
+      "role": "Consumer role of the same Ordering API above. Outcomes are applied to its database.",
+      "icon": "nodedotjs",
+      "owner": "ordering",
+      "databaseOwner": "",
+      "queue": "",
+      "brokerRole": false
+    },
+    {
+      "id": "quarantine",
+      "name": "lab.quarantine",
+      "stack": "Durable queue · invalid deliveries",
+      "x": 1100,
+      "y": 1675,
+      "value": "Retains invalid or wrong-owner messages for investigation.",
+      "role": "Both API consumers explicitly republish invalid deliveries through the default exchange; no automated quarantine consumer exists.",
+      "icon": "rabbitmq",
+      "owner": "",
+      "databaseOwner": "",
+      "queue": "lab.quarantine",
+      "brokerRole": true
+    }
+  ],
+  "edges": [
+    {
+      "id": "client-ordering",
+      "from": "client",
+      "to": "ordering",
+      "label": "HTTP",
+      "points": [
+        [254, 318],
+        [320, 318]
+      ],
+      "labelPosition": [287, 300],
+      "bidirectional": true
+    },
+    {
+      "id": "ordering-toxiproxy",
+      "from": "ordering",
+      "to": "toxiproxy",
+      "label": "AMQP",
+      "points": [
+        [550, 292],
+        [785, 292]
+      ],
+      "labelPosition": [667, 274],
+      "bidirectional": true
+    },
+    {
+      "id": "fulfillment-toxiproxy",
+      "from": "fulfillment",
+      "to": "toxiproxy",
+      "label": "AMQP",
+      "points": [
+        [1270, 292],
+        [1015, 292]
+      ],
+      "labelPosition": [1142, 274],
+      "bidirectional": true
+    },
+    {
+      "id": "toxiproxy-rabbitmq",
+      "from": "toxiproxy",
+      "to": "rabbitmq",
+      "label": "AMQP",
+      "points": [
+        [900, 396],
+        [900, 500]
+      ],
+      "labelPosition": [945, 450],
+      "bidirectional": true
+    },
+    {
+      "id": "ordering-redis",
+      "from": "ordering",
+      "to": "redis",
+      "label": "Cache",
+      "points": [
+        [435, 396],
+        [435, 500]
+      ],
+      "labelPosition": [482, 450],
+      "bidirectional": true
+    },
+    {
+      "id": "ordering-database",
+      "from": "ordering",
+      "to": "ordering-db",
+      "label": "SQL / result",
+      "points": [
+        [550, 360],
+        [625, 360],
+        [625, 898],
+        [550, 898]
+      ],
+      "labelPosition": [710, 710],
+      "bidirectional": true
+    },
+    {
+      "id": "fulfillment-database",
+      "from": "fulfillment",
+      "to": "fulfillment-db",
+      "label": "SQL / result",
+      "points": [
+        [1385, 396],
+        [1385, 820]
+      ],
+      "labelPosition": [1450, 610],
+      "bidirectional": true
+    },
+    {
+      "id": "operator-ordering",
+      "from": "operator",
+      "to": "ordering",
+      "label": "Observe / control",
+      "points": [
+        [785, 100],
+        [435, 100],
+        [435, 240]
+      ],
+      "labelPosition": [605, 80],
+      "bidirectional": true
+    },
+    {
+      "id": "operator-fulfillment",
+      "from": "operator",
+      "to": "fulfillment",
+      "label": "Observe / control",
+      "points": [
+        [1015, 100],
+        [1385, 100],
+        [1385, 240]
+      ],
+      "labelPosition": [1198, 80],
+      "bidirectional": true
+    },
+    {
+      "id": "publish-accepted",
+      "from": "ordering-publisher",
+      "to": "exchange",
+      "label": "Publish / confirm",
+      "points": [
+        [550, 1228],
+        [600, 1228],
+        [600, 1327],
+        [660, 1327]
+      ],
+      "labelPosition": [605, 1134],
+      "bidirectional": true
+    },
+    {
+      "id": "publish-outcomes",
+      "from": "fulfillment-publisher",
+      "to": "exchange",
+      "label": "Publish / confirm",
+      "points": [
+        [550, 1478],
+        [610, 1478],
+        [610, 1380],
+        [660, 1380]
+      ],
+      "labelPosition": [545, 1370],
+      "bidirectional": true
+    },
+    {
+      "id": "route-accepted",
+      "from": "exchange",
+      "to": "accepted",
+      "label": "lab.accepted",
+      "points": [
+        [890, 1327],
+        [945, 1327],
+        [945, 1228],
+        [1000, 1228]
+      ],
+      "labelPosition": [920, 1207],
+      "bidirectional": false
+    },
+    {
+      "id": "route-outcomes",
+      "from": "exchange",
+      "to": "outcomes",
+      "label": "lab.outcomes",
+      "points": [
+        [890, 1380],
+        [970, 1380],
+        [970, 1478],
+        [1000, 1478]
+      ],
+      "labelPosition": [928, 1503],
+      "bidirectional": false
+    },
+    {
+      "id": "consume-accepted",
+      "from": "accepted",
+      "to": "fulfillment-consumer",
+      "label": "Deliver / ack",
+      "points": [
+        [1230, 1228],
+        [1360, 1228]
+      ],
+      "labelPosition": [1295, 1207],
+      "bidirectional": true
+    },
+    {
+      "id": "consume-outcomes",
+      "from": "outcomes",
+      "to": "ordering-consumer",
+      "label": "Deliver / ack",
+      "points": [
+        [1230, 1478],
+        [1360, 1478]
+      ],
+      "labelPosition": [1295, 1457],
+      "bidirectional": true
+    },
+    {
+      "id": "quarantine-fulfillment",
+      "from": "fulfillment-consumer",
+      "to": "quarantine",
+      "label": "Invalid delivery",
+      "points": [
+        [1590, 1270],
+        [1640, 1270],
+        [1640, 1875],
+        [1215, 1875],
+        [1215, 1831]
+      ],
+      "labelPosition": [1430, 1898],
+      "bidirectional": true
+    },
+    {
+      "id": "quarantine-ordering",
+      "from": "ordering-consumer",
+      "to": "quarantine",
+      "label": "Invalid delivery",
+      "points": [
+        [1475, 1556],
+        [1475, 1753],
+        [1330, 1753]
+      ],
+      "labelPosition": [1518, 1648],
+      "bidirectional": true
+    }
+  ],
+  "nodeWidth": 230,
+  "nodeHeight": 156,
+  "groups": [
+    {
+      "id": "backend-scope",
+      "x": 290,
+      "y": 0,
+      "width": 1380,
+      "height": 1030,
+      "label": "Backend connections · configured placement",
+      "note": ""
+    },
+    {
+      "id": "database-scope",
+      "x": 300,
+      "y": 790,
+      "width": 1230,
+      "height": 216,
+      "label": "PostgreSQL server · separate owner databases",
+      "note": ""
+    },
+    {
+      "id": "broker-scope",
+      "x": 290,
+      "y": 1060,
+      "width": 1380,
+      "height": 860,
+      "label": "RabbitMQ message bus · logical routing within the same broker",
+      "note": "Same API roles, not extra processes. AMQP travels through Toxiproxy above; quarantine publications also use the default exchange."
+    }
+  ]
+}

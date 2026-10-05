@@ -12,6 +12,10 @@ import {
   type Action,
 } from './operations';
 const [name, service, arg] = process.argv.slice(2);
+/** Open the configured local/remote resource monitor.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 function monitor() {
   if (service === 'remote-host' || service === 'lab-vm') {
     requireSettings(cfg, ['REMOTE_HOST', 'REMOTE_USER']);
@@ -140,6 +144,10 @@ else if (name) {
   outro('Lab processes remain in their requested state.');
 }
 
+/** Submit an allowlisted operator action and poll its recorded completion.
+ * Input: name, service, preset, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function requestAction(name: string, service?: Service, preset?: string) {
   const result = await fetch(cfg.OPERATOR_URL + '/api/v1/actions', {
     method: 'POST',

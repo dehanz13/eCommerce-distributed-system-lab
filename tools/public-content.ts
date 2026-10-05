@@ -2,10 +2,17 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-/** Return locations and categories only; a flagged value must not appear in diagnostics. */
+/** Return locations and categories only; a flagged value must not appear in diagnostics.
+ * Input: file, contents, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export function inspectPublicFile(file: string, contents: string) {
   const issues: string[] = [];
-  if (/(^|\/)\.env(?:\.|$)/.test(file) && !file.endsWith('.env.example'))
+  if (
+    /(^|\/)\.env(?:\.|$)/.test(file) &&
+    !file.endsWith('.env.example') &&
+    file !== '.env.web.example'
+  )
     issues.push('private configuration file');
   if (
     /(^|\/)(\.ssh|\.aws|\.lab|test-results|playwright-report)\//.test(file) ||
@@ -44,6 +51,10 @@ export function inspectPublicFile(file: string, contents: string) {
   return issues.map((category) => `${file}: ${category}`);
 }
 
+/** Scan tracked/public candidate files without exposing matched credential values.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export function checkPublicContent() {
   const files = execFileSync(
     'git',

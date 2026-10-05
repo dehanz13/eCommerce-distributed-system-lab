@@ -56,6 +56,8 @@ Presets are success, slow (five seconds), retry (first attempt fails, second suc
 
 ## Events and identifiers
 
+The [system replacement guide](replacing-systems.md) identifies the existing seams and required guarantees. Event creation/outbox staging are transport-independent; application entry points choose the delivery adapter. A shopper-scoped `submissionReference` connects a checkout key to events, persisted jobs and outcomes without distributing its raw replay key.
+
 | Event                 | Producer    | Version-one payload                 |
 | --------------------- | ----------- | ----------------------------------- |
 | order.accepted        | Ordering    | orderId                             |

@@ -4,9 +4,17 @@ import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import { type DomainEvent, type PresetName } from '@lab/contracts';
 import { transaction, activity } from '@lab/runtime';
-import { event, saveEvent } from '@lab/runtime/broker';
+import { event, saveEvent } from '@lab/runtime/events';
+/** Assemble the fulfillment module around its owned SQL state and broker readiness.
+ * Input: p, connected, from the application entry point: a SQL pool and broker-readiness predicate.
+ * Communicates with fulfillment PostgreSQL and transactional outbox; never ordering tables.
+ */
 export function fulfillment(p: pg.Pool, connected: () => boolean) {
   const measurements = telemetry('fulfillment');
+  /** Apply a validated event once and commit its owner effects.
+   * Input: e, from parsed accepted events, persisted jobs and caller readiness.
+   * Communicates with fulfillment PostgreSQL and transactional outbox; never ordering tables.
+   */
   async function consume(e: DomainEvent) {
     let duplicate = false;
     await transaction(p, async (c) => {
@@ -22,13 +30,21 @@ export function fulfillment(p: pg.Pool, connected: () => boolean) {
       }
       const settings = await c.query('SELECT preset FROM settings WHERE id=1');
       await c.query(
-        "INSERT INTO jobs(id,order_id,preset,status,correlation_id,causation_id) VALUES($1,$2,$3,'queued',$4,$5) ON CONFLICT(order_id) DO NOTHING",
-        [randomUUID(), e.data.orderId, settings.rows[0].preset, e.correlationId, e.id],
+        "INSERT INTO jobs(id,order_id,preset,status,correlation_id,causation_id,submission_reference) VALUES($1,$2,$3,'queued',$4,$5,$6) ON CONFLICT(order_id) DO NOTHING",
+        [
+          randomUUID(),
+          e.data.orderId,
+          settings.rows[0].preset,
+          e.correlationId,
+          e.id,
+          e.submissionReference ?? null,
+        ],
       );
     });
     measurements.consumption.inc({ outcome: duplicate ? 'duplicate' : 'committed' });
     activity('fulfillment', 'job.processing', {
       correlationId: e.correlationId,
+      submissionReference: e.submissionReference,
       eventId: e.id,
       stage: 'process',
       step: 'inbox deduplication and durable job insert committed',
@@ -38,8 +54,13 @@ export function fulfillment(p: pg.Pool, connected: () => boolean) {
       orderId: e.data.orderId,
       eventId: e.id,
       correlationId: e.correlationId,
+      submissionReference: e.submissionReference,
     });
   }
+  /** Advance persisted work only when its dependencies are ready.
+   * Input: no arguments; uses its current owner state, from parsed accepted events, persisted jobs and caller readiness.
+   * Communicates with fulfillment PostgreSQL and transactional outbox; never ordering tables.
+   */
   async function tick() {
     if (!connected()) return;
     let started: Record<string, unknown> | null = null;
@@ -74,6 +95,7 @@ export function fulfillment(p: pg.Pool, connected: () => boolean) {
           attemptId,
           attemptNumber: number,
           correlationId: job.correlation_id,
+          ...(job.submission_reference ? { submissionReference: job.submission_reference } : {}),
           preset: job.preset,
           startedAt: new Date(persistedAttempt.rows[0].started_at).toISOString(),
           dueAt: new Date(persistedAttempt.rows[0].due_at).toISOString(),
@@ -95,6 +117,7 @@ export function fulfillment(p: pg.Pool, connected: () => boolean) {
           attemptNumber: job.attempt_number,
           outcome: result,
           correlationId: job.correlation_id,
+          ...(job.submission_reference ? { submissionReference: job.submission_reference } : {}),
         },
         seconds: Math.max(0, (Date.now() - new Date(attempt.rows[0].started_at).getTime()) / 1000),
       };
@@ -125,6 +148,7 @@ export function fulfillment(p: pg.Pool, connected: () => boolean) {
             },
             job.correlation_id,
             job.causation_id,
+            job.submission_reference ?? undefined,
           ),
         );
       }

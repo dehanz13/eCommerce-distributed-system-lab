@@ -2,7 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { format, resolveConfig } from 'prettier';
-/** Only executed assertion results become checked items; missing/skipped tests remain unchecked. */
+/** Only executed assertion results become checked items; missing/skipped tests remain unchecked.
+ * Input: result, root, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function inventory(result, root) {
   return (result.testResults ?? []).flatMap((file) =>
     (file.assertionResults ?? []).map((test) => ({
@@ -37,6 +40,10 @@ const owners = {
   'test-inventory.test.ts': 'Quality tooling',
   'public-content.test.ts': 'Publication tooling',
 };
+/** Write the current measured test inventory from the saved runner result.
+ * Input: input, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function writeInventory(input = '.lab/unit-results.json') {
   const root = await fs.realpath('.');
   const result = JSON.parse(await fs.readFile(input, 'utf8'));

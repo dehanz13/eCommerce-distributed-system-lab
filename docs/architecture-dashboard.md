@@ -6,6 +6,8 @@ The dashboard polls every two seconds. It is a live activity visualizer, not dis
 
 ## Follow a journey
 
+After checkout, Shop provides **Follow this order**, which opens Architecture with the order's scoped key reference selected. The observed journey displays **Checkout key reference** and all associated correlation IDs. Explicit replay with a different correlation ID joins the same reference; raw replay keys are not displayed or put into event envelopes. Historical records without this additive metadata show an unavailable reference. See [replacement seams and identity](replacing-systems.md).
+
 Run demo checkout to reserve one in-stock fictional product through the real cart, preview and checkout interfaces. It uses the current new-job simulation preset. Use Controls to choose slow (five seconds) before running it to watch the scheduled processing window. Retry and fail show recorded attempts and retry deadlines. Existing jobs retain their preset. The demo saves an unresolved submission in browser storage and offers explicit idempotent recovery; it never automatically retries acceptance.
 
 Select a correlation ID or follow the newest checkout. Include other requests to inspect ordinary HTTP activity. Eleven checkout milestones cover request receipt, transactional acceptance, server response, confirmed accepted-event publication, consumer receipt, job commit, attempt start, terminal processing commit, confirmed outcome publication, outcome receipt and final order commit. A rejected checkout only has HTTP milestones. A failed order can reach full observation coverage: the failure and stock compensation are successful observations of a failed business outcome.

@@ -3,6 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { safeObservation as sanitize } from '@lab/contracts';
+/** Bound diagnostic payloads and redact credential-shaped fields.
+ * Input: value, from owner diagnostic data or a requested retained window.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export const safeObservation = (value: unknown) => sanitize(value, 0, secrets);
 import { projectRoot } from './configuration';
 export type Trace = {
@@ -12,14 +16,23 @@ export type Trace = {
   eventId?: string;
   orderId?: string;
   causationId?: string;
+  submissionReference?: string;
 };
 export const trace = new AsyncLocalStorage<Trace>();
 const logDir = path.join(projectRoot(), '.lab/logs');
 let secrets: string[] = [];
 let writeFailureReported = false;
+/** Register configured credential strings for diagnostic redaction.
+ * Input: values, from owner diagnostic data or a requested retained window.
+ * Communicates with bounded local activity files; no business writes.
+ */
 export function redactValues(values: string[]) {
   secrets = values.filter((x) => x.length >= 4);
 }
+/** Append bounded structured owner activity without changing transaction semantics.
+ * Input: owner, type, data, from owner diagnostic data or a requested retained window.
+ * Communicates with bounded local activity files; no business writes.
+ */
 export function activity(owner: string, type: string, data: Record<string, unknown> = {}) {
   try {
     fs.mkdirSync(logDir, { recursive: true });
@@ -54,6 +67,10 @@ export function activity(owner: string, type: string, data: Record<string, unkno
     writeFailureReported = true;
   }
 }
+/** Delete activity files outside the host retention/size budget.
+ * Input: no arguments; uses its current owner state, from owner diagnostic data or a requested retained window.
+ * Communicates with bounded local activity files; no business writes.
+ */
 export function pruneLogs() {
   if (!fs.existsSync(logDir)) return;
   const files = fs
@@ -68,7 +85,10 @@ export function pruneLogs() {
       size -= file.s.size;
     }
 }
-/** Bounded recent observations, not an exhaustive audit ledger. */
+/** Bounded recent observations, not an exhaustive audit ledger.
+ * Input: owner, correlationId, from owner diagnostic data or a requested retained window.
+ * Communicates with bounded local activity files; no business writes.
+ */
 export function readActivity(owner: string, correlationId?: string) {
   if (!fs.existsSync(logDir)) return [];
   return fs

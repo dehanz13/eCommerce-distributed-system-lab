@@ -1,6 +1,9 @@
 import { cfg, readActivity } from '@lab/runtime';
 import { validateReply } from '@lab/contracts';
-/** Collect bounded observations without making unavailable producers appear silent or healthy. */
+/** Collect bounded observations without making unavailable producers appear silent or healthy.
+ * Input: correlationId, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function collectActivity(correlationId?: string) {
   const sources = await Promise.all(
     Object.entries({

@@ -17,6 +17,10 @@ try {
 } catch {
   current = null;
 }
+/** Atomically persist the current bounded operator workload state.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 function save() {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = file + '.tmp';
@@ -43,7 +47,15 @@ export const explanations: Record<ExperimentOptions['scenario'], string> = {
   'failed-processing':
     'New jobs exhaust three processing attempts. Ordering marks failed and releases stock once.',
 };
+/** Sample owner/dependency state before or after an experiment.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function snapshot() {
+  /** Load the next owner-managed observation or record.
+   * Input: url, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   const read = async (url: string) => {
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(2500) });
@@ -60,6 +72,10 @@ async function snapshot() {
     cache: await read(cfg.ORDERING_URL + '/api/v1/cache'),
   };
 }
+/** Apply a bounded named Toxiproxy operation.
+ * Input: path, method, body, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function proxy(path: string, method: string, body?: unknown) {
   const result = await fetch(cfg.TOXIPROXY_URL + '/proxies/lab-rabbitmq' + path, {
     method,
@@ -71,8 +87,20 @@ async function proxy(path: string, method: string, body?: unknown) {
     throw new Error('Lab network proxy unavailable: ' + result.status);
 }
 export const experiments = {
+  /** Report whether the owner’s current workload prevents conflicting controls.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with the module’s current local snapshot only; no new network or storage operation.
+   */
   busy: () => current?.status === 'running',
+  /** Return the current local snapshot without starting new work.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with the module’s current local snapshot only; no new network or storage operation.
+   */
   inspect: () => current,
+  /** Restore only lab-owned settings/dependencies after an experiment.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   async restore() {
     // Explicit recovery is also safe after an interrupted operator: only named lab targets.
     await proxy('', 'POST', { enabled: true });
@@ -86,6 +114,10 @@ export const experiments = {
       save();
     }
   },
+  /** Persist and begin a bounded explicitly requested learning workload.
+   * Input: options, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   start(options: ExperimentOptions) {
     if (experiments.busy())
       throw new Problem(409, 'EXPERIMENT_RUNNING', 'Wait for the active exercise');
@@ -107,6 +139,10 @@ export const experiments = {
     return run;
   },
 };
+/** Run one scoped failure exercise and record restoration evidence.
+ * Input: run, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function perform(run: ExperimentRun) {
   let restore: (() => Promise<void>) | undefined;
   try {

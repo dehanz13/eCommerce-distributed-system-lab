@@ -65,7 +65,8 @@
                           "route": { "type": "string" },
                           "status": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
                           "outcome": { "type": "string" },
-                          "key": { "type": "string" }
+                          "key": { "type": "string" },
+                          "submissionReference": { "pattern": "^[a-f0-9]{64}$", "type": "string" }
                         },
                         "required": ["id", "owner", "type", "occurredAt"]
                       }

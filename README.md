@@ -8,6 +8,8 @@ A local monorepo with four applications: web, ordering, fulfillment and operator
 
 ## Start
 
+To run web on one machine and foreground APIs on another, use [independent development, terminal logs and cleanup](docs/independent-development.md). The web-only configuration contains HTTP origins, without backend credentials.
+
 Install the Node version in `.nvmrc`, pnpm 10.21.0 and Docker with Compose. Native lifecycle checks use lsof on macOS and ss from iproute2 on Linux. Run these commands from the repository root:
 
 ```sh
@@ -28,9 +30,15 @@ The root `.env` is the editable configuration source. Missing or invalid require
 
 The dashboard provides Overview, Architecture, Cache, Shoppers, Failure Lab, Records, Timeline, Metrics and Controls. Architecture follows recorded activity with two-second polling. Its progress indicates observed milestones, not network transit time or completion percentages for real processing work.
 
+The independent [backend architecture console](docs/backend-console.md) is served by the operator at `/architecture` (default port 4313), with zoom, system selection, live observations and filtered logs. It remains available when the shopper web app is stopped.
+
 `./lab stop` stops the managed services while leaving the operator available. `./lab reset` erases and reseeds managed lab data. Follow the [shutdown and cleanup runbook](docs/shutdown-and-cleanup.md) to stop the remaining operator, preserve or delete volumes, remove generated files and stop a dedicated guest. Run `./lab monitor` for local btop, `./lab monitor remote-host` for the remote physical host, or `./lab monitor lab-vm` for its configured guest.
 
 ## Documentation
+
+For module replacement and end-to-end checkout identity, read [replacement seams and key references](docs/replacing-systems.md).
+
+For future adoption and payments, read [reusable ecommerce API direction](docs/reusable-ecommerce-api.md). For changing persisted data and transport contracts, follow [the schema-change runbook](docs/schema-change-guide.md).
 
 Start with the [step-by-step learning path](docs/learning-path.md). Keep the [complete command reference](docs/command-reference.md) alongside it, and use the [capacity guide](docs/resource-capacity.md) for CPU, memory, disk and shopper-traffic parameters. [Editable Excalidraw scenes and SVG diagrams](docs/diagrams/README.md) show the whole ecosystem, each data path and the dedicated guest.
 

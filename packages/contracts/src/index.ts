@@ -4,6 +4,7 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { FeederRunSchema, ExperimentRunSchema, CacheSchema } from './experiments';
 export const Id = Type.String({ format: 'uuid' });
+export const SubmissionReference = Type.String({ pattern: '^[a-f0-9]{64}$' });
 export const Time = Type.String({ format: 'date-time' });
 export const Preset = Type.Union([
   Type.Literal('success'),
@@ -49,6 +50,7 @@ const eventMetadata = {
   occurredAt: Time,
   correlationId: Id,
   causationId: Id,
+  submissionReference: Type.Optional(SubmissionReference),
 };
 export const Event = Type.Union([
   Type.Object(
@@ -87,6 +89,10 @@ export type DomainEvent = Static<typeof Event>;
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
 const validateEvent = ajv.compile(Event);
+/** Validate an external envelope before owner processing.
+ * Input: value, from the external event envelope before consumer work.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function parseEvent(value: unknown): DomainEvent {
   if (!validateEvent(value)) throw new Error('INVALID_EVENT');
   return value as DomainEvent;
@@ -156,6 +162,7 @@ export interface Order {
   fulfilledAt: string | null;
   failedAt: string | null;
   correlationId: string;
+  submissionReference?: string | null;
   items: OrderItem[];
 }
 const nullableTime = Type.Union([Time, Type.Null()]);
@@ -199,6 +206,7 @@ export const OrderSchema = Type.Object({
   status: Type.Union([Type.Literal('accepted'), Type.Literal('fulfilled'), Type.Literal('failed')]),
   totalCents: Type.Integer({ minimum: 0 }),
   correlationId: Id,
+  submissionReference: Type.Optional(Type.Union([SubmissionReference, Type.Null()])),
   fulfilledAt: nullableTime,
   failedAt: nullableTime,
   items: Type.Array(
@@ -222,6 +230,7 @@ export const ActivitySchema = Type.Object(
     type: Type.String(),
     occurredAt: Time,
     correlationId: Type.Optional(Id),
+    submissionReference: Type.Optional(SubmissionReference),
     requestId: Type.Optional(Id),
     eventId: Type.Optional(Id),
     eventType: Type.Optional(Type.String()),
@@ -257,13 +266,34 @@ export const ActivityCollectionSchema = Type.Object({
   records: Type.Array(ActivitySchema),
 });
 export type ActivityCollection = Static<typeof ActivityCollectionSchema>;
+export const BackendConsoleSnapshot = Type.Object({
+  sampledAt: Time,
+  topology: Type.Union([Type.Literal('single'), Type.Literal('two')]),
+  scope: Type.String(),
+  host: Type.Record(Type.String(), Type.Unknown()),
+  samples: Type.Array(
+    Type.Object({
+      id: Type.String(),
+      available: Type.Boolean(),
+      sampledAt: Time,
+      data: Type.Unknown(),
+      error: Type.Union([Type.String(), Type.Null()]),
+    }),
+  ),
+  activity: ActivityCollectionSchema,
+});
+/** Select the executable response contract for an HTTP route and method.
+ * Input: path, method, from the server/client’s route and HTTP method.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function httpSchema(path: string, method: string) {
   let data: TSchema = Type.Unknown();
   const route = (path.split('?')[0] ?? path).replace(
     /^\/(operator|ordering|fulfillment)(?=\/)/,
     '',
   );
-  if (route === '/api/v1/resources') data = Type.Union([CleanupReportSchema, Type.Null()]);
+  if (route === '/api/v1/backend') data = BackendConsoleSnapshot;
+  else if (route === '/api/v1/resources') data = Type.Union([CleanupReportSchema, Type.Null()]);
   else if (route === '/api/v1/actions')
     data = method === 'GET' ? Type.Array(ActionSchema) : ActionSchema;
   else if (route.startsWith('/api/v1/actions/')) data = ActionSchema;
@@ -297,6 +327,10 @@ export function httpSchema(path: string, method: string) {
   });
 }
 const validators = new Map<string, ReturnType<typeof ajv.compile>>();
+/** Reject HTTP data that does not match the shared runtime contract.
+ * Input: path, method, value, from an HTTP response received by the shared fetch client.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function validateReply(path: string, method: string, value: unknown) {
   const key = method + ' ' + path.split('?')[0];
   let check = validators.get(key);

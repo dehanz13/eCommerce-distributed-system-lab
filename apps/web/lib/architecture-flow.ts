@@ -161,17 +161,29 @@ export const nextPieces = [
     why: 'Receive a file, validate rows, checkpoint processing and quarantine bad input.',
   },
 ];
+/** Accept only an object-shaped observation.
+ * Input: value, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function object(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
 }
+/** Extract object records from an observation array.
+ * Input: value, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function records(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value)
     ? value.filter((x) => x !== null && typeof x === 'object' && !Array.isArray(x))
     : [];
 }
 // Last-known data remains inspectable, but cannot establish present health.
+/** Classify an observation by sample age, errors and refresh state.
+ * Input: sample, now, polling, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function isStale(sample: Observation | undefined, now: number, polling: boolean) {
   return (
     !polling ||
@@ -180,6 +192,10 @@ export function isStale(sample: Observation | undefined, now: number, polling: b
     !Number.isFinite(Date.parse(sample.at))
   );
 }
+/** Interpret sampled owner/dependency health without inventing availability.
+ * Input: id, samples, now, polling, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function pieceHealth(
   id: PieceId,
   samples: Observations,
@@ -222,6 +238,10 @@ export function pieceHealth(
   return 'ready';
 }
 const diagnosticRoutes = /^\/api\/v1\/(system|status|host|broker|actions)$/;
+/** Collect and deduplicate retained owner observations.
+ * Input: samples, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function observedActivity(samples: Observations): ActivityRecord[] {
   const unique = new Map<string, ActivityRecord>();
   for (const key of ['orderingLogs', 'fulfillmentLogs', 'operatorLogs']) {
@@ -241,21 +261,44 @@ export function observedActivity(samples: Observations): ActivityRecord[] {
 }
 export type Journey = {
   id: string;
+  submissionReference?: string;
+  correlationIds: string[];
   checkout: boolean;
   label: string;
   logs: ActivityRecord[];
   lastAt: string;
 };
+/** Group recorded activity by scoped submission identity and unambiguous correlations.
+ * Input: activity, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function journeys(activity: ActivityRecord[]): Journey[] {
+  const references = new Map<string, Set<string>>();
+  for (const item of activity) {
+    if (!item.correlationId || !item.submissionReference) continue;
+    const found = references.get(item.correlationId) ?? new Set<string>();
+    found.add(item.submissionReference);
+    references.set(item.correlationId, found);
+  }
   const groups = new Map<string, ActivityRecord[]>();
   for (const item of activity) {
     if (!item.correlationId) continue;
-    const group = groups.get(item.correlationId) ?? [];
+    const candidates = references.get(item.correlationId);
+    const reference =
+      item.submissionReference ?? (candidates?.size === 1 ? [...candidates][0] : undefined);
+    const key = reference ? 'submission:' + reference : 'correlation:' + item.correlationId;
+    const group = groups.get(key) ?? [];
     group.push(item);
-    groups.set(item.correlationId, group);
+    groups.set(key, group);
   }
   return [...groups]
-    .map(([id, logs]) => {
+    .map(([, grouped]) => {
+      const logs = [...grouped].sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
+      const correlationIds = [
+        ...new Set(logs.flatMap((x) => (x.correlationId ? [x.correlationId] : []))),
+      ];
+      const submissionReference = logs.find((x) => x.submissionReference)?.submissionReference;
+      const id = submissionReference ?? correlationIds[0]!;
       const checkout = logs.some(
         (x) =>
           x.type.startsWith('checkout.') ||
@@ -268,6 +311,8 @@ export function journeys(activity: ActivityRecord[]): Journey[] {
         logs.find((x) => x.type === 'http.completed');
       return {
         id,
+        correlationIds,
+        submissionReference,
         checkout,
         logs,
         label: checkout
@@ -285,8 +330,15 @@ export type Hop = {
   edge: string;
   observation?: ActivityRecord;
 };
-/** Only explicit observations establish a milestone. Missing logs never imply failure or success. */
+/** Only explicit observations establish a milestone. Missing logs never imply failure or success.
+ * Input: journey, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function journeyHops(journey: Journey): Hop[] {
+  /** Find the first observed milestone matching the local predicate.
+   * Input: predicate, from the selected journey’s retained observations.
+   * Communicates with local computation/presentation only; no direct network or database calls.
+   */
   const find = (predicate: (item: ActivityRecord) => boolean) => journey.logs.find(predicate);
   const received = find(
     (x) => x.type === 'http.received' && (!journey.checkout || x.route === '/api/v1/checkouts'),
@@ -411,6 +463,10 @@ export function journeyHops(journey: Journey): Hop[] {
     },
   ];
 }
+/** Describe an observed business or HTTP outcome without inferring missing completion.
+ * Input: journey, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function journeyOutcome(journey: Journey) {
   const terminal = journey.logs.find((x) => x.type === 'outcome.applied');
   if (terminal)
@@ -423,6 +479,10 @@ export function journeyOutcome(journey: Journey) {
     return `HTTP ${response.status} · request rejected`;
   return journey.checkout ? 'Awaiting observed outcome' : 'HTTP activity';
 }
+/** Map one observed operation to its diagram connection.
+ * Input: item, from polled owner/operator observations supplied by the dashboard.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function activityEdge(item: ActivityRecord) {
   if (item.type.startsWith('cache.'))
     return item.type === 'cache.database' ? 'ordering-write' : 'cache';

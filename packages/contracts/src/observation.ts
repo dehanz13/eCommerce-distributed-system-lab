@@ -1,4 +1,7 @@
-/** Keep fictional business payloads useful, while bounding records and removing credentials. */
+/** Keep fictional business payloads useful, while bounding records and removing credentials.
+ * Input: value, depth, secrets, from external envelopes/responses or caller-selected schemas.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function safeObservation(value: unknown, depth = 0, secrets: string[] = []): unknown {
   if (depth > 8) return '[depth limit]';
   if (typeof value === 'string') {

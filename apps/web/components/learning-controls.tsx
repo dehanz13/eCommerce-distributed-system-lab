@@ -6,6 +6,10 @@ import type { Observations } from '../lib/architecture-flow';
 import { observedActivity, isStale } from '../lib/architecture-flow';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+/** Render sampled state with explicit source and timing.
+ * Input: props, from React props, current browser state and explicit user actions.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function Snapshot({ title, value }: { title: string; value: unknown }) {
   return (
     <details className="learning-card">
@@ -14,6 +18,10 @@ function Snapshot({ title, value }: { title: string; value: unknown }) {
     </details>
   );
 }
+/** Present bounded cache, shopper and failure exercises through their owner contracts.
+ * Input: props, from React props, current browser state and explicit user actions.
+ * Communicates with owner HTTP contracts through the shared client; never owner databases.
+ */
 export function LearningControls({
   mode,
   samples,
@@ -50,6 +58,10 @@ export function LearningControls({
         ttlSeconds?: number;
       }
     | undefined;
+  /** Run an explicit learning control and retain its observed outcome.
+   * Input: work, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   async function act(work: () => Promise<unknown>) {
     setBusy(true);
     setMessage('');
@@ -63,6 +75,10 @@ export function LearningControls({
       setBusy(false);
     }
   }
+  /** Submit a JSON learning action to its named owner endpoint.
+   * Input: path, body, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   const post = (path: string, body?: unknown) =>
     request(path, { method: 'POST', ...(body ? { body: JSON.stringify(body) } : {}) });
   return (
