@@ -1,5 +1,7 @@
 # Architecture dashboard
 
+This guide describes the shopper application’s learning map. The [independent backend console](backend-console.md) is the complete backend-focused view: both owner databases, Toxiproxy, the actual RabbitMQ bus/queues, live sampled health, colored ordered-hop replay and log inspection. It runs at the backend Operator API origin plus `/architecture`, separately from shopper web. All static architecture references are available as [eight colored Excalidraw drawings](diagrams/README.md).
+
 Open System Dashboard and select Architecture. The map shows the four applications, RabbitMQ, the Redis catalog cache and both privately owned PostgreSQL databases. Select a piece to inspect its purpose, technology and guarantees. Blue transport motion highlights newly observed hops. Service state is sampled by the operator, not inferred from animation. A missing owner makes its database health unknown; cached observations become stale after ten seconds or when refresh is paused.
 
 The dashboard polls every two seconds. It is a live activity visualizer, not distributed tracing or a network-transit measurement. Pausing refresh preserves inspectable data and marks it stale. Operating-system resource measurements remain in Metrics and btop. Single/two-machine topology comes from the operator configuration; the second machine is not automatically discovered.

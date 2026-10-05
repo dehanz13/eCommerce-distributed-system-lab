@@ -1,5 +1,7 @@
 # Resource capacity: configure, measure, compare
 
+Current split: measure shopper web on the client, the three native APIs on the backend macOS host, and dependencies inside its dedicated guest. Run backend lifecycle controls from that backend checkout (`TOPOLOGY=single` plus `REMOTE_VM=ecommerce-lab`). The remote fulfillment container/profile below describes the original remote-Compose alternative; it is stopped in the current native-API deployment. Guest Compose always uses its private `.lab/remote.env` projection; `single` without a guest uses root `.env` on its selected Docker engine. For current startup and btop/log commands see [independent development](independent-development.md).
+
 Capacity is a constraint, not a measurement. The dedicated guest template assigns **4 CPUs, 4 GiB RAM and a 40 GiB sparse disk limit**. Compose currently caps PostgreSQL at 1 GiB, RabbitMQ at 768 MiB, Redis at 128 MiB, Toxiproxy at 64 MiB and remote fulfillment at 512 MiB. Native processes, Docker/guest overhead, builds and browser tooling add usage. These limits do not establish a peak footprint or guarantee the eight-GB target.
 
 ## 1. Capture a baseline before changing anything

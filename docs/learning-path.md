@@ -1,6 +1,6 @@
 # Learning path: follow one order through the lab
 
-Work from the repository root on the **application host** unless a step names another host. Commands use default URLs from `.env.example`; substitute your configured origin if different. Data is fictional. The [command reference](command-reference.md) lists every shipped launcher, script and package command, REST capability, parameters and inspection endpoints. The [capacity guide](resource-capacity.md) covers CPU, memory, disk and traffic limits. Keep both open alongside the dashboard.
+For the current split, run backend controls and inspection commands from the **backend host** checkout; run shopper web on the client host. The original controller-host alternative remains supported. Commands use default URLs from `.env.example`; substitute your configured origin if different. Data is fictional. The [command reference](command-reference.md) lists every shipped launcher, script and package command, REST capability, parameters and inspection endpoints. The [capacity guide](resource-capacity.md) covers CPU, memory, disk and traffic limits. Keep both open alongside the dashboard.
 
 ## 1. Establish a reproducible starting point
 
@@ -251,7 +251,7 @@ Work from the repository root on the **application host** unless a step names an
 
 ## 8. Move to the dedicated guest and adjust capacity
 
-Follow [remote guest setup](remote-lab-vm.md), then [capacity controls](resource-capacity.md). Stop the old topology before changing `.env`. Moving hosts recreates and reseeds the lab; there is no migration routine. The [deployment diagram](diagrams/README.md) distinguishes the macOS host, Linux guest, Docker network, owner databases, proxy and host-forwarded ports.
+Follow [remote guest setup](remote-lab-vm.md), then [capacity controls](resource-capacity.md). Stop the old topology before changing `.env`. Moving API processes preserves the same owner databases and volumes. Moving to a different SQL server needs an explicit backup/migration plan. The [deployment diagram](diagrams/README.md) distinguishes the macOS host, Linux guest, Docker network, owner databases, proxy and host-forwarded ports.
 
 ## 9. Verify what you learned
 

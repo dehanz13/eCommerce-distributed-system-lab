@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
+import type { Product } from '@lab/contracts';
 
 // Transport fixtures exercise an independently running web process while ordering is unavailable, then recovers.
 test('shop remains usable and shows a calm warning until ordering reads recover', async ({
@@ -33,9 +34,10 @@ test('shop remains usable and shows a calm warning until ordering reads recover'
                 priceCents: 200,
                 availableStock: 2,
                 active: true,
+                deactivatedAt: null,
                 createdAt: at,
                 updatedAt: at,
-              },
+              } satisfies Product,
             ]
           : [];
     await route.fulfill({
