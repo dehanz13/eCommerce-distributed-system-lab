@@ -52,7 +52,12 @@
                           "owner": { "type": "string" },
                           "type": { "type": "string" },
                           "occurredAt": { "format": "date-time", "type": "string" },
+                          "streamId": { "format": "uuid", "type": "string" },
+                          "sequence": { "minimum": 1, "type": "integer" },
+                          "publicationId": { "format": "uuid", "type": "string" },
+                          "deliveryId": { "format": "uuid", "type": "string" },
                           "correlationId": { "format": "uuid", "type": "string" },
+                          "submissionReference": { "pattern": "^[a-f0-9]{64}$", "type": "string" },
                           "requestId": { "format": "uuid", "type": "string" },
                           "eventId": { "format": "uuid", "type": "string" },
                           "eventType": { "type": "string" },
@@ -65,8 +70,7 @@
                           "route": { "type": "string" },
                           "status": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
                           "outcome": { "type": "string" },
-                          "key": { "type": "string" },
-                          "submissionReference": { "pattern": "^[a-f0-9]{64}$", "type": "string" }
+                          "key": { "type": "string" }
                         },
                         "required": ["id", "owner", "type", "occurredAt"]
                       }
@@ -143,7 +147,15 @@
                                     "owner": { "type": "string" },
                                     "type": { "type": "string" },
                                     "occurredAt": { "format": "date-time", "type": "string" },
+                                    "streamId": { "format": "uuid", "type": "string" },
+                                    "sequence": { "minimum": 1, "type": "integer" },
+                                    "publicationId": { "format": "uuid", "type": "string" },
+                                    "deliveryId": { "format": "uuid", "type": "string" },
                                     "correlationId": { "format": "uuid", "type": "string" },
+                                    "submissionReference": {
+                                      "pattern": "^[a-f0-9]{64}$",
+                                      "type": "string"
+                                    },
                                     "requestId": { "format": "uuid", "type": "string" },
                                     "eventId": { "format": "uuid", "type": "string" },
                                     "eventType": { "type": "string" },
@@ -158,11 +170,7 @@
                                       "anyOf": [{ "type": "integer" }, { "type": "string" }]
                                     },
                                     "outcome": { "type": "string" },
-                                    "key": { "type": "string" },
-                                    "submissionReference": {
-                                      "pattern": "^[a-f0-9]{64}$",
-                                      "type": "string"
-                                    }
+                                    "key": { "type": "string" }
                                   },
                                   "required": ["id", "owner", "type", "occurredAt"]
                                 }
@@ -182,7 +190,15 @@
                               "owner": { "type": "string" },
                               "type": { "type": "string" },
                               "occurredAt": { "format": "date-time", "type": "string" },
+                              "streamId": { "format": "uuid", "type": "string" },
+                              "sequence": { "minimum": 1, "type": "integer" },
+                              "publicationId": { "format": "uuid", "type": "string" },
+                              "deliveryId": { "format": "uuid", "type": "string" },
                               "correlationId": { "format": "uuid", "type": "string" },
+                              "submissionReference": {
+                                "pattern": "^[a-f0-9]{64}$",
+                                "type": "string"
+                              },
                               "requestId": { "format": "uuid", "type": "string" },
                               "eventId": { "format": "uuid", "type": "string" },
                               "eventType": { "type": "string" },
@@ -195,11 +211,7 @@
                               "route": { "type": "string" },
                               "status": { "anyOf": [{ "type": "integer" }, { "type": "string" }] },
                               "outcome": { "type": "string" },
-                              "key": { "type": "string" },
-                              "submissionReference": {
-                                "pattern": "^[a-f0-9]{64}$",
-                                "type": "string"
-                              }
+                              "key": { "type": "string" }
                             },
                             "required": ["id", "owner", "type", "occurredAt"]
                           }
@@ -1973,6 +1985,10 @@
                                         "owner": { "type": "string" },
                                         "type": { "type": "string" },
                                         "occurredAt": { "format": "date-time", "type": "string" },
+                                        "streamId": { "format": "uuid", "type": "string" },
+                                        "sequence": { "minimum": 1, "type": "integer" },
+                                        "publicationId": { "format": "uuid", "type": "string" },
+                                        "deliveryId": { "format": "uuid", "type": "string" },
                                         "correlationId": { "format": "uuid", "type": "string" },
                                         "submissionReference": {
                                           "pattern": "^[a-f0-9]{64}$",
@@ -2012,6 +2028,10 @@
                                   "owner": { "type": "string" },
                                   "type": { "type": "string" },
                                   "occurredAt": { "format": "date-time", "type": "string" },
+                                  "streamId": { "format": "uuid", "type": "string" },
+                                  "sequence": { "minimum": 1, "type": "integer" },
+                                  "publicationId": { "format": "uuid", "type": "string" },
+                                  "deliveryId": { "format": "uuid", "type": "string" },
                                   "correlationId": { "format": "uuid", "type": "string" },
                                   "submissionReference": {
                                     "pattern": "^[a-f0-9]{64}$",

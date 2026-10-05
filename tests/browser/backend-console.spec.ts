@@ -70,10 +70,13 @@ test('does not replay a quiet owner when another owner replaces its retained win
   ).toEqual([quiet.id]);
 });
 
-test('replays early processing before a later republish and duplicate delivery', async ({
+test('replays same-millisecond processing before a later republish and duplicate delivery', async ({
   page,
 }) => {
   const eventId = randomUUID();
+  const publicationIds = [randomUUID(), randomUUID()];
+  const deliveryIds = [randomUUID(), randomUUID()];
+  const streams = { ordering: randomUUID(), fulfillment: randomUUID() };
   const start = Date.now() - 100;
   const records = (
     [
@@ -89,9 +92,13 @@ test('replays early processing before a later republish and duplicate delivery',
     owner,
     type,
     eventId,
+    streamId: streams[owner as keyof typeof streams],
+    sequence: [1, 1, 2, 2, 3, 4][index],
+    publicationId: publicationIds[index < 3 ? 0 : 1],
+    deliveryId: owner === 'fulfillment' ? deliveryIds[index < 3 ? 0 : 1] : undefined,
     eventType: 'order.accepted',
     destinationQueue: 'lab.accepted',
-    occurredAt: new Date(start + index).toISOString(),
+    occurredAt: new Date(start).toISOString(),
   }));
   await page.route('**/api/v1/backend', (route) =>
     route.fulfill({

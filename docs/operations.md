@@ -40,6 +40,8 @@ Run btop on each physical host and inside the Linux guest to distinguish host pr
 
 Structured owner activity is retained locally for seven days and capped at 100 MiB across the host's .lab/logs files. The activity endpoint returns a bounded recent window; archived days remain local files until pruning. Startup stdout/stderr files are diagnostic process output, separate from the bounded structured activity stream. Reset clears owned lab data and logs while retaining machine setup and canonical configuration.
 
+For tied timestamps, inspect `streamId` and `sequence`: one process generates increasing local positions, and a restart creates a different stream. Follow `publicationId` from `event.publishing` to its broker receipt, then `deliveryId` through consumer processing and acknowledgment/deferment. Retries retain the durable `eventId` but receive a new publication identity; broker redelivery gets a new delivery identity. These are diagnostics, not idempotency keys or globally comparable clocks. Missing legacy metadata remains unavailable evidence.
+
 If a checkout is ambiguous, use Recover submission rather than creating another key. For conflicts, preview again. During a dependency outage inspect readiness and pending outbox work; do not count connectivity retries as processing attempts. Following an unexpected crash, explicitly request restart. Inspect action failure details before repeating reset/restart operations.
 
 ## Verification commands

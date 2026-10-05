@@ -46,6 +46,38 @@ app.post('/api/v1/actions', { schema: { body: ActionInput } }, (req) =>
   }),
 );
 afterAll(() => app.close());
+it('validates optional causal observation metadata while accepting retained legacy activity', () => {
+  const record = {
+    id: randomUUID(),
+    owner: 'ordering',
+    type: 'event.received',
+    occurredAt: new Date().toISOString(),
+  };
+  const meta = {
+    requestId: randomUUID(),
+    correlationId: randomUUID(),
+    respondedAt: record.occurredAt,
+  };
+  expect(() => validateReply('/activity', 'GET', { data: [record], meta })).not.toThrow();
+  const metadata = {
+    streamId: randomUUID(),
+    sequence: 1,
+    publicationId: randomUUID(),
+    deliveryId: randomUUID(),
+  };
+  expect(() =>
+    validateReply('/activity', 'GET', { data: [{ ...record, ...metadata }], meta }),
+  ).not.toThrow();
+  for (const invalid of [
+    { sequence: 0 },
+    { streamId: 'invalid' },
+    { publicationId: 'invalid' },
+    { deliveryId: 'invalid' },
+  ])
+    expect(() =>
+      validateReply('/activity', 'GET', { data: [{ ...record, ...metadata, ...invalid }], meta }),
+    ).toThrow();
+});
 it('serializes a product response matching the shared runtime contract', async () => {
   const correlationId = randomUUID();
   const result = await app.inject({

@@ -14,6 +14,8 @@ export type Trace = {
   correlationId?: string;
   requestId?: string;
   eventId?: string;
+  publicationId?: string;
+  deliveryId?: string;
   orderId?: string;
   causationId?: string;
   submissionReference?: string;
@@ -22,6 +24,8 @@ export const trace = new AsyncLocalStorage<Trace>();
 const logDir = path.join(projectRoot(), '.lab/logs');
 let secrets: string[] = [];
 let writeFailureReported = false;
+const streamId = randomUUID();
+let sequence = 0;
 /** Register configured credential strings for diagnostic redaction.
  * Input: values, from owner diagnostic data or a requested retained window.
  * Communicates with bounded local activity files; no business writes.
@@ -30,7 +34,7 @@ export function redactValues(values: string[]) {
   secrets = values.filter((x) => x.length >= 4);
 }
 /** Append bounded structured owner activity without changing transaction semantics.
- * Input: owner, type, data, from owner diagnostic data or a requested retained window.
+ * Input: owner, type, data from owner diagnostics; this writer supplies its process stream, sequence, ID and UTC time.
  * Communicates with bounded local activity files; no business writes.
  */
 export function activity(owner: string, type: string, data: Record<string, unknown> = {}) {
@@ -54,6 +58,8 @@ export function activity(owner: string, type: string, data: Record<string, unkno
         owner,
         type,
         occurredAt,
+        streamId,
+        sequence: ++sequence,
       }) + '\n',
     );
     pruneLogs();

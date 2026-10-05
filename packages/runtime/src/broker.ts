@@ -1,6 +1,7 @@
 import { telemetry } from './telemetry';
 import amqp from 'amqplib';
 import type pg from 'pg';
+import { randomUUID } from 'node:crypto';
 import { parseEvent, type DomainEvent } from '@lab/contracts';
 import { cfg, activity, trace } from './index';
 import type { EventDelivery } from './events';
@@ -86,6 +87,14 @@ export function broker(
             }
             return;
           }
+          // Transport attempt identity is optional for legacy senders; never trust a malformed header.
+          const header = msg.properties.headers?.publicationId;
+          const publicationId =
+            typeof header === 'string' &&
+            /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(header)
+              ? header
+              : undefined;
+          const deliveryId = randomUUID();
           try {
             activity(owner, 'event.received', {
               eventId: e.id,
@@ -94,6 +103,8 @@ export function broker(
               correlationId: e.correlationId,
               submissionReference: e.submissionReference,
               causationId: e.causationId,
+              publicationId,
+              deliveryId,
               input: e,
             });
             await trace.run(
@@ -104,11 +115,15 @@ export function broker(
                 correlationId: e.correlationId,
                 submissionReference: e.submissionReference,
                 causationId: e.causationId,
+                publicationId,
+                deliveryId,
               },
               () => consume(e),
             );
             ch.ack(msg);
             activity(owner, 'event.acknowledged', {
+              publicationId,
+              deliveryId,
               eventId: e.id,
               eventType: e.type,
               orderId: e.data.orderId,
@@ -118,6 +133,8 @@ export function broker(
           } catch (err) {
             measurements.consumption.inc({ outcome: 'deferred' });
             activity(owner, 'event.deferred', {
+              publicationId,
+              deliveryId,
               eventId: e.id,
               correlationId: e.correlationId,
               submissionReference: e.submissionReference,
@@ -176,7 +193,9 @@ export function broker(
         const ch = channel;
         if (!ch) break;
         const q = e.type === 'order.accepted' ? queues.fulfillment : queues.ordering;
+        const publicationId = randomUUID();
         activity(owner, 'event.publishing', {
+          publicationId,
           eventId: e.id,
           correlationId: e.correlationId,
           submissionReference: e.submissionReference,
@@ -199,7 +218,7 @@ export function broker(
           ch.sendToQueue(
             q,
             Buffer.from(JSON.stringify(e)),
-            { persistent: true, mandatory: true, messageId: e.id },
+            { persistent: true, mandatory: true, messageId: e.id, headers: { publicationId } },
             (err) => {
               ch.removeListener('return', onReturn);
               if (err || returned) reject(err ?? new Error('UNROUTABLE_EVENT'));
@@ -210,6 +229,7 @@ export function broker(
         await p.query('UPDATE outbox SET published_at=now() WHERE id=$1', [e.id]);
         measurements.publication.inc({ outcome: 'confirmed' });
         activity(owner, 'event.published', {
+          publicationId,
           eventId: e.id,
           correlationId: e.correlationId,
           submissionReference: e.submissionReference,

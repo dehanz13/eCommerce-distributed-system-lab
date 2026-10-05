@@ -5,5 +5,9 @@ export function orderedActivity<
     owner: string;
     type: string;
     occurredAt: string;
+    streamId?: string;
+    sequence?: number;
+    publicationId?: string;
+    deliveryId?: string;
   },
 >(records: T[]): T[];

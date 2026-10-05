@@ -10,6 +10,22 @@ app.post('/api/v1/checkouts', () => {
 });
 app.get('/health', (req) => response(req, { ready: true }));
 afterAll(() => app.close());
+it('records an authoritative process stream and sequence when timestamps tie', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-10-05T00:00:00Z'));
+  try {
+    activity('sequence-fixture', 'fixture.first', { streamId: 'caller-value', sequence: 0 });
+    activity('sequence-fixture', 'fixture.second', { streamId: 'caller-value', sequence: 0 });
+    const [second, first] = readActivity('sequence-fixture');
+    expect(second?.occurredAt).toBe(first?.occurredAt);
+    expect(first?.streamId).toMatch(/^[a-f0-9-]{36}$/i);
+    expect(second?.streamId).toBe(first?.streamId);
+    expect(Number(first?.sequence)).toBeGreaterThan(0);
+    expect(Number(second?.sequence)).toBeGreaterThan(Number(first?.sequence));
+  } finally {
+    vi.useRealTimers();
+  }
+});
 it('records input, processing and output with one trace and redacts nested credentials', async () => {
   const correlationId = randomUUID();
   await app.inject({
