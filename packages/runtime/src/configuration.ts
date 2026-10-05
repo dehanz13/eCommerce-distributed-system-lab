@@ -155,7 +155,15 @@ export function loadConfiguration(file = path.join(projectRoot(), '.env')) {
 export function loadWebConfiguration(folder = projectRoot()) {
   const dedicated = path.join(folder, '.env.web');
   const file = fs.existsSync(dedicated) ? dedicated : path.join(folder, '.env');
-  const input = dotenv.parse(fs.readFileSync(file, 'utf8'));
+  let contents: string;
+  try {
+    contents = fs.readFileSync(file, 'utf8');
+  } catch {
+    throw new Error(
+      '[configuration] Web configuration is missing or unreadable. Create .env.web from .env.web.example (or check .env); values omitted.',
+    );
+  }
+  const input = dotenv.parse(contents);
   const values: Record<string, string> = {};
   for (const key of ['ORDERING_URL', 'FULFILLMENT_URL', 'OPERATOR_URL'] as const) {
     try {

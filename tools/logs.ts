@@ -1,4 +1,5 @@
 import { readActivity, safeObservation } from '@lab/runtime/observation';
+import { orderedActivity } from './backend-flow-order.js';
 const [owner = 'all', identity] = process.argv.slice(2);
 const owners = ['ordering', 'fulfillment', 'operator'];
 if (
@@ -19,9 +20,20 @@ let suppressedFailures = 0;
  */
 function follow() {
   try {
-    const records = (owner === 'all' ? owners : [owner])
-      .flatMap((name) => readActivity(name))
-      .sort((a, b) => String(a.occurredAt).localeCompare(String(b.occurredAt)));
+    // Share the console's causal ordering; normalize local JSON identity fields without changing diagnostic metadata.
+    const records = orderedActivity(
+      (owner === 'all' ? owners : [owner]).flatMap((name) =>
+        readActivity(name).map((record) => ({
+          ...record,
+          id: String(record.id),
+          owner: String(record.owner),
+          type: String(record.type),
+          occurredAt: String(record.occurredAt),
+          correlationId: record.correlationId,
+          submissionReference: record.submissionReference,
+        })),
+      ),
+    );
     if (unavailable) console.error('[logs] Local observations recovered.');
     unavailable = false;
     suppressedFailures = 0;

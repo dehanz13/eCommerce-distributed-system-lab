@@ -88,3 +88,57 @@ it('retains quiet-owner IDs through busy-owner bursts and retires IDs outside th
     once.mockRestore();
   }
 });
+
+it('prints tied and rolled-back owner timestamps in process sequence order', async () => {
+  const args = process.argv;
+  const output = vi.spyOn(console, 'log').mockImplementation(() => {});
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const once = vi.spyOn(process, 'once').mockReturnValue(process);
+  vi.useFakeTimers();
+  process.argv = ['node', 'logs', 'ordering'];
+  const stream = 'fixture-stream';
+  read.mockReturnValue([
+    {
+      id: 'third',
+      owner: 'ordering',
+      type: 'transaction.step_result',
+      streamId: stream,
+      sequence: 3,
+      occurredAt: '2026-10-05T00:00:00.000Z',
+    },
+    {
+      id: 'second',
+      owner: 'ordering',
+      type: 'transaction.step',
+      streamId: stream,
+      sequence: 2,
+      occurredAt: '2026-10-05T00:00:01.000Z',
+    },
+    {
+      id: 'first',
+      owner: 'ordering',
+      type: 'http.received',
+      streamId: stream,
+      sequence: 1,
+      occurredAt: '2026-10-05T00:00:01.000Z',
+    },
+  ]);
+  try {
+    vi.resetModules();
+    await import('../tools/logs');
+    expect(output.mock.calls.map(([line]) => JSON.parse(String(line)).id)).toEqual([
+      'first',
+      'second',
+      'third',
+    ]);
+    vi.advanceTimersByTime(500);
+    expect(output).toHaveBeenCalledTimes(3);
+  } finally {
+    process.argv = args;
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    output.mockRestore();
+    errors.mockRestore();
+    once.mockRestore();
+  }
+});

@@ -27,6 +27,8 @@ node --import tsx --input-type=module -e "import {stopService} from './tools/ope
 
 For foreground owners, use Ctrl+C in each API terminal instead. SIGINT/SIGTERM drains registered resources and saves a private shutdown receipt. A crash or SIGKILL cannot run graceful cleanup; persisted attempts and outboxes remain recoverable.
 
+Operator shutdown first closes HTTP admission, then waits for an accepted lifecycle action, including its start delay and retained result, for up to 180 seconds. A timeout or result-write failure makes shutdown unverified; inspect `.lab/actions.json`, the shutdown receipt and actual dependency/listener state before restarting. A successfully drained action can still have a failed action outcome: the shutdown receipt certifies draining, not that the named operation succeeded. Multi-step work exceeding this budget remains unverified. Managed forced termination still bypasses these graceful handlers, so finish active actions before `reload-operator` or `stopService('operator')`.
+
 ## Stop independent shopper web
 
 On the client host, press Ctrl+C in its development terminal. For managed web:

@@ -35,6 +35,7 @@ for (const a of readActions()) {
   actions.set(a.id, a);
 }
 let busy = false;
+let activeAction: Promise<void> | undefined;
 registerInspectionRoutes(app);
 app.get('/health', (req) => response(req, { ready: true }));
 app.get('/api/v1/resources', (req) => response(req, readCleanup()));
@@ -56,11 +57,12 @@ app.post(
     if (actions.size > 100) actions.delete(actions.keys().next().value!);
     busy = true;
     record(a);
-    setTimeout(() => {
+    // Own accepted work immediately, including its delay, so HTTP 202 cannot outlive shutdown tracking.
+    activeAction = new Promise<void>((resolve) => setTimeout(resolve, 50)).then(() => {
       a.status = 'running';
       a.startedAt = new Date().toISOString();
       record(a);
-      execute(b.name, b.service, b.preset, (progress) => {
+      return execute(b.name, b.service, b.preset, (progress) => {
         a.progress = progress;
         record(a);
       })
@@ -81,7 +83,11 @@ app.post(
           busy = false;
           record(a);
         });
-    }, 50);
+    });
+    // A failed state write must be observed without an unhandled rejection; shutdown still receives that failure.
+    void activeAction.catch(() => {
+      console.error('[actions] Action state could not be saved; inspect .lab state permissions.');
+    });
     reply.code(202);
     return response(req, a);
   },
@@ -186,6 +192,18 @@ installShutdown('operator', [
     name: 'HTTP listener and active requests',
     /** Drain requests and close this owner HTTP server; receives no data and uses the server created at startup. */
     close: () => app.close(),
+  },
+  {
+    name: 'accepted lifecycle action and retained result',
+    // Named commands can take 120 seconds each; multi-step actions have a finite shutdown budget.
+    timeoutMs: 180000,
+    /** Drain the action accepted by this operator, including its start delay and named service work.
+     * Receives no data; uses the promise retained by /api/v1/actions and its persisted completion record.
+     * Communicates through the action's existing named process adapters; no additional operation is started.
+     */
+    close: async () => {
+      await activeAction;
+    },
   },
   {
     name: 'new shopper scheduling (retained work survives restart)',

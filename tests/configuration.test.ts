@@ -136,3 +136,38 @@ it('loads a complete file and leaves its contents out of configuration errors', 
     fs.rmSync(folder, { recursive: true, force: true });
   }
 });
+
+it.each(['missing', 'unreadable dedicated', 'unreadable fallback'])(
+  'reports %s web configuration without exposing paths or OS details',
+  (scenario) => {
+    const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'private-web-config-'));
+    try {
+      if (scenario !== 'missing')
+        fs.mkdirSync(path.join(folder, scenario === 'unreadable dedicated' ? '.env.web' : '.env'));
+      expect(() => loadWebConfiguration(folder)).toThrow(
+        '[configuration] Web configuration is missing or unreadable. Create .env.web from .env.web.example (or check .env); values omitted.',
+      );
+      try {
+        loadWebConfiguration(folder);
+      } catch (error) {
+        expect(String(error)).not.toContain(folder);
+        expect(String(error)).not.toMatch(/ENOENT|EISDIR/);
+      }
+    } finally {
+      fs.rmSync(folder, { recursive: true, force: true });
+    }
+  },
+);
+
+it('loads public origins from the fallback .env when a dedicated web file is absent', () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'web-fallback-'));
+  try {
+    fs.writeFileSync(
+      path.join(folder, '.env'),
+      'ORDERING_URL=http://api.local:4311\nFULFILLMENT_URL=http://api.local:4312\nOPERATOR_URL=http://api.local:4313\n',
+    );
+    expect(loadWebConfiguration(folder).ORDERING_URL).toBe('http://api.local:4311');
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
+});

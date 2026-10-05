@@ -16,6 +16,8 @@ pnpm dev:web
 
 Open http://127.0.0.1:4310. Next.js proxies browser-origin requests to the configured backend origins. Changing origins requires restarting development web; a production build records its rewrites, so rebuild before production restart. `.env.web` takes precedence over root `.env` for web configuration. It is ignored by Git. The existing managed controller still needs its full root `.env`.
 
+If the selected web configuration file is missing or unreadable, startup reports a stable diagnostic without filesystem paths or values. Create `.env.web` from `.env.web.example`, fill its public origins and check file permissions. An unreadable dedicated file is not silently replaced by backend configuration; fix that file and restart web.
+
 The page shows the warning after an ordering request fails. Check connection or automatic polling reloads catalog/cart after recovery and clears it once that initialization succeeds. A shopper opened while ordering is unavailable can resume adding products without refreshing the page. Last-observed records can remain visible during an outage; they do not prove current backend availability. Validation/conflict responses keep their useful business explanation. If a checkout response is lost, recover its retained original body/key before attempting a fresh purchase.
 
 ## Backend machine: backend processes
@@ -81,6 +83,8 @@ pnpm logs all <correlation-UUID-or-checkout-key-reference>
 ```
 
 Each command is an alternative viewer. It prints structured input/process/output records every half second from bounded local owner windows, including HTTP input/output, transaction observations, received/published envelopes and processing outcomes. It prints the initial retained window once, then newly observed IDs. It does not collect remote files automatically or guarantee an exhaustive high-volume audit trail. For a guest process, run the viewer in that guest checkout or follow its mounted `.lab/logs` there. Use the dashboard Timeline for browser-side request observations; the web terminal shows Next.js startup/proxy diagnostics.
+
+Terminal records use the same causal ordering as the backend diagram. Known process `streamId`/`sequence` takes precedence over tied or rolled-back timestamps, with exact publication/delivery dependencies where available. This orders each newly observed bounded batch; it cannot reorder lines already printed or recover missing history. Independent streams and legacy records do not establish a complete global order.
 
 Deduplication retains IDs for the current snapshot, up to 200 records per owner and 600 across all three owners. Busy owners cannot evict IDs still visible in a quiet owner's window. IDs that leave the snapshot are forgotten; a later reappearance can be printed again. This viewer is a recent-window inspection tool, not an exhaustive audit ledger.
 
