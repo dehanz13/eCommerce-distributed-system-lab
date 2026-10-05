@@ -32,7 +32,9 @@ function follow() {
       if (!identity || record.correlationId === identity || record.submissionReference === identity)
         console.log(JSON.stringify(safeObservation(record)));
     }
-    while (seen.size > 600) seen.delete(seen.values().next().value!);
+    // Retain every visible owner's IDs; a busy owner must not evict a quiet owner's window.
+    const retainedIds = new Set(records.map((record) => String(record.id)));
+    for (const id of seen) if (!retainedIds.has(id)) seen.delete(id);
   } catch {
     const now = Date.now();
     if (!unavailable || now - lastFailureAt >= 30000) {

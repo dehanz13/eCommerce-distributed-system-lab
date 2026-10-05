@@ -82,6 +82,8 @@ pnpm logs all <correlation-UUID-or-checkout-key-reference>
 
 Each command is an alternative viewer. It prints structured input/process/output records every half second from bounded local owner windows, including HTTP input/output, transaction observations, received/published envelopes and processing outcomes. It prints the initial retained window once, then newly observed IDs. It does not collect remote files automatically or guarantee an exhaustive high-volume audit trail. For a guest process, run the viewer in that guest checkout or follow its mounted `.lab/logs` there. Use the dashboard Timeline for browser-side request observations; the web terminal shows Next.js startup/proxy diagnostics.
 
+Deduplication retains IDs for the current snapshot, up to 200 records per owner and 600 across all three owners. Busy owners cannot evict IDs still visible in a quiet owner's window. IDs that leave the snapshot are forgotten; a later reappearance can be printed again. This viewer is a recent-window inspection tool, not an exhaustive audit ledger.
+
 Ctrl+C stops the viewer without stopping its APIs. A quiet window is not proof of health. Use owner `/health` and the dashboard sampled states alongside it. Raw idempotency keys remain excluded from activity; follow their shopper-scoped submission references.
 
 On the backend host, use `btop` for physical-host counters and `limactl shell ecommerce-lab btop` for guest counters. For native dependency stdout, enter the dedicated guest with `limactl shell ecommerce-lab`, change to the mounted backend checkout, and run:

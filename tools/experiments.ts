@@ -171,16 +171,17 @@ export const experiments = {
       });
     return run;
   },
-  /** Stop accepting exercises, release the active delay, and await its registered restoration and retained report.
-   * Accepts no data; uses the task/controller created by start and communicates with that exercise’s named dependency only.
+  /** Stop accepting exercises, await active restoration, and reject unresolved retained restoration even after the task settles.
+   * Accepts no data; uses the task/controller from start and retained exercise state from disk or perform.
+   * Communicates with the active exercise's named dependency; settled failures require explicit recovery.
    */
   async close() {
     closing = true;
     controller?.abort();
     const pending = active;
-    if (!pending) return;
-    await pending;
-    if (current?.restoration === 'failed') throw new Error('Exercise restoration failed');
+    if (pending) await pending;
+    if (current && current.restoration !== 'completed')
+      throw new Error('Exercise restoration failed or is unverified; explicitly restore the lab');
   },
 };
 /** Run one scoped failure exercise and record restoration evidence.

@@ -1,6 +1,75 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 
+test('does not replay a quiet owner when another owner replaces its retained window', async ({
+  page,
+}) => {
+  const at = new Date().toISOString();
+  const quiet = {
+    id: randomUUID(),
+    owner: 'fulfillment',
+    type: 'transaction.step',
+    occurredAt: at,
+  };
+  const windows = Array.from({ length: 9 }, () =>
+    Array.from({ length: 200 }, () => ({
+      id: randomUUID(),
+      owner: 'ordering',
+      type: 'fixture.no_hop',
+      occurredAt: at,
+    })),
+  );
+  let batch = 0;
+  await page.clock.install({ time: new Date(at) });
+  await page.route('**/api/v1/backend', (route) => {
+    const records = [quiet, ...windows[batch]!];
+    return route.fulfill({
+      json: {
+        data: {
+          sampledAt: at,
+          topology: 'single',
+          host: {},
+          samples: [],
+          activity: {
+            records,
+            limitPerOwner: 200,
+            sources: ['ordering', 'fulfillment'].map((owner) => ({
+              owner,
+              available: true,
+              records: records.filter((record) => record.owner === owner),
+            })),
+          },
+        },
+      },
+    });
+  });
+  await page.addInitScript(() => {
+    const state = window as typeof window & { replayIds: string[] };
+    state.replayIds = [];
+    window.addEventListener('DOMContentLoaded', () => {
+      const status = document.getElementById('flow-status')!;
+      let previous = '';
+      new MutationObserver(() => {
+        const id = status.dataset.observation ?? '';
+        if (id && id !== previous) state.replayIds.push(id);
+        previous = id;
+      }).observe(status, { attributes: true });
+    });
+  });
+  await page.goto('/architecture');
+  await expect(page.locator('#flow-status')).toHaveAttribute('data-observation', quiet.id);
+  await page.clock.runFor(1000);
+  for (batch = 1; batch <= 8; batch++) {
+    const response = page.waitForResponse('**/api/v1/backend');
+    await page.locator('#refresh').click();
+    await (await response).finished();
+    await page.clock.runFor(1000);
+  }
+  expect(
+    await page.evaluate(() => (window as typeof window & { replayIds: string[] }).replayIds),
+  ).toEqual([quiet.id]);
+});
+
 test('replays early processing before a later republish and duplicate delivery', async ({
   page,
 }) => {

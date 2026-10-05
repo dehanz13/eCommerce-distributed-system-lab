@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { faultNames } from '@lab/contracts';
-import { installShutdown } from '@lab/runtime/lifecycle';
+import { closeResources, installShutdown } from '@lab/runtime/lifecycle';
 const state = vi.hoisted(() => ({
   folder: '',
   status: vi.fn(),
@@ -48,6 +48,57 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 afterAll(() => fs.rmSync(state.folder, { recursive: true, force: true }));
+it('does not certify shutdown after failed restoration has already settled', async () => {
+  vi.resetModules();
+  const { experiments: owner } = await import('../tools/experiments');
+  state.start.mockRejectedValueOnce(new Error('Fixture restoration failure'));
+  const run = owner.start({ scenario: 'cache-outage', durationSeconds: 3 });
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(run.restoration).toBe('failed');
+  expect(owner.busy()).toBe(false);
+  const report = await closeResources(
+    'operator',
+    [{ name: 'experiment', close: () => owner.close() }],
+    state.folder,
+  );
+  expect(report.verified).toBe(false);
+  expect(run.restoration).toBe('failed');
+  await owner.restore();
+  const restored = await closeResources(
+    'operator',
+    [{ name: 'experiment', close: () => owner.close() }],
+    state.folder,
+  );
+  expect(restored.verified).toBe(true);
+});
+
+it('does not certify shutdown for restoration left unknown by an operator restart', async () => {
+  fs.mkdirSync(state.folder + '/.lab', { recursive: true });
+  fs.writeFileSync(
+    state.folder + '/.lab/experiment.json',
+    JSON.stringify({
+      id: '00000000-0000-4000-8000-000000000001',
+      options: { scenario: 'cache-outage', durationSeconds: 3 },
+      status: 'running',
+      restoration: 'pending',
+      requestedAt: new Date().toISOString(),
+      finishedAt: null,
+      expected: 'Restore cache availability',
+      progress: 'Observing',
+      error: null,
+    }),
+  );
+  vi.resetModules();
+  const { experiments: owner } = await import('../tools/experiments');
+  expect(owner.inspect()).toMatchObject({ status: 'interrupted', restoration: 'unknown' });
+  const report = await closeResources(
+    'operator',
+    [{ name: 'experiment', close: () => owner.close() }],
+    state.folder,
+  );
+  expect(report.verified).toBe(false);
+  expect(state.start).not.toHaveBeenCalled();
+});
 it.each(faultNames)(
   'captures and restores the %s exercise with bounded progress',
   async (scenario) => {

@@ -140,7 +140,9 @@ function collectFlow() {
     omittedHops += replayQueue.length - 300;
     replayQueue.splice(0, replayQueue.length - 300);
   }
-  while (seenActivity.size > 1200) seenActivity.delete(seenActivity.values().next().value);
+  // Snapshot membership bounds memory without making quiet owners' retained records look new.
+  const retainedIds = new Set(snapshot.activity.records.map((record) => record.id));
+  for (const id of seenActivity) if (!retainedIds.has(id)) seenActivity.delete(id);
 }
 
 /** Advance one recorded hop at a readable pace, retaining a brief color trail; inputs come from the bounded replay queue.
