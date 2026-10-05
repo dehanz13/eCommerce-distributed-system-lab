@@ -147,7 +147,7 @@ it('drains an interrupted exercise and awaits restoration before shutdown can fi
         release = resolve;
       }),
   );
-  const run = active.start({ scenario: 'cache-outage', durationSeconds: 60 });
+  const run = active.start({ scenario: 'cache-outage', durationSeconds: 30 });
   await vi.advanceTimersByTimeAsync(0);
   expect(state.stop).toHaveBeenCalledWith('redis');
   let closed = false;
@@ -172,7 +172,7 @@ it.each(faultNames)(
   async (scenario) => {
     vi.resetModules();
     const { experiments: active } = await import('../tools/experiments');
-    const run = active.start({ scenario, durationSeconds: 60 });
+    const run = active.start({ scenario, durationSeconds: 30 });
     await vi.advanceTimersByTimeAsync(0);
     await active.close();
     expect(run).toMatchObject({ status: 'interrupted', restoration: 'completed' });
@@ -206,7 +206,7 @@ it('reports failed shutdown restoration and retains explicit recovery state', as
   vi.resetModules();
   const { experiments: active } = await import('../tools/experiments');
   state.start.mockRejectedValueOnce(Error('fixture restart failed'));
-  const run = active.start({ scenario: 'cache-outage', durationSeconds: 60 });
+  const run = active.start({ scenario: 'cache-outage', durationSeconds: 30 });
   await vi.advanceTimersByTimeAsync(0);
   await expect(active.close()).rejects.toThrow('restoration failed');
   expect(run).toMatchObject({ status: 'failed', restoration: 'failed' });
@@ -215,7 +215,7 @@ it('reports failed shutdown restoration and retains explicit recovery state', as
 it('restores the active fault even if writing its shutdown progress fails', async () => {
   vi.resetModules();
   const { experiments: active } = await import('../tools/experiments');
-  const run = active.start({ scenario: 'cache-outage', durationSeconds: 60 });
+  const run = active.start({ scenario: 'cache-outage', durationSeconds: 30 });
   await vi.advanceTimersByTimeAsync(0);
   const write = vi.spyOn(fs, 'writeFileSync').mockImplementationOnce(() => {
     throw Error('fixture disk full');
@@ -232,7 +232,7 @@ it('restores the active fault even if writing its shutdown progress fails', asyn
 it('does not apply a fault if shutdown arrives while the baseline is being captured', async () => {
   vi.resetModules();
   const { experiments: active } = await import('../tools/experiments');
-  const run = active.start({ scenario: 'network-cut', durationSeconds: 60 });
+  const run = active.start({ scenario: 'network-cut', durationSeconds: 30 });
   await active.close();
   expect(run).toMatchObject({ status: 'interrupted', restoration: 'completed' });
   expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/proxies/'))).toBe(
@@ -250,7 +250,7 @@ it('does not exit on SIGTERM until the active exercise has restored its dependen
         release = resolve;
       }),
   );
-  const run = active.start({ scenario: 'cache-outage', durationSeconds: 60 });
+  const run = active.start({ scenario: 'cache-outage', durationSeconds: 30 });
   await vi.advanceTimersByTimeAsync(0);
   const signals = ['SIGINT', 'SIGTERM'] as const;
   const before = signals.map((signal) => new Set(process.listeners(signal)));

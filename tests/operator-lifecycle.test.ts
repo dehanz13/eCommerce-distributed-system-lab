@@ -304,6 +304,9 @@ it('creates and refreshes a private guest projection before Compose in a fresh s
     expect(projection).toContain('REDIS_PUBLISHED_PORT=63801');
     expect(fs.statSync(file).mode & 0o777).toBe(0o600);
     expect(state.commands.some((command) => command.file === 'ssh')).toBe(false);
+    const inode = fs.statSync(file).ino;
+    await startService('redis');
+    expect(fs.statSync(file).ino).toBe(inode);
     cfg.REDIS_PORT = '63802';
     await startService('redis');
     expect(fs.readFileSync(file, 'utf8')).toContain('REDIS_PUBLISHED_PORT=63802');

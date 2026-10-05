@@ -315,14 +315,17 @@ export function prepareGuestEnvironment() {
     RABBIT_PUBLISHED_PORT: cfg.RABBIT_PORT,
   };
   const file = path.join(state, 'remote.env');
+  const contents = Object.entries(projection)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('\n');
+  // Keep unchanged mount metadata stable across back-to-back Compose commands.
+  // Replacing the same inode repeatedly can invalidate the guest's virtiofs lookup cache.
+  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === contents) {
+    fs.chmodSync(file, 0o600);
+    return;
+  }
   const temporary = file + '.tmp';
-  fs.writeFileSync(
-    temporary,
-    Object.entries(projection)
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n'),
-    { mode: 0o600 },
-  );
+  fs.writeFileSync(temporary, contents, { mode: 0o600 });
   fs.chmodSync(temporary, 0o600);
   fs.renameSync(temporary, file);
 }

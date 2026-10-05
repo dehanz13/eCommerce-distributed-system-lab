@@ -29,7 +29,7 @@ After cloning on the backend host and preparing its root `.env`, generate the pr
 ./lab prepare-guest
 ```
 
-This command uses `TOPOLOGY=single` and a configured `REMOTE_VM`; it does not start any services. It atomically writes `.lab/remote.env` with owner-only permissions. Lab container controls regenerate the same projection automatically before local guest Compose commands, including on a fresh checkout. Rerun preparation after changing host ports if you use Compose directly. Keep the generated file private; it contains dependency credentials.
+This command uses `TOPOLOGY=single` and a configured `REMOTE_VM`; it does not start any services. It writes `.lab/remote.env` with owner-only permissions, replacing the file atomically when configuration changes. Unchanged content keeps its existing file identity so back-to-back guest commands do not invalidate the shared mount’s metadata cache. Lab container controls regenerate the same projection automatically before local guest Compose commands, including on a fresh checkout. Rerun preparation after changing host ports if you use Compose directly. Keep the generated file private; it contains dependency credentials.
 
 For native container logs, enter the guest, change to its mounted checkout and run `docker compose --env-file .lab/remote.env logs --follow --tail 100 postgres rabbitmq redis toxiproxy`. For host and guest counters, run `btop` on the backend host and `limactl shell ecommerce-lab btop` separately. These viewers do not control the services.
 

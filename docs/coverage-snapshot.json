@@ -23,10 +23,10 @@
     "branches": { "total": 531, "covered": 495, "pct": 93.22 }
   },
   "overall": {
-    "lines": { "total": 2454, "covered": 1321, "skipped": 0, "pct": 53.83 },
-    "statements": { "total": 2728, "covered": 1434, "skipped": 0, "pct": 52.56 },
+    "lines": { "total": 2458, "covered": 1325, "skipped": 0, "pct": 53.9 },
+    "statements": { "total": 2732, "covered": 1438, "skipped": 0, "pct": 52.63 },
     "functions": { "total": 634, "covered": 292, "skipped": 0, "pct": 46.05 },
-    "branches": { "total": 1862, "covered": 921, "skipped": 0, "pct": 49.46 },
+    "branches": { "total": 1866, "covered": 925, "skipped": 0, "pct": 49.57 },
     "branchesTrue": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
   },
   "systems": {
@@ -73,10 +73,10 @@
       "branches": { "total": 213, "covered": 145, "pct": 68.07 }
     },
     "tools": {
-      "lines": { "total": 875, "covered": 600, "pct": 68.57 },
-      "statements": { "total": 975, "covered": 647, "pct": 66.35 },
+      "lines": { "total": 879, "covered": 604, "pct": 68.71 },
+      "statements": { "total": 979, "covered": 651, "pct": 66.49 },
       "functions": { "total": 154, "covered": 116, "pct": 75.32 },
-      "branches": { "total": 602, "covered": 361, "pct": 59.96 }
+      "branches": { "total": 606, "covered": 365, "pct": 60.23 }
     }
   },
   "files": {
@@ -387,10 +387,10 @@
       "branches": { "total": 2, "covered": 0, "skipped": 0, "pct": 0 }
     },
     "tools/operations.ts": {
-      "lines": { "total": 300, "covered": 200, "skipped": 0, "pct": 66.66 },
+      "lines": { "total": 304, "covered": 204, "skipped": 0, "pct": 67.1 },
       "functions": { "total": 49, "covered": 31, "skipped": 0, "pct": 63.26 },
-      "statements": { "total": 337, "covered": 209, "skipped": 0, "pct": 62.01 },
-      "branches": { "total": 223, "covered": 131, "skipped": 0, "pct": 58.74 }
+      "statements": { "total": 341, "covered": 213, "skipped": 0, "pct": 62.46 },
+      "branches": { "total": 227, "covered": 135, "skipped": 0, "pct": 59.47 }
     },
     "tools/public-content.ts": {
       "lines": { "total": 31, "covered": 21, "skipped": 0, "pct": 67.74 },
