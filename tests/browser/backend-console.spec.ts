@@ -155,6 +155,7 @@ test('operator architecture is independent, zoomable, selectable and honest abou
 }) => {
   let down = false;
   let reads = 0;
+  await page.clock.install({ time: new Date() });
   let flowRecords: (typeof record & { eventType?: string; destinationQueue?: string })[] = [];
   const at = new Date().toISOString();
   const record = {
@@ -163,6 +164,8 @@ test('operator architecture is independent, zoomable, selectable and honest abou
     type: 'checkout.rejected',
     status: 409,
     occurredAt: at,
+    streamId: randomUUID(),
+    sequence: 1,
     correlationId: randomUUID(),
     detail: '<img src=x onerror=alert(1)>',
   };
@@ -252,6 +255,9 @@ test('operator architecture is independent, zoomable, selectable and honest abou
     'marker-start',
     'url(#arrow)',
   );
+  // Finish the initial warning replay, then hold time before introducing the next observed frame.
+  await expect(page.locator('#flow-status')).toContainText('Replay idle');
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   flowRecords = [
     {
       ...record,
@@ -285,7 +291,8 @@ test('operator architecture is independent, zoomable, selectable and honest abou
       type: 'transaction.step_failed',
       status: 500,
     },
-  ];
+  ].map((record, index) => ({ ...record, sequence: index + 2 }));
+  // Hold the 650 ms frame while media emulation makes a browser round trip; CI scheduling must not expire it.
   await page.getByRole('button', { name: 'Refresh now', exact: true }).click();
   await expect(page.locator('[data-edge="client-ordering"]')).toHaveAttribute(
     'data-flow',
@@ -302,6 +309,7 @@ test('operator architecture is independent, zoomable, selectable and honest abou
       .evaluate((element) => getComputedStyle(element).animationName),
   ).toBe('none');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.clock.resume();
   await expect(page.locator('[data-edge="ordering-toxiproxy"]')).toHaveAttribute(
     'data-flow',
     'event',
