@@ -1,6 +1,78 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 
+test('replays early processing before a later republish and duplicate delivery', async ({
+  page,
+}) => {
+  const eventId = randomUUID();
+  const start = Date.now() - 100;
+  const records = (
+    [
+      ['ordering', 'event.publishing'],
+      ['fulfillment', 'event.received'],
+      ['fulfillment', 'event.acknowledged'],
+      ['ordering', 'event.publishing'],
+      ['fulfillment', 'event.received'],
+      ['fulfillment', 'event.acknowledged'],
+    ] satisfies Array<[string, string]>
+  ).map(([owner, type], index) => ({
+    id: randomUUID(),
+    owner,
+    type,
+    eventId,
+    eventType: 'order.accepted',
+    destinationQueue: 'lab.accepted',
+    occurredAt: new Date(start + index).toISOString(),
+  }));
+  await page.route('**/api/v1/backend', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          sampledAt: new Date().toISOString(),
+          topology: 'single',
+          host: {},
+          samples: ['ordering', 'fulfillment'].map((id) => ({
+            id,
+            available: true,
+            sampledAt: new Date().toISOString(),
+            data: { ready: true, database: true, broker: true },
+          })),
+          activity: {
+            records: [...records].reverse(),
+            sources: ['ordering', 'fulfillment'].map((owner) => ({
+              owner,
+              available: true,
+              records,
+            })),
+          },
+        },
+      },
+    }),
+  );
+  await page.addInitScript(() => {
+    const state = window as typeof window & { replayIds: string[] };
+    state.replayIds = [];
+    window.addEventListener('DOMContentLoaded', () => {
+      const status = document.getElementById('flow-status')!;
+      new MutationObserver(() => {
+        const id = status.dataset.observation;
+        if (id && !state.replayIds.includes(id)) state.replayIds.push(id);
+      }).observe(status, { attributes: true, childList: true });
+    });
+  });
+  await page.goto('/architecture');
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => (window as typeof window & { replayIds: string[] }).replayIds.length),
+      { timeout: 15000 },
+    )
+    .toBe(6);
+  expect(
+    await page.evaluate(() => (window as typeof window & { replayIds: string[] }).replayIds),
+  ).toEqual(records.map(({ id }) => id));
+});
+
 // This page is served by an isolated operator process, with owner HTTP observations supplied by fixtures.
 test('operator architecture is independent, zoomable, selectable and honest about outages and paused data', async ({
   page,
@@ -353,7 +425,7 @@ test('owned database probes and queue counters distinguish failures, missing evi
       type: 'event.acknowledged',
       eventType: 'fulfillment.completed',
       eventId: outcomeEventId,
-      occurredAt: at,
+      occurredAt: new Date(Date.parse(at) + 20).toISOString(),
     },
     {
       id: randomUUID(),

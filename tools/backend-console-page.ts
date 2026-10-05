@@ -36,3 +36,8 @@ export const backendConsoleScript = fs.readFileSync(
   new URL('./backend-console-browser.js', import.meta.url),
   'utf8',
 );
+
+export const backendFlowOrderScript = fs.readFileSync(
+  new URL('./backend-flow-order.js', import.meta.url),
+  'utf8',
+);

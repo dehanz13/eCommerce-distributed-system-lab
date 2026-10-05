@@ -68,6 +68,7 @@ async function compose(args: string[]) {
   }
   if (cfg.REMOTE_VM) {
     if (!/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM)) throw new Error('Invalid REMOTE_VM');
+    prepareGuestEnvironment();
     return command('limactl', [
       'shell',
       cfg.REMOTE_VM,
@@ -292,6 +293,39 @@ export async function waitReady(url: string, timeout = 60000) {
   }
   throw new Error(`Readiness deadline exceeded: ${url}`);
 }
+/** Prepare the private Compose projection from the owning host’s validated root configuration.
+ * Accepts no arguments; container DNS/ports come from Compose conventions and published ports from cfg.
+ * Writes only .lab/remote.env atomically with owner-only permissions; never starts services or prints secrets.
+ */
+export function prepareGuestEnvironment() {
+  const projection = {
+    ...cfg,
+    PG_HOST: 'postgres',
+    PG_PORT: '5432',
+    RABBIT_HOST: 'rabbitmq',
+    RABBIT_PORT: '5672',
+    RABBIT_CONNECT_HOST: 'toxiproxy',
+    RABBIT_CONNECT_PORT: '8666',
+    RABBIT_PROXY_PUBLISHED_PORT: cfg.RABBIT_CONNECT_PORT,
+    REDIS_HOST: 'redis',
+    REDIS_PORT: '6379',
+    REDIS_PUBLISHED_PORT: cfg.REDIS_PORT,
+    PG_PUBLISHED_PORT: cfg.PG_PORT,
+    FULFILLMENT_PORT: new URL(cfg.FULFILLMENT_URL).port || '4312',
+    RABBIT_PUBLISHED_PORT: cfg.RABBIT_PORT,
+  };
+  const file = path.join(state, 'remote.env');
+  const temporary = file + '.tmp';
+  fs.writeFileSync(
+    temporary,
+    Object.entries(projection)
+      .map(([k, v]) => `${k}=${v}`)
+      .join('\n'),
+    { mode: 0o600 },
+  );
+  fs.chmodSync(temporary, 0o600);
+  fs.renameSync(temporary, file);
+}
 /** Project and transfer only the lab configuration/artifacts needed by the selected remote host.
  * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
  * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
@@ -312,29 +346,7 @@ export async function deployRemote() {
     root + '/',
     `${host}:${cfg.REMOTE_DIR}/`,
   ]);
-  const projection = {
-    ...cfg,
-    PG_HOST: 'postgres',
-    PG_PORT: '5432',
-    RABBIT_HOST: 'rabbitmq',
-    RABBIT_PORT: '5672',
-    RABBIT_CONNECT_HOST: 'toxiproxy',
-    RABBIT_CONNECT_PORT: '8666',
-    RABBIT_PROXY_PUBLISHED_PORT: cfg.RABBIT_CONNECT_PORT,
-    REDIS_HOST: 'redis',
-    REDIS_PORT: '6379',
-    REDIS_PUBLISHED_PORT: cfg.REDIS_PORT,
-    PG_PUBLISHED_PORT: cfg.PG_PORT,
-    FULFILLMENT_PORT: new URL(cfg.FULFILLMENT_URL).port || '4312',
-    RABBIT_PUBLISHED_PORT: cfg.RABBIT_PORT,
-  };
-  fs.writeFileSync(
-    path.join(state, 'remote.env'),
-    Object.entries(projection)
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n'),
-    { mode: 0o600 },
-  );
+  prepareGuestEnvironment();
   await command('ssh', [host, `mkdir -p ${quoteShell(cfg.REMOTE_DIR + '/.lab')}`]);
   await command('scp', [
     path.join(state, 'remote.env'),

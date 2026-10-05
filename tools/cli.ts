@@ -6,6 +6,7 @@ import {
   startService,
   stopService,
   waitReady,
+  prepareGuestEnvironment,
   status,
   names,
   type Service,
@@ -17,15 +18,19 @@ const [name, service, arg] = process.argv.slice(2);
  * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
  */
 function monitor() {
+  if (service === 'lab-vm') {
+    requireSettings(cfg, ['REMOTE_VM']);
+    if (!/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM)) throw new Error('Invalid REMOTE_VM in root .env');
+    if (cfg.TOPOLOGY === 'single') {
+      const result = spawnSync('limactl', ['shell', cfg.REMOTE_VM, 'btop'], { stdio: 'inherit' });
+      if (result.error) throw result.error;
+      return result.status ?? 1;
+    }
+  }
   if (service === 'remote-host' || service === 'lab-vm') {
     requireSettings(cfg, ['REMOTE_HOST', 'REMOTE_USER']);
     const host = cfg.REMOTE_USER + '@' + cfg.REMOTE_HOST;
     if (!/^[a-zA-Z0-9_.@-]+$/.test(host)) throw new Error('Invalid remote host');
-    if (service === 'lab-vm') {
-      requireSettings(cfg, ['REMOTE_VM']);
-      if (!/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM))
-        throw new Error('Invalid REMOTE_VM in root .env');
-    }
     const result = spawnSync(
       'ssh',
       ['-t', host, service === 'remote-host' ? 'btop' : 'limactl shell ' + cfg.REMOTE_VM + ' btop'],
@@ -38,7 +43,13 @@ function monitor() {
   if (result.error) throw result.error;
   return result.status ?? 1;
 }
-if (name === 'monitor') {
+if (name === 'prepare-guest') {
+  requireSettings(cfg, ['REMOTE_VM']);
+  if (cfg.TOPOLOGY !== 'single')
+    throw new Error('Prepare the guest on its owning host with TOPOLOGY=single');
+  prepareGuestEnvironment();
+  console.log('Private guest Compose configuration prepared; no services started.');
+} else if (name === 'monitor') {
   process.exitCode = monitor();
 } else if (name === 'test-browser') {
   await (await import('./browser-test')).runBrowserTests();

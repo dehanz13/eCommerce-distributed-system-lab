@@ -133,3 +133,35 @@ it('refuses a symlinked artifact ancestor and never deletes its external target'
   expect(report.verified).toBe(false);
   expect(fs.readFileSync(path.join(external, '.next/proof'), 'utf8')).toBe('outside');
 });
+
+it('allows bounded exercise restoration beyond the ordinary connection-close deadline', async () => {
+  vi.useFakeTimers();
+  try {
+    let release!: () => void;
+    const reportPromise = closeResources(
+      'operator',
+      [
+        {
+          name: 'exercise restoration',
+          timeoutMs: 180000,
+          close: () =>
+            new Promise<void>((resolve) => {
+              release = resolve;
+            }),
+        },
+      ],
+      folder(),
+    );
+    let finished = false;
+    void reportPromise.then(() => {
+      finished = true;
+    });
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(finished).toBe(false);
+    release();
+    expect(await reportPromise).toMatchObject({ verified: true });
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    vi.useRealTimers();
+  }
+});

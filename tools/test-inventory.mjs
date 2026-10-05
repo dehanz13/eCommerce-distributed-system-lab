@@ -28,6 +28,8 @@ const owners = {
   'operator-lifecycle.test.ts': 'Operator',
   'resources.test.ts': 'Operator',
   'experiments.test.ts': 'Operator',
+  'monitor.test.ts': 'Operator host monitoring',
+  'backend-flow-order.test.ts': 'Operator replay ordering',
   'feeder.test.ts': 'Shopper feeder',
   'shopper-behavior.test.ts': 'Shopper feeder',
   'architecture-flow.test.ts': 'Web',

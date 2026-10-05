@@ -1,3 +1,4 @@
+import { orderedActivity } from '/architecture-order.js';
 // This operator-served module consumes only its same-origin backend observation contract.
 const viewport = document.getElementById('viewport');
 const canvas = document.getElementById('canvas');
@@ -99,48 +100,6 @@ function queueSample(name) {
   return broker?.available && Array.isArray(broker.data)
     ? broker.data.find((queue) => queue.name === name)
     : null;
-}
-
-/** Order a bounded batch by recorded UTC time and explicit request/event dependencies.
- * Input: newly collected owner records; matching publish attempts precede delivery and SQL results follow their step.
- * This orders available evidence only; missing records or unsynchronized host clocks cannot establish a complete global order.
- */
-function orderedActivity(records) {
-  const remaining = [...records].sort(
-    (a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt),
-  );
-  const ordered = [];
-  while (remaining.length) {
-    const index = remaining.findIndex(
-      (child) =>
-        !remaining.some(
-          (parent) =>
-            parent.id !== child.id &&
-            ((child.eventId &&
-              child.eventId === parent.eventId &&
-              ((child.type === 'event.received' && parent.type === 'event.publishing') ||
-                (parent.type === 'event.received' &&
-                  parent.owner === child.owner &&
-                  !['event.received', 'event.publishing', 'event.published'].includes(
-                    child.type,
-                  )) ||
-                (child.type === 'event.published' &&
-                  parent.type === 'event.publishing' &&
-                  parent.owner === child.owner))) ||
-              (child.requestId &&
-                child.requestId === parent.requestId &&
-                ((child.type === 'http.completed' && parent.type !== 'http.completed') ||
-                  (child.type !== 'http.received' && parent.type === 'http.received'))) ||
-              (child.transactionId &&
-                child.transactionId === parent.transactionId &&
-                child.step === parent.step &&
-                /transaction.step_(result|failed)/.test(child.type) &&
-                parent.type === 'transaction.step')),
-        ),
-    );
-    ordered.push(remaining.splice(index < 0 ? 0 : index, 1)[0]);
-  }
-  return ordered;
 }
 
 /** Queue new recent boundary observations for a slowed replay; input comes from the operator snapshot, no writes.

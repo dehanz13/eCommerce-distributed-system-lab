@@ -23,6 +23,14 @@ The checkout is a writable virtiofs mount. Database and broker volumes are insid
 
 The current deployment runs all three Node APIs on the backend macOS host and the four dependencies in this guest. Backend configuration uses `TOPOLOGY=single` plus `REMOTE_VM=ecommerce-lab`; controls execute local `limactl shell` without a client-side operator. Host API connections use the forwarded ports, while the private `.lab/remote.env` Compose projection uses container DNS names. Preserve the existing `learning-core` volumes and stop any containerized fulfillment before starting its host replacement. Use [independent development](independent-development.md) for the three terminal commands.
 
+After cloning on the backend host and preparing its root `.env`, generate the private container configuration before using Compose directly:
+
+```sh
+./lab prepare-guest
+```
+
+This command uses `TOPOLOGY=single` and a configured `REMOTE_VM`; it does not start any services. It atomically writes `.lab/remote.env` with owner-only permissions. Lab container controls regenerate the same projection automatically before local guest Compose commands, including on a fresh checkout. Rerun preparation after changing host ports if you use Compose directly. Keep the generated file private; it contains dependency credentials.
+
 For native container logs, enter the guest, change to its mounted checkout and run `docker compose --env-file .lab/remote.env logs --follow --tail 100 postgres rabbitmq redis toxiproxy`. For host and guest counters, run `btop` on the backend host and `limactl shell ecommerce-lab btop` separately. These viewers do not control the services.
 
 ## Original remote-Compose controller alternative
@@ -40,6 +48,6 @@ The template forwards ports 54329 (PostgreSQL), 56729 (direct AMQP), 56730 (AMQP
 ./lab monitor lab-vm
 ```
 
-The first command opens btop on the physical remote host; the second opens it inside the configured guest. Record those scopes separately. Unsupported sensor readings are unavailable rather than zero.
+The first command opens btop on the configured SSH host. With `TOPOLOGY=single`, the second uses local `limactl shell` on the guest’s owning host and requires no SSH configuration; with `TOPOLOGY=two`, it uses SSH to enter the remote guest. Record those scopes separately. Unsupported sensor readings are unavailable rather than zero.
 
 Use the [shutdown runbook](shutdown-and-cleanup.md) to stop only this guest, preserve its disk or deliberately remove it. No command in this runbook targets another project's guest or the host's default Docker context.

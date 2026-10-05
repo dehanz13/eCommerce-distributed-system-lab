@@ -78,3 +78,9 @@ Start the retained guest on the backend host with `limactl start ecommerce-lab`.
 Run `pnpm dev:ordering`, `pnpm dev:fulfillment` and `pnpm dev:operator` in separate backend terminals; run `pnpm dev:web` on the client. Inspect owner readiness, the independent console and retained pending work before a new purchase. Do not automatically resubmit a checkout. Named managed starts are alternatives to those foreground owners; never start both on the same port. Whole-lab `./lab start` also starts web on its controller host.
 
 See [guest setup](remote-lab-vm.md), [configuration](configuration.md) and [independent startup/log commands](independent-development.md). References: [Compose down](https://docs.docker.com/reference/cli/docker/compose/down/), [Lima stop](https://lima-vm.io/docs/reference/limactl_stop/), [Lima delete](https://lima-vm.io/docs/reference/limactl_delete/).
+
+## Shutdown during a failure exercise
+
+For a foreground operator, Ctrl+C or SIGTERM stops accepting new exercises, ends the active fault window and waits for the registered restoration before exiting. Changed services are restarted, the scoped network fault is removed, or the previous processing preset is restored. The experiment record retains `interrupted` with its restoration outcome and an after-snapshot. Restoration failures remain `failed` and make the shutdown report unverified; inspect the failed target and use the explicit experiment restoration control before another exercise.
+
+Exercise restoration has a bounded three-minute shutdown allowance because a named dependency command can take up to two minutes. Other connection closers retain their five-second limit. Forced termination, including a managed command that uses SIGKILL, cannot execute this handler; restart the operator, inspect the retained experiment and explicitly restore it if restoration is unknown. A timeout reports unverified cleanup rather than certifying recovery.

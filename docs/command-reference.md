@@ -79,6 +79,8 @@ Run from the checkout root. The [learning path](learning-path.md) provides order
 
 Useful test parameters:
 
+For a fresh backend checkout whose dedicated guest is configured with `TOPOLOGY=single` and `REMOTE_VM`, `./lab prepare-guest` writes the private Compose environment without starting services. Local guest container controls also prepare it automatically. `./lab monitor lab-vm` enters that local guest without SSH; the same monitor in `TOPOLOGY=two` enters the configured remote guest through SSH.
+
 ```sh
 pnpm exec vitest run tests/checkout.test.ts
 pnpm exec vitest run tests/fulfillment.test.ts

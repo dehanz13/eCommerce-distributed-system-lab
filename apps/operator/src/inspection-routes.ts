@@ -4,7 +4,11 @@ import { Id } from '@lab/contracts';
 import { response } from '@lab/runtime';
 import { controlPage } from '../../../tools/control-page';
 import { collectActivity } from '../../../tools/activity-collection';
-import { backendConsolePage, backendConsoleScript } from '../../../tools/backend-console-page';
+import {
+  backendConsolePage,
+  backendConsoleScript,
+  backendFlowOrderScript,
+} from '../../../tools/backend-console-page';
 import { backendConsoleObservations } from '../../../tools/backend-console-observations';
 import fs from 'node:fs';
 
@@ -22,6 +26,9 @@ export function registerInspectionRoutes(app: FastifyInstance) {
   );
   app.get('/architecture.js', { schema: { hide: true } }, (_req, reply) =>
     reply.type('text/javascript').send(backendConsoleScript),
+  );
+  app.get('/architecture-order.js', { schema: { hide: true } }, (_req, reply) =>
+    reply.type('text/javascript').send(backendFlowOrderScript),
   );
   app.get('/architecture.excalidraw', { schema: { hide: true } }, (_req, reply) =>
     reply

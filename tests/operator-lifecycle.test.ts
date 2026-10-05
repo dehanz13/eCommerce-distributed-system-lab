@@ -288,3 +288,26 @@ it('controls a local dedicated guest while preserving volumes and measuring its 
     Object.assign(cfg, previous);
   }
 });
+
+it('creates and refreshes a private guest projection before Compose in a fresh single-host checkout', async () => {
+  const { cfg } = await import('@lab/runtime');
+  const previous = { ...cfg };
+  const file = path.join(state.root, '.lab/remote.env');
+  fs.rmSync(file, { force: true });
+  Object.assign(cfg, { TOPOLOGY: 'single', REMOTE_VM: 'lab-fixture', REDIS_PORT: '63801' });
+  try {
+    await startService('redis');
+    expect(fs.existsSync(file)).toBe(true);
+    const projection = fs.readFileSync(file, 'utf8');
+    expect(projection).toContain('PG_HOST=postgres');
+    expect(projection).toContain('RABBIT_CONNECT_HOST=toxiproxy');
+    expect(projection).toContain('REDIS_PUBLISHED_PORT=63801');
+    expect(fs.statSync(file).mode & 0o777).toBe(0o600);
+    expect(state.commands.some((command) => command.file === 'ssh')).toBe(false);
+    cfg.REDIS_PORT = '63802';
+    await startService('redis');
+    expect(fs.readFileSync(file, 'utf8')).toContain('REDIS_PUBLISHED_PORT=63802');
+  } finally {
+    Object.assign(cfg, previous);
+  }
+});

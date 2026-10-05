@@ -18,12 +18,12 @@ export function writeCleanupEvidence(folder: string, kind: string, report: { id:
 }
 
 /** Close caller-owned timers/connections in order; record each failure and continue without touching other processes.
- * Input: owner, resources, folder, timeoutMs, from caller-owned closers, shutdown signals or a prepared cleanup report.
+ * Input: owner, named closers with optional bounded timeout overrides, report folder and default timeout from owner startup/shutdown.
  * Communicates with owned connections and private local report files.
  */
 export async function closeResources(
   owner: string,
-  resources: Array<{ name: string; close: () => unknown | Promise<unknown> }>,
+  resources: Array<{ name: string; close: () => unknown | Promise<unknown>; timeoutMs?: number }>,
   folder = projectRoot(),
   timeoutMs = 5000,
 ) {
@@ -34,7 +34,7 @@ export async function closeResources(
       await Promise.race([
         Promise.resolve().then(resource.close),
         new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error('Timeout')), timeoutMs);
+          timer = setTimeout(() => reject(new Error('Timeout')), resource.timeoutMs ?? timeoutMs);
         }),
       ]);
       results.push({ name: resource.name, closed: true });

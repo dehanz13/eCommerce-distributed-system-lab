@@ -34,3 +34,7 @@ Suggested next slices:
 2. Batch/file processor: local SFTP receipt, row validation, checkpointed processing, quarantine and a batch summary. Add encryption/key routines after the plain-file path is reproducible.
 
 The shopper population, revisioned Redis catalog cache and nine scoped failure exercises are implemented; see [learning labs](learning-labs.md). Their recorded test results are linked in [verification](verification.md). Benchmark reporting, richer telemetry and additional database models remain separate proposed slices.
+
+## Backend console replay and repeated delivery
+
+The separate operator console orders recorded request and SQL-step pairs by their explicit attempt IDs. Event IDs survive republishing and redelivery, so the backend replay uses only preceding publication/receipt observations as event dependencies; it never makes an earlier delivery wait for a later retry. With missing evidence or unsynchronized clocks, timestamp order is conservative and does not certify global causality. The replay changes display timing only, not the broker or business work.

@@ -194,4 +194,11 @@ installShutdown('operator', [
       feeder.stop();
     },
   },
+  {
+    name: 'active failure exercise restoration and retained report',
+    // Named dependency operations can take up to 120 seconds; allow bounded restoration before exit.
+    timeoutMs: 180000,
+    /** Drain the startup-owned exercise task; accepts no data and awaits its named dependency restoration and evidence. */
+    close: () => experiments.close(),
+  },
 ]);
