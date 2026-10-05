@@ -31,7 +31,7 @@ Private evidence is retained in `.lab/reports/`, including `live-api-availabilit
 - At the original checkpoint, the entire backend group had not moved to its own backend checkout. The later cutover below establishes that placement. Follow [independent development](independent-development.md) and the [guest runbook](remote-lab-vm.md); use one lifecycle owner per process.
 - The original checkpoint was uncommitted local work. The published revisions and completed cutover are recorded below; clone the named release branch to obtain them.
 - Stripe payments and a distributable client package are design work described in [the reusable API plan](reusable-ecommerce-api.md), not implemented checkout capabilities.
-- The console uses a lightweight live SVG renderer and offers an editable Excalidraw scene. Scene structure is tested; importing it in the external Excalidraw editor was not verified in this session.
+- At this original checkpoint, external-editor import was unverified. The later documentation refinement restored all eight scenes and exported them through the actual Excalidraw 0.18.1 SDK, then inspected every SVG in a local browser. The console continues to use its lightweight live renderer.
 - Native container stdout and per-container/guest resource counters are not collected by the console. Use the scoped terminal commands in [the console guide](backend-console.md).
 - Generated-cache deletion was tested against disposable fixtures. This live checkpoint retained the running lab's build artifacts; it did not prune unrelated caches, Docker images or VM allocations.
 

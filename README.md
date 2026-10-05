@@ -1,5 +1,7 @@
 # eCommerce distributed systems lab
 
+The current independent setup runs shopper web on the client and the three APIs on the backend host, with dependencies in its dedicated guest. Follow [independent development](docs/independent-development.md) and the [eight Excalidraw architecture drawings](docs/diagrams/README.md). Coverage and verification evidence are reported separately in [code quality](docs/code-quality.md) and [local verification](docs/local-verification.md).
+
 [![Code quality](https://github.com/dehanz13/eCommerce-distributed-system-lab/actions/workflows/quality.yml/badge.svg)](https://github.com/dehanz13/eCommerce-distributed-system-lab/actions/workflows/quality.yml)
 [![Business line coverage](docs/badges/business-coverage.svg)](docs/coverage-report.md)
 [![Overall unit line coverage](docs/badges/unit-coverage.svg)](docs/coverage-report.md)

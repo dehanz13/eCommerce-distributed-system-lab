@@ -1,129 +1,80 @@
-# Shutdown, cleanup and restart runbook
+# Shutdown, cleanup and restart
 
-Use this runbook to free CPU, memory or disk space on application host and remote host. Routine shutdown preserves source, configuration and durable lab records. The optional deletion steps explicitly identify what is erased.
+Routine cleanup retains orders, history, unresolved submissions and diagnostic reports. The current split runs shopper web on the client host, three APIs on the backend host, and dependencies in its dedicated `ecommerce-lab` Lima guest. Run backend lifecycle controls from the backend checkout. See [independent development](independent-development.md) for foreground versus managed ownership.
 
-The default topology runs the interactive lab on application host, with a separate `ecommerce-lab` Lima guest on remote host. In `TOPOLOGY=two`, stop the lab from application host while remote host is still reachable, then stop the guest. See [topology configuration](remote-lab-vm.md). Commands below use the current checkout path; adjust it if you move the repository.
+## Finish active work
 
-## 1. Finish active learning exercises
+Stop new simulated shoppers with `./lab feeder stop`, then inspect `./lab feeder status` until active work reaches zero and the run has a terminal outcome. Let any failure exercise finish and verify restoration. Lifecycle controls reject conflicting work. Preserve unknown checkout submissions for explicit recovery.
 
-If shoppers are running, stop new shoppers and wait until the report shows `active: 0` and a terminal run status:
+## Stop managed backend resources
 
-```sh
-cd "<repository-directory>"
-./lab feeder stop
-./lab feeder status
-```
-
-If a Failure Lab exercise is active, let it finish and confirm restoration completed. Lifecycle actions are rejected while shoppers or an exercise are active. Keep retained unknown checkout submissions for explicit recovery later.
-
-## 2. Stop the application host lab without erasing records
-
-In application host Terminal, from the checkout:
+From the backend checkout:
 
 ```sh
 ./lab stop
+./lab resources
 ```
 
-Wait for the action to report `status: completed`. Save the measured cleanup evidence with `./lab resources`, or inspect the operator control page at the origin printed by `./lab operator`. `./lab stop` now tears down this lab Compose project itself, preserving volumes. If the dedicated guest should release its allocation too, use `./lab poweroff`; its next full start starts the guest again. If it reports a failure, inspect that error before proceeding. This stops the managed applications and dependencies; the operator remains running so its action result can be retrieved.
+Inspect the action outcome and report. Stop attempts every independent owned cleanup, removes the lab Compose containers/networks and verifies listener/container state. Volumes, images, source, configuration, logs and reports remain. The operator stays running for recovery. A failed or unavailable probe is not verified cleanup.
 
-Then stop the remaining operator. The extra local Compose teardown below is an idempotent manual verification/fallback for a local topology; in two-host mode the operator already targeted its configured remote container host:
+Use `./lab poweroff` instead when the dedicated guest should also release its running allocation. With `TOPOLOGY=single` and `REMOTE_VM=ecommerce-lab`, it controls the local guest; the original `two` arrangement controls its configured remote guest. The guest disk remains. Other guests are outside this operation.
+
+Stop the remaining managed operator only after reading its receipt:
 
 ```sh
-./scripts/cleanup-startup
-docker compose --env-file .env --profile remote down
+node --import tsx --input-type=module -e "import {stopService} from './tools/operations.ts'; await stopService('operator');"
 ```
 
-The cleanup helper checks listener working directories before terminating this checkout's processes on the default ports 4310–4313. If you customized application ports, that helper does not cover those custom ports. Compose targets the `learning-core` project in the selected Docker context. Omitting `--volumes` preserves PostgreSQL and RabbitMQ volumes. Redis has no persistence, so its cached catalog disappears; PostgreSQL remains authoritative.
+For foreground owners, use Ctrl+C in each API terminal instead. SIGINT/SIGTERM drains registered resources and saves a private shutdown receipt. A crash or SIGKILL cannot run graceful cleanup; persisted attempts and outboxes remain recoverable.
 
-Verify shutdown without bootstrapping the operator again:
+## Stop independent shopper web
+
+On the client host, press Ctrl+C in its development terminal. For managed web:
 
 ```sh
-# macOS
+node --import tsx --input-type=module -e "import {stopService} from './tools/operations.ts'; await stopService('web');"
+```
+
+Do not run backend lifecycle actions from the web-only checkout. Read-only `./lab status` can inspect configured origins without starting a local operator.
+
+## Verify and inspect a failed teardown
+
+Check each owner host for configured listeners. For default macOS ports:
+
+```sh
 lsof -nP -iTCP:4310-4313 -sTCP:LISTEN
-# Linux (older lsof versions can miss Next.js)
-ss -H -ltnp 'sport >= :4310 and sport <= :4313'
-docker compose --env-file .env --profile remote ps -a
-```
-
-Expect no lab listeners and no remaining Compose containers. `lsof` normally exits with status 1 when it finds no matching listeners. A remaining listener can belong to another checkout; inspect its ownership rather than terminating it blindly.
-
-Quit Docker Desktop if no other projects need it running. Close monitoring terminals, or press `q` in btop.
-
-## 3. Stop the dedicated remote host guest
-
-Run directly in remote host Terminal:
-
-```sh
-limactl stop ecommerce-lab
 limactl list
 ```
 
-Confirm `ecommerce-lab` shows `Stopped`. This releases its running CPU/memory usage while retaining its VM disk and lab data. It does not delete disk files. Target only `ecommerce-lab`; other guests are outside this runbook.
-
-## 4. Optional: remove rebuildable application host files
-
-After shutdown, remove generated dependencies, builds and test reports:
+An operator retained intentionally still listens on 4313. Inspect ownership before terminating a remaining listener. To inspect containers in a running dedicated guest, enter it, change to the mounted backend checkout and run:
 
 ```sh
-cd "<repository-directory>"
-rm -rf node_modules apps/web/.next coverage test-results
-docker image rm learning-core-browser:local
+docker compose --env-file .lab/remote.env ps -a
+docker compose --env-file .lab/remote.env logs --tail 100 postgres rabbitmq redis toxiproxy
 ```
 
-Measure these folders with `du -sh` before removing them; their sizes change. The browser image is separate verification tooling. If it is already absent, no image removal is needed; if Docker reports it is in use, finish that lab test container first.
+If teardown failed, inspect its action/report error, guest connectivity, the selected Compose project and native dependency logs. Retry the named cleanup after correcting that cause; do not switch Docker engines or globally prune the host. For local Docker without a guest, use root `.env` on that explicitly selected engine instead.
 
-This preserves source, `.env`, lockfiles and `.lab` recovery/activity state. Dependency installation, frontend building and browser-image building are needed again when their outputs have been removed. Avoid global Docker pruning: other projects can share the same Docker engine.
+## Explicit generated-cache removal
 
-## 5. Optional: erase lab data or the guest disk
-
-These steps erase data. Use them only when you intend to recreate and reseed the lab.
-
-To remove the application host lab's PostgreSQL databases and RabbitMQ volume data, from the stopped checkout:
+After local web, ordering and fulfillment listeners stop:
 
 ```sh
-docker compose --env-file .env --profile remote down --volumes
+pnpm clean:generated
 ```
 
-This targets local Compose volumes; it does not erase a separate remote host guest. Host files such as `.env` and `.lab` remain.
+This removes only `apps/web/.next`, `coverage`, `test-results`, `playwright-report` and `.lab/browser.env`. It refuses active default/configured application listeners and unsafe intermediate symlinks. It retains dependencies, reports, activity, configuration, volumes, source and recovery records. Run it separately on each checkout; it does not delete remote files. Avoid simultaneous builds/tests during cleanup.
 
-To remove the stopped remote host lab VM and its disk, run on remote host:
+The retained `.lab/reports/` receipt lists attempted removals, errors, retained resources, lessons and recovery guidance. Managed stop evidence is also at `.lab/cleanup.json` and `/api/v1/resources`. Before/after counters are observations, not a certified return to an idle baseline. Report persistence failure is a failed diagnostic.
 
-```sh
-limactl delete ecommerce-lab
-```
+## Deliberate data erasure
 
-This erases the guest's databases, queues, container images and installed tools. The checkout mounted from macOS remains on the host. The 40 GiB disk setting is a capacity limit, not a guarantee of 40 GiB reclaimed. Recreate a deleted VM through the [dedicated VM runbook](remote-lab-vm.md); the ordinary restart below assumes it still exists.
+`./lab reset` is the separate destructive reset/reseed action. It is not routine cleanup. Deleting the stopped dedicated guest with `limactl delete ecommerce-lab` erases its databases, queues, images and installed tools; the host checkout remains. Do so only when deliberately recreating that lab. The 40 GiB sparse-disk limit is not a measured amount of reclaimed space. Never target other guests or use global Docker pruning.
 
-## 6. Start again
+## Restart the current split
 
-If retaining the remote host guest, start it there:
+Start the retained guest on the backend host with `limactl start ecommerce-lab`. Start only PostgreSQL, RabbitMQ, Redis and Toxiproxy through its existing `.lab/remote.env` Compose projection. Keep the old fulfillment container stopped when using the native host API. Existing volumes do not need reseeding.
 
-```sh
-limactl start ecommerce-lab
-```
+Run `pnpm dev:ordering`, `pnpm dev:fulfillment` and `pnpm dev:operator` in separate backend terminals; run `pnpm dev:web` on the client. Inspect owner readiness, the independent console and retained pending work before a new purchase. Do not automatically resubmit a checkout. Named managed starts are alternatives to those foreground owners; never start both on the same port. Whole-lab `./lab start` also starts web on its controller host.
 
-On application host, start Docker Desktop, then:
-
-```sh
-cd "<repository-directory>"
-nvm use
-pnpm install --frozen-lockfile
-./lab operator
-./lab start
-./lab status
-```
-
-In single-machine mode, `./lab start` starts local dependencies and rebuilds the frontend. In two-machine mode it also projects configuration and starts the remote lab services. Preserved records remain; empty lab volumes are initialized, migrated and seeded.
-
-Starting the VM alone does not establish container readiness. To resume the separate remote host demonstration stack while application host remains in single-machine mode, run on remote host from its mounted checkout:
-
-```sh
-cd "<repository-directory>"
-limactl shell ecommerce-lab sh -c 'cd "$1" && docker compose --env-file .lab/remote.env --profile remote up -d --wait' sh "$PWD"
-```
-
-This uses the existing generated remote configuration and explicitly selects the lab guest. It assumes that guest and its demonstration stack were already provisioned; adjust the checkout path to `REMOTE_DIR` if different. Inspect owner readiness after container startup.
-
-`./lab reset` erases managed lab data and then starts/reseeds the lab. Use the shutdown steps when your goal is to free running capacity.
-
-References: [Docker Compose down](https://docs.docker.com/reference/cli/docker/compose/down/), [Lima stop](https://lima-vm.io/docs/reference/limactl_stop/), [Lima delete](https://lima-vm.io/docs/reference/limactl_delete/).
+See [guest setup](remote-lab-vm.md), [configuration](configuration.md) and [independent startup/log commands](independent-development.md). References: [Compose down](https://docs.docker.com/reference/cli/docker/compose/down/), [Lima stop](https://lima-vm.io/docs/reference/limactl_stop/), [Lima delete](https://lima-vm.io/docs/reference/limactl_delete/).

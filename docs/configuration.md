@@ -1,21 +1,21 @@
 # Configuration
 
-Copy `.env.example` to the ignored root `.env` during first setup. Preserve an existing file. The shared loader reads that file for backend services, terminal tools and frontend build/start configuration. It does not merge arbitrary shell variables into the editable source. The operator generates service-specific projections under `.lab/` for remote containers and isolated browser checks.
+Copy `.env.example` to the ignored root `.env` during first setup. Preserve an existing file. The shared loader reads that file for backend services and terminal tools. Web reads `.env.web` first, falling back to root `.env` for HTTP origins only; it does not require backend credentials. It does not merge arbitrary shell variables into the editable source. The operator generates service-specific projections under `.lab/` for remote containers and isolated browser checks.
 
 ## Required values
 
 All non-optional keys in `.env.example` must be present and nonblank. This includes topology, database host/port/accounts, database names, broker host/ports/account, cache host/port, service URLs and proxy URL. The example passwords are fictional lab defaults.
 
-| Setting                                    | Validation or behavior                                                             |
-| ------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `TOPOLOGY`                                 | `single` or `two`                                                                  |
-| Dependency ports                           | Integers from 1 through 65535                                                      |
-| Service and proxy URLs                     | HTTP origins without embedded credentials, paths, query parameters or fragments    |
-| Application URLs                           | Include a non-default listening port from 1 through 65535; port zero is rejected   |
-| `RABBIT_CONNECT_HOST`                      | May be blank; uses `RABBIT_HOST` for the AMQP proxy connection                     |
-| `REMOTE_HOST`, `REMOTE_USER`, `REMOTE_DIR` | Required in two-machine mode; SSH operations also check their command-safe formats |
-| `REMOTE_VM`                                | Optional for direct remote Linux operation; required by the guest-monitor command  |
-| `REMOTE_BIND_IP`                           | Required when generating the Lima guest template                                   |
+| Setting                                    | Validation or behavior                                                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `TOPOLOGY`                                 | `single` or `two`                                                                                                   |
+| Dependency ports                           | Integers from 1 through 65535                                                                                       |
+| Service and proxy URLs                     | HTTP origins without embedded credentials, paths, query parameters or fragments                                     |
+| Application URLs                           | Include a non-default listening port from 1 through 65535; port zero is rejected                                    |
+| `RABBIT_CONNECT_HOST`                      | May be blank; uses `RABBIT_HOST` for the AMQP proxy connection                                                      |
+| `REMOTE_HOST`, `REMOTE_USER`, `REMOTE_DIR` | Required in two-machine mode; SSH operations also check their command-safe formats                                  |
+| `REMOTE_VM`                                | Selects the dedicated local Lima guest in `single`, or remote guest in `two`; blank uses the selected Docker engine |
+| `REMOTE_BIND_IP`                           | Required when generating the Lima guest template                                                                    |
 
 Missing required fields are reported together. The loader writes a message to stderr and throws before service startup. It reports variable names and corrective instructions, never supplied values. A missing or unreadable file is reported as a root configuration-file error.
 
@@ -28,6 +28,10 @@ Example terminal output:
 ```
 
 `./lab` reports a missing file and exits. `scripts/bootstrap` explicitly creates a missing file from the example and prints that it did so. It does not replace an existing file.
+
+## Current independent split
+
+The backend checkout uses `TOPOLOGY=single` because it owns all three APIs and its dependencies. `REMOTE_VM=ecommerce-lab` selects local Lima controls there. The separate client checkout uses ignored `.env.web` with backend HTTP origins; no SQL, broker or SSH credentials belong in it. `TOPOLOGY=two` names the original remote-Compose controller arrangement, not every deployment with two physical machines. Run lifecycle commands on the owner host; read-only `./lab status` can inspect configured origins from the client. See [independent development](independent-development.md).
 
 ## Apply a change
 

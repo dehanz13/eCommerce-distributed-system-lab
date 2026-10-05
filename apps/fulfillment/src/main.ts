@@ -92,36 +92,18 @@ installShutdown('fulfillment', [
   { name: 'publication timer', close: stopPublishing },
   { name: 'processing timer', close: stopProcessing },
   {
-    name: 'HTTP listener and active requests' /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
-     * Communicates with fulfillment SQL, RabbitMQ and its HTTP clients.
-     */,
-    /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
-     * Communicates with fulfillment SQL, RabbitMQ and its HTTP clients.
-     */
+    name: 'HTTP listener and active requests',
+    /** Drain requests and close this owner HTTP server; receives no data and uses the server created at startup. */
     close: () => app.close(),
   },
   {
-    name: 'broker connection' /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
-     * Communicates with fulfillment SQL, RabbitMQ and its HTTP clients.
-     */,
-    /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
-     * Communicates with fulfillment SQL, RabbitMQ and its HTTP clients.
-     */
+    name: 'broker connection',
+    /** Close this owner RabbitMQ channels/connection; receives no data and uses the startup delivery adapter. */
     close: () => io.close(),
   },
   {
-    name: 'database pool' /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
-     * Communicates with fulfillment SQL, RabbitMQ and its HTTP clients.
-     */,
-    /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
-     * Communicates with fulfillment SQL, RabbitMQ and its HTTP clients.
-     */
+    name: 'database pool',
+    /** Drain the owner PostgreSQL pool; receives no data and uses the startup database pool. */
     close: () => p.end(),
   },
 ]);

@@ -26,7 +26,7 @@ For a complete shutdown on both machines, resource cleanup, verification and res
 
 ## Two-machine topology
 
-The application host runs web, ordering and operator. The remote Linux host or guest runs PostgreSQL, RabbitMQ, Redis, the AMQP proxy and fulfillment. Configure the root `.env` with `TOPOLOGY=two`, reachable dependency hosts, service URLs, SSH account and checkout directory. Set `REMOTE_VM=ecommerce-lab` only when the remote host manages that guest through Lima.
+The current independent split runs web on the client host and all three APIs on the backend host. Run lifecycle controls from the backend checkout, using `TOPOLOGY=single` and `REMOTE_VM=ecommerce-lab` for its local dedicated guest. Dependencies run in that guest; host APIs use forwarded ports. Client `.env.web` contains HTTP origins only. The original `TOPOLOGY=two` controller arrangement remains an alternative: ordering/operator/web on the controller and dependencies/containerized fulfillment on its configured remote host. Follow [independent development](independent-development.md) for the current split; whole-lab `start` still includes web on the controller.
 
 See the [remote guest runbook](remote-lab-vm.md) for pinned setup, port forwarding and btop scopes. The operator generates `.lab/remote.env` and explicitly selects the configured guest rather than the host's default Docker context. Missing remote settings name the variables in terminal diagnostics.
 

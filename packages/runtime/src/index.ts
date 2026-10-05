@@ -106,9 +106,9 @@ export async function transaction<T>(
   }
 }
 export class Problem extends Error {
-  /** function Object() { [native code] }
-   * Input: status, code, message, details, from function Object() { [native code] }.
-   * Communicates with owner HTTP/SQL runtime and bounded local observations.
+  /** Describe a rejected owner operation for the HTTP error handler.
+   * Inputs: status, stable code, public message and optional details from validated owner work.
+   * Stores error data locally; the server handler later sends Problem Details to the caller.
    */
   constructor(
     public status: number,
@@ -119,10 +119,7 @@ export class Problem extends Error {
     super(message);
   }
 }
-/** Accept a valid caller correlation UUID and identify this HTTP attempt.
- * Input: req, from owner configuration, validated HTTP input and injected SQL work.
- * Communicates with owner HTTP/SQL runtime and bounded local observations.
- */
+/** Identify an HTTP attempt from its incoming Fastify request and correlation header; computes locally without database or network calls. */
 export function identifiers(req: FastifyRequest) {
   const raw = req.headers['x-correlation-id'];
   return {
@@ -134,10 +131,7 @@ export function identifiers(req: FastifyRequest) {
         : req.id,
   };
 }
-/** Wrap owner data in HTTP request/correlation metadata.
- * Input: req, data, from owner configuration, validated HTTP input and injected SQL work.
- * Communicates with owner HTTP/SQL runtime and bounded local observations.
- */
+/** Build the caller's HTTP envelope from the incoming Fastify request and route result; adds identifiers/time locally without extra service calls. */
 export function response<T>(req: FastifyRequest, data: T) {
   return { data, meta: { ...identifiers(req), respondedAt: new Date().toISOString() } };
 }

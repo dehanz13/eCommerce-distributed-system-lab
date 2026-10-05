@@ -183,22 +183,13 @@ app.post('/api/v1/experiments/restore', async (req) => {
 await listen(app, cfg.OPERATOR_URL);
 installShutdown('operator', [
   {
-    name: 'HTTP listener and active requests' /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated control/inspection requests and retained operator state.
-     * Communicates with owner HTTP endpoints and named local/remote lab operations.
-     */,
-    /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated control/inspection requests and retained operator state.
-     * Communicates with owner HTTP endpoints and named local/remote lab operations.
-     */
+    name: 'HTTP listener and active requests',
+    /** Drain requests and close this owner HTTP server; receives no data and uses the server created at startup. */
     close: () => app.close(),
   },
   {
     name: 'new shopper scheduling (retained work survives restart)',
-    /** Release the concrete caller-owned connection registered for shutdown.
-     * Input: no arguments; uses its current owner state, from validated control/inspection requests and retained operator state.
-     * Communicates with owner HTTP endpoints and named local/remote lab operations.
-     */
+    /** Stop scheduling new simulated shoppers during shutdown; accepts no input, uses the startup feeder, and retains existing recovery records. */
     close: () => {
       feeder.stop();
     },

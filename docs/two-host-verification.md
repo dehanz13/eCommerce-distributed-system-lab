@@ -1,5 +1,7 @@
 # Two-host verification
 
+This is a dated verification snapshot. Current backend-host placement and later measured checks are recorded in [local verification](local-verification.md); current startup commands are in [independent development](independent-development.md). Historical results below retain their original scope.
+
 Physical two-host verification completed on October 3, 2026 UTC. The application ran with web, ordering and operator on the application host, and PostgreSQL, RabbitMQ, Redis, Toxiproxy and fulfillment in the dedicated Linux guest. The [snapshot](two-host-snapshot.json) contains UTC action times, workload results, separate measurement sources and cleanup evidence. Application source was `d866e4b`; this release also corrects a browser-test ordering assumption. Other workloads remained running.
 
 Runtime qualification: the application-host processes and native verification commands ran under Node **24.11.0**, although `.nvmrc` at `d866e4b` requires **24.21.0**. Fulfillment used the pinned 24.21.0 container. Keep the observed version in the snapshot: these results demonstrate the recorded deployment, but do not verify the required pinned application-host setup. No physical rerun under that pin is recorded. For a new run, install/select 24.21.0 before bootstrapping the operator and all application processes, and capture their actual runtime versions separately from container versions.

@@ -16,7 +16,7 @@ pnpm dev:web
 
 Open http://127.0.0.1:4310. Next.js proxies browser-origin requests to the configured backend origins. Changing origins requires restarting development web; a production build records its rewrites, so rebuild before production restart. `.env.web` takes precedence over root `.env` for web configuration. It is ignored by Git. The existing managed controller still needs its full root `.env`.
 
-The page shows the warning after an ordering request fails. Check connection or a successful order poll clears it. Last-observed records can remain visible during an outage; they do not prove current backend availability. Validation/conflict responses keep their useful business explanation. If a checkout response is lost, recover its retained original body/key before attempting a fresh purchase.
+The page shows the warning after an ordering request fails. Check connection or automatic polling reloads catalog/cart after recovery and clears it once that initialization succeeds. A shopper opened while ordering is unavailable can resume adding products without refreshing the page. Last-observed records can remain visible during an outage; they do not prove current backend availability. Validation/conflict responses keep their useful business explanation. If a checkout response is lost, recover its retained original body/key before attempting a fresh purchase.
 
 ## Backend machine: backend processes
 

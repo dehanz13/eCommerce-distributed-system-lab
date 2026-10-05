@@ -10,6 +10,9 @@ if (
   );
 }
 const seen = new Set<string>();
+let unavailable = false;
+let lastFailureAt = 0;
+let suppressedFailures = 0;
 /** Read bounded local owner windows, filter optional caller identity, and print new structured requests/events/results without duplicates.
  * Input: no arguments; uses its current owner state, from CLI owner/identity selection and already sanitized local owner activity.
  * Communicates with local activity files and terminal output; no remote service control.
@@ -19,6 +22,9 @@ function follow() {
     const records = (owner === 'all' ? owners : [owner])
       .flatMap((name) => readActivity(name))
       .sort((a, b) => String(a.occurredAt).localeCompare(String(b.occurredAt)));
+    if (unavailable) console.error('[logs] Local observations recovered.');
+    unavailable = false;
+    suppressedFailures = 0;
     for (const record of records) {
       const id = String(record.id);
       if (seen.has(id)) continue;
@@ -28,7 +34,16 @@ function follow() {
     }
     while (seen.size > 600) seen.delete(seen.values().next().value!);
   } catch {
-    console.error('[logs] Local observations unavailable; check .lab/logs permissions. Retrying.');
+    const now = Date.now();
+    if (!unavailable || now - lastFailureAt >= 30000) {
+      console.error(
+        '[logs] Local observations unavailable; check .lab/logs permissions. Retrying.',
+        { suppressedFailures },
+      );
+      lastFailureAt = now;
+      suppressedFailures = 0;
+    } else suppressedFailures++;
+    unavailable = true;
   }
 }
 console.error(

@@ -1,5 +1,7 @@
 # Command reference
 
+For the current independent split, run named lifecycle controls from the backend checkout; the client runs `pnpm dev:web` alone. Whole-lab `./lab start` still includes web on the controller host. See [independent development](independent-development.md) for managed-to-foreground transitions and `pnpm logs all`. Routine cleanup retains records/reports; `pnpm clean:generated` explicitly removes disposable build/test output after application listeners stop.
+
 Run from the checkout root. The [learning path](learning-path.md) provides ordered exercises and expected outcomes; this reference enumerates shipped entry points. Root `.env` controls origins/topology; examples assume `.env.example` defaults. Scripts do not imply successful readiness until their result says so. Do not run destructive/fault tests on another project's services.
 
 ## Terminal launcher

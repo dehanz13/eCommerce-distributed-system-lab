@@ -2,19 +2,11 @@
 
 This lab teaches the path from a browser submission to a transaction, durable event, processing attempt and observable outcome. Everything is fictional. There is no signup, payment, carrier integration, or production deployment. A monorepo is one source repository; it does not imply one runtime process or shared database ownership.
 
-```mermaid
-flowchart LR
-  W[Web: shop, catalog, dashboard] --> O[Ordering]
-  O --> OD[(Ordering database)]
-  O --> R[RabbitMQ]
-  R --> F[Fulfillment]
-  F --> FD[(Fulfillment database)]
-  F --> R
-  R --> O
-  W --> P[Operator]
-  CLI[Terminal menu] --> P
-  P --> S[Named lifecycle operations and observations]
-```
+![Complete ecosystem, database ownership and actual broker bus](diagrams/01-ecosystem.svg)
+
+The [eight editable Excalidraw drawings](diagrams/README.md) cover checkout, durable fulfillment, broker routing, cache behavior, controls and physical placement. State charts below describe business transitions rather than additional deployed systems.
+
+The current split runs shopper web on the client host; Ordering API, Fulfillment API and Operator API run as independent Node processes on the backend host. Its dedicated Lima guest contains PostgreSQL, RabbitMQ, Redis and Toxiproxy. PostgreSQL hosts two independently owned databases. The console at the operator origin plus `/architecture` works independently of shopper web. See [independent development](independent-development.md) for separate terminal commands.
 
 | Workspace          | Owns                                                                                     | Interface and guarantees                                                                           |
 | ------------------ | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -78,14 +70,14 @@ Group 1 supports up to 50 distinct cart products and quantities 1–999. Prices/
 
 ## Decision register
 
-| Decision                                                 | Reason                                                                                        |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Node 24 / pnpm / TypeScript                              | One reproducible language/toolchain across the four applications                              |
-| Fastify / TypeBox / Ajv                                  | Small REST implementation with executable request/response contracts                          |
-| PostgreSQL, two databases                                | Teach ownership and local transactions without cross-service table reads                      |
-| RabbitMQ                                                 | Durable queues and explicit publication/acknowledgment behavior with modest local overhead    |
-| Transactional outbox/inbox                               | Database commit and broker acknowledgment cannot be one distributed transaction               |
-| Native applications locally, containers for dependencies | Makes process/container distinctions visible; the remote fulfillment process is containerized |
-| Next.js / Tailwind / shadcn-style controls               | Simple shop/catalog/dashboard navigation with shared accessible controls                      |
-| Manual restart after crashes                             | Keep requested and observed state explicit; no hidden restart policy                          |
-| Recreate and reseed when moving hosts                    | Reproducibility without a migration/backup subsystem in Group 1                               |
+| Decision                                                 | Reason                                                                                     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Node 24 / pnpm / TypeScript                              | One reproducible language/toolchain across the four applications                           |
+| Fastify / TypeBox / Ajv                                  | Small REST implementation with executable request/response contracts                       |
+| PostgreSQL, two databases                                | Teach ownership and local transactions without cross-service table reads                   |
+| RabbitMQ                                                 | Durable queues and explicit publication/acknowledgment behavior with modest local overhead |
+| Transactional outbox/inbox                               | Database commit and broker acknowledgment cannot be one distributed transaction            |
+| Native applications locally, containers for dependencies | Current split: three native backend owners; dependencies in a dedicated guest              |
+| Next.js / Tailwind / shadcn-style controls               | Simple shop/catalog/dashboard navigation with shared accessible controls                   |
+| Manual restart after crashes                             | Keep requested and observed state explicit; no hidden restart policy                       |
+| Preserve existing volumes when moving API processes      | Process placement changes do not require erasing business records                          |

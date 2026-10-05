@@ -46,7 +46,7 @@ Closing the page cancels its current fetch and stops its timer. Each new sample 
 
 ## Editable diagram and maintenance
 
-Download the Excalidraw scene from the console, or open `docs/diagrams/08-backend-console.excalidraw` in Excalidraw. This is an editable static architecture drawing with embedded local technology symbols; it does not contain private configuration or live data. The live console uses a small SVG/HTML renderer rather than loading the full Excalidraw editor. Both use `tools/backend-map.json` for positions, labels and paths. After changing that registry, regenerate the scene with:
+Download the current static scene from the console, or open the documented [scene](diagrams/08-backend-console.excalidraw) and [SVG](diagrams/08-backend-console.svg). The documented scene and downloadable scene are the same compact live-layout reference, generated from the shared registry. This is an editable static architecture drawing with embedded local technology symbols; it does not contain private configuration or live data. The live console uses a small SVG/HTML renderer rather than loading the full Excalidraw editor. Both use `tools/backend-map.json` for positions, labels and paths. After changing that registry, regenerate all documented scenes with `node --import tsx tools/architecture-diagrams.mjs` and export their SVGs with Excalidraw. The compact downloadable reference can also be regenerated with:
 
 ```sh
 pnpm exec tsx tools/backend-diagram.ts

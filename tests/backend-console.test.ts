@@ -158,3 +158,19 @@ it('preserves a valid degraded 503 health report and rejects malformed health fi
     invalid.data.samples.find((sample: { id: string }) => sample.id === 'ordering'),
   ).toMatchObject({ available: false, data: null });
 });
+
+it.each([
+  {},
+  { 'lab-rabbitmq': {} },
+  { 'lab-rabbitmq': { enabled: 'false' } },
+  { 'lab-rabbitmq': null },
+])('keeps malformed or missing proxy evidence unavailable: %j', async (proxy) => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(JSON.stringify(proxy))),
+  );
+  const payload = (await app.inject('/api/v1/backend')).json();
+  expect(
+    payload.data.samples.find((sample: { id: string }) => sample.id === 'toxiproxy'),
+  ).toMatchObject({ available: false, data: null });
+});

@@ -3,8 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 /** Return locations and categories only; a flagged value must not appear in diagnostics.
- * Input: file, contents, from CLI/control input, public owner contracts or measured local evidence.
- * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ * Inputs: repository-relative filename and file text supplied by the publication scanner.
+ * Checks text locally and returns safe categories; no HTTP, database or lifecycle operations.
  */
 export function inspectPublicFile(file: string, contents: string) {
   const issues: string[] = [];
@@ -52,8 +52,8 @@ export function inspectPublicFile(file: string, contents: string) {
 }
 
 /** Scan tracked/public candidate files without exposing matched credential values.
- * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
- * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ * Input: none; Git supplies candidate paths and the filesystem supplies their contents.
+ * Reads local Git/filesystem state and prints safe diagnostics; no network or lifecycle operations.
  */
 export function checkPublicContent() {
   const files = execFileSync(

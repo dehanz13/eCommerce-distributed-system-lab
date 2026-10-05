@@ -103,6 +103,7 @@ function Status({ value }: { value: string }) {
  * Communicates with owner HTTP contracts through the shared client; never owner databases.
  */
 export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
+  const needsShopperReload = useRef(true);
   const [dark, setDark] = useState(false),
     [products, setProducts] = useState<Product[]>([]),
     [cart, setCart] = useState<Cart | null>(null),
@@ -172,12 +173,14 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
           setCart(c.data);
           const o = await request<Order[]>('/api/v1/orders?shopperId=' + shopper, { signal });
           setOrders(o.data);
+          needsShopperReload.current = false;
         }
         setBackendUnavailable(false);
       } catch (e) {
         if (signal?.aborted) return;
         const unavailable = !(e instanceof ApiError) || e.status === 0 || e.status >= 500;
         setBackendUnavailable(unavailable);
+        if (unavailable) needsShopperReload.current = true;
         if (!unavailable) setMessage(String(e instanceof Error ? e.message : e));
       }
     },
@@ -204,10 +207,15 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
         });
         if (!controller.signal.aborted) {
           setOrders(result.data);
-          setBackendUnavailable(false);
+          // Reload the idempotently acquired cart/catalog after a read outage; never replay checkout.
+          if (needsShopperReload.current) await load(controller.signal);
+          else setBackendUnavailable(false);
         }
       } catch {
-        if (!controller.signal.aborted) setBackendUnavailable(true);
+        if (!controller.signal.aborted) {
+          needsShopperReload.current = true;
+          setBackendUnavailable(true);
+        }
       } finally {
         if (!controller.signal.aborted) timer = setTimeout(pollOrders, 2000);
       }
@@ -217,7 +225,7 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [view, shopper]);
+  }, [view, shopper, load]);
   /** Run one explicit UI action and surface its failure without replaying it.
    * Input: work, from React props, current browser state and explicit user actions.
    * Communicates with owner HTTP contracts through the shared client; never owner databases.

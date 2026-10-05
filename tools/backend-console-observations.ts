@@ -26,6 +26,16 @@ async function sample(id: string, url: string, route: string) {
       throw new Error('Invalid health contract');
     if (id === 'toxiproxy' && (!body || typeof body !== 'object' || Array.isArray(body)))
       throw new Error('Invalid proxy contract');
+    if (id === 'toxiproxy') {
+      const proxy = body['lab-rabbitmq'];
+      if (
+        !proxy ||
+        typeof proxy !== 'object' ||
+        Array.isArray(proxy) ||
+        typeof proxy.enabled !== 'boolean'
+      )
+        throw new Error('Missing or invalid configured proxy evidence');
+    }
     const data =
       id === 'toxiproxy'
         ? Object.entries(body)
