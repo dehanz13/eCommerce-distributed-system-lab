@@ -57,13 +57,15 @@ If teardown failed, inspect its action/report error, guest connectivity, the sel
 
 ## Explicit generated-cache removal
 
-After local web, ordering and fulfillment listeners stop:
+After local web, ordering, fulfillment and operator listeners stop:
 
 ```sh
 pnpm clean:generated
 ```
 
 This removes only `apps/web/.next`, `coverage`, `test-results`, `playwright-report` and `.lab/browser.env`. It refuses active default/configured application listeners and unsafe intermediate symlinks. It retains dependencies, reports, activity, configuration, volumes, source and recovery records. Run it separately on each checkout; it does not delete remote files. Avoid simultaneous builds/tests during cleanup.
+
+The idle check includes the Operator API on its default port 4313 and its configured `OPERATOR_URL` port. Stop the local operator before generated-cache removal; its recovery UI remains unavailable until that operator is restarted. A refusal retains all artifacts and writes an unverified cleanup report.
 
 The retained `.lab/reports/` receipt lists attempted removals, errors, retained resources, lessons and recovery guidance. Managed stop evidence is also at `.lab/cleanup.json` and `/api/v1/resources`. Before/after counters are observations, not a certified return to an idle baseline. Report persistence failure is a failed diagnostic.
 

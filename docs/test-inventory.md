@@ -1,6 +1,6 @@
 # Unit and module test inventory
 
-Generated 2026-10-05T07:08:01.866Z from the run started 2026-10-05T07:07:54.736Z. Source: Vitest JSON assertion results. Passed 188; failed 0; skipped/pending 0.
+Generated 2026-10-05T07:23:18.310Z from the run started 2026-10-05T07:23:11.336Z. Source: Vitest JSON assertion results. Passed 192; failed 0; skipped/pending 0.
 
 Regenerate with `pnpm test` or `pnpm test:coverage`. A checked box means this test passed in that run. Unchecked items carry their actual status; they do not imply every unexecuted test failed. Integration/browser checks have separate commands and do not appear in this unit inventory. Collection failures are listed separately. This is a dated snapshot, not a live indicator.
 
@@ -8,7 +8,7 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 
 ## Operator observation collection · tests/activity-collection.test.ts
 
-- [x] collects valid source data and labels unavailable owners rather than inventing an empty healthy stream — **passed** (14 ms)
+- [x] collects valid source data and labels unavailable owners rather than inventing an empty healthy stream — **passed** (15 ms)
 - [x] rejects an invalid activity reply at the real runtime contract boundary — **passed** (0 ms)
 - [x] enforces the advertised owner window with 200 remote records — **passed** (8 ms)
 - [x] enforces the advertised owner window with 201 remote records — **passed** (1 ms)
@@ -28,8 +28,8 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 ## Shared tooling · tests/backend-console.test.ts
 
 - [x] keeps connector lanes clear of cards and other connectors — **passed** (10 ms)
-- [x] serves the backend console, local module and editable scene independently of shopper routes — **passed** (37 ms)
-- [x] reports partial outages, redacts sampled secrets and validates the public snapshot contract — **passed** (39 ms)
+- [x] serves the backend console, local module and editable scene independently of shopper routes — **passed** (35 ms)
+- [x] reports partial outages, redacts sampled secrets and validates the public snapshot contract — **passed** (36 ms)
 - [x] preserves a valid degraded 503 health report and rejects malformed health fields — **passed** (2 ms)
 - [x] keeps malformed or missing proxy evidence unavailable: {} — **passed** (1 ms)
 - [x] keeps malformed or missing proxy evidence unavailable: {"lab-rabbitmq":{}} — **passed** (1 ms)
@@ -47,36 +47,43 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 - [x] revisioned catalog cache returns authoritative catalog data when a cache fill fails — **passed** (2 ms)
 - [x] revisioned catalog cache fills a cold key and serves a hit without another catalog load — **passed** (0 ms)
 - [x] revisioned catalog cache cannot select a stale revision after a late fill completes — **passed** (52 ms)
-- [x] revisioned catalog cache coalesces overlapping loads within this ordering process — **passed** (51 ms)
+- [x] revisioned catalog cache coalesces overlapping loads within this ordering process — **passed** (50 ms)
 - [x] revisioned catalog cache rejects corrupt cached JSON and replaces it with validated database data — **passed** (0 ms)
 - [x] revisioned catalog cache falls back when cache lookup fails without masking database failure — **passed** (1 ms)
 - [x] revisioned catalog cache cleans failed fills so a later request can recover — **passed** (0 ms)
 
 ## Ordering · tests/checkout.test.ts
 
-- [x] reserves stock, snapshots items, empties the cart and records an event atomically — **passed** (27 ms)
-- [x] recovers an accepted response before checking the emptied cart and rejects key reuse — **passed** (14 ms)
-- [x] requires a bounded key and a known cart — **passed** (8 ms)
-- [x] scopes tracing references to the shopper even when two shoppers choose the same key — **passed** (20 ms)
-- [x] requires reconfirmation after contents or price changes and keeps the cart — **passed** (12 ms)
-- [x] rejects empty, inactive and short-stock carts without a partial order — **passed** (13 ms)
-- [x] rolls back reservation, order and cart changes if saving the outgoing event fails — **passed** (15 ms)
-- [x] compensates once despite duplicate and contradictory terminal outcomes — **passed** (26 ms)
-- [x] fulfills once and refuses a recovery cart for accepted or fulfilled orders — **passed** (19 ms)
+- [x] reserves stock, snapshots items, empties the cart and records an event atomically — **passed** (25 ms)
+- [x] recovers an accepted response before checking the emptied cart and rejects key reuse — **passed** (13 ms)
+- [x] requires a bounded key and a known cart — **passed** (7 ms)
+- [x] scopes tracing references to the shopper even when two shoppers choose the same key — **passed** (16 ms)
+- [x] requires reconfirmation after contents or price changes and keeps the cart — **passed** (11 ms)
+- [x] rejects empty, inactive and short-stock carts without a partial order — **passed** (11 ms)
+- [x] rolls back reservation, order and cart changes if saving the outgoing event fails — **passed** (13 ms)
+- [x] compensates once despite duplicate and contradictory terminal outcomes — **passed** (18 ms)
+- [x] fulfills once and refuses a recovery cart for accepted or fulfilled orders — **passed** (11 ms)
 - [x] does not permanently deduplicate an unknown-order outcome before its effects commit — **passed** (5 ms)
-- [x] fingerprints prices independently of item order without mutating the input — **passed** (12 ms)
+- [x] fingerprints prices independently of item order without mutating the input — **passed** (11 ms)
+
+## Shared tooling · tests/clean-generated-command.test.ts
+
+- [x] refuses generated cleanup with an operator listener on darwin port 4313 — **passed** (9 ms)
+- [x] refuses generated cleanup with an operator listener on darwin port 5413 — **passed** (1 ms)
+- [x] refuses generated cleanup with an operator listener on linux port 4313 — **passed** (1 ms)
+- [x] refuses generated cleanup with an operator listener on linux port 5413 — **passed** (1 ms)
 
 ## Client wrapper · tests/client.test.ts
 
-- [x] sends requests and records valid identifiers on local HTTP without randomUUID — **passed** (20 ms)
-- [x] retries one transient read but never repeats checkout — **passed** (255 ms)
-- [x] does not retry client validation errors — **passed** (1 ms)
-- [x] bounds transport retries and respects an explicitly aborted read — **passed** (253 ms)
-- [x] correlates browser input, transport and output while redacting fictional sensitive fields — **passed** (1 ms)
+- [x] sends requests and records valid identifiers on local HTTP without randomUUID — **passed** (17 ms)
+- [x] retries one transient read but never repeats checkout — **passed** (261 ms)
+- [x] does not retry client validation errors — **passed** (4 ms)
+- [x] bounds transport retries and respects an explicitly aborted read — **passed** (257 ms)
+- [x] correlates browser input, transport and output while redacting fictional sensitive fields — **passed** (3 ms)
 
 ## Configuration · tests/configuration.test.ts
 
-- [x] starts web configuration with only public origins and prefers .env.web over backend settings — **passed** (6 ms)
+- [x] starts web configuration with only public origins and prefers .env.web over backend settings — **passed** (3 ms)
 - [x] accepts the committed single-machine example and optional empty remote settings — **passed** (0 ms)
 - [x] reports all missing required settings together without substituting defaults — **passed** (1 ms)
 - [x] rejects an invalid dependency port: 0 — **passed** (0 ms)
@@ -89,7 +96,7 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 - [x] rejects an unsafe service origin without logging its value — **passed** (0 ms)
 - [x] rejects an unsafe service origin without logging its value — **passed** (0 ms)
 - [x] rejects an unsafe service origin without logging its value — **passed** (0 ms)
-- [x] rejects 'ORDERING_URL' when 'http://localhost' has no usable lifecycle port — **passed** (1 ms)
+- [x] rejects 'ORDERING_URL' when 'http://localhost' has no usable lifecycle port — **passed** (0 ms)
 - [x] rejects 'ORDERING_URL' when 'https://localhost' has no usable lifecycle port — **passed** (0 ms)
 - [x] rejects 'ORDERING_URL' when 'http://localhost:80' has no usable lifecycle port — **passed** (0 ms)
 - [x] rejects 'ORDERING_URL' when 'https://localhost:443' has no usable lifecycle port — **passed** (0 ms)
@@ -118,8 +125,8 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 ## Quality tooling · tests/coverage-report.test.ts
 
 - [x] reports the business gate and untested overall/system code separately without publishing host paths — **passed** (112 ms)
-- [x] fails a business result at 90% while still writing the report — **passed** (105 ms)
-- [x] fails when a listed business module is absent from the collected scope — **passed** (50 ms)
+- [x] fails a business result at 90% while still writing the report — **passed** (109 ms)
+- [x] fails when a listed business module is absent from the collected scope — **passed** (48 ms)
 
 ## Shared tooling · tests/database-connectivity.test.ts
 
@@ -131,32 +138,32 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 - [x] business guarantees uses integer money and rejects invalid quantities — **passed** (1 ms)
 - [x] business guarantees has a bounded deterministic processing budget — **passed** (0 ms)
 - [x] business guarantees never reverses terminal orders — **passed** (0 ms)
-- [x] business guarantees rejects contradictory event payloads — **passed** (3 ms)
+- [x] business guarantees rejects contradictory event payloads — **passed** (2 ms)
 
 ## Operator · tests/experiments.test.ts
 
-- [x] does not certify shutdown after failed restoration has already settled — **passed** (17 ms)
+- [x] does not certify shutdown after failed restoration has already settled — **passed** (14 ms)
 - [x] does not certify shutdown for restoration left unknown by an operator restart — **passed** (2 ms)
 - [x] captures and restores the cache-outage exercise with bounded progress — **passed** (3 ms)
 - [x] captures and restores the broker-outage exercise with bounded progress — **passed** (2 ms)
 - [x] captures and restores the database-outage exercise with bounded progress — **passed** (2 ms)
 - [x] captures and restores the fulfillment-restart exercise with bounded progress — **passed** (2 ms)
-- [x] captures and restores the network-latency exercise with bounded progress — **passed** (3 ms)
-- [x] captures and restores the network-cut exercise with bounded progress — **passed** (3 ms)
+- [x] captures and restores the network-latency exercise with bounded progress — **passed** (2 ms)
+- [x] captures and restores the network-cut exercise with bounded progress — **passed** (2 ms)
 - [x] captures and restores the slow-processing exercise with bounded progress — **passed** (2 ms)
 - [x] captures and restores the retry-processing exercise with bounded progress — **passed** (2 ms)
 - [x] captures and restores the failed-processing exercise with bounded progress — **passed** (2 ms)
-- [x] refuses an unhealthy baseline and records unavailable snapshots — **passed** (2 ms)
-- [x] requires explicit restoration after cleanup fails, then restores only named lab targets — **passed** (2 ms)
+- [x] refuses an unhealthy baseline and records unavailable snapshots — **passed** (1 ms)
+- [x] requires explicit restoration after cleanup fails, then restores only named lab targets — **passed** (3 ms)
 - [x] records a proxy mutation failure without reporting the exercise as successful — **passed** (1 ms)
 - [x] drains an interrupted exercise and awaits restoration before shutdown can finish — **passed** (2 ms)
-- [x] restores the cache-outage fault when shutdown interrupts its active window — **passed** (1 ms)
+- [x] restores the cache-outage fault when shutdown interrupts its active window — **passed** (2 ms)
 - [x] restores the broker-outage fault when shutdown interrupts its active window — **passed** (1 ms)
 - [x] restores the database-outage fault when shutdown interrupts its active window — **passed** (1 ms)
 - [x] restores the fulfillment-restart fault when shutdown interrupts its active window — **passed** (1 ms)
 - [x] restores the network-latency fault when shutdown interrupts its active window — **passed** (1 ms)
-- [x] restores the network-cut fault when shutdown interrupts its active window — **passed** (1 ms)
-- [x] restores the slow-processing fault when shutdown interrupts its active window — **passed** (1 ms)
+- [x] restores the network-cut fault when shutdown interrupts its active window — **passed** (2 ms)
+- [x] restores the slow-processing fault when shutdown interrupts its active window — **passed** (2 ms)
 - [x] restores the retry-processing fault when shutdown interrupts its active window — **passed** (1 ms)
 - [x] restores the failed-processing fault when shutdown interrupts its active window — **passed** (1 ms)
 - [x] reports failed shutdown restoration and retains explicit recovery state — **passed** (2 ms)
@@ -167,39 +174,39 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 ## Shopper feeder · tests/feeder.test.ts
 
 - [x] preserves an unknown checkout and recovers its original submission before another run — **passed** (68 ms)
-- [x] runs accepted and abandoned shopper journeys and accounts for their requests — **passed** (57 ms)
+- [x] runs accepted and abandoned shopper journeys and accounts for their requests — **passed** (54 ms)
 - [x] stops new shoppers, finishes active work and retains a terminal run report — **passed** (52 ms)
-- [x] clears definitive checkout rejections but retains transport failures for recovery — **passed** (103 ms)
-- [x] records a failed catalog setup without starting shopper transactions — **passed** (51 ms)
+- [x] clears definitive checkout rejections but retains transport failures for recovery — **passed** (104 ms)
+- [x] records a failed catalog setup without starting shopper transactions — **passed** (52 ms)
 
 ## Fulfillment · tests/fulfillment.test.ts
 
-- [x] commits the inbox and one job, deduplicates delivery and snapshots the preset — **passed** (22 ms)
-- [x] does not spend processing attempts on dependency outages or a paused queue — **passed** (12 ms)
-- [x] waits for the five-second deadline and resumes the same attempt after restart, even while paused — **passed** (22 ms)
-- [x] fails once, preserves a one-second retry deadline, then commits success and its event — **passed** (19 ms)
-- [x] exhausts exactly three attempts with one- and five-second retry delays — **passed** (26 ms)
-- [x] rolls back the final attempt and job if its outcome cannot be stored — **passed** (25 ms)
-- [x] keeps at most one active attempt when multiple jobs wait — **passed** (15 ms)
+- [x] commits the inbox and one job, deduplicates delivery and snapshots the preset — **passed** (27 ms)
+- [x] does not spend processing attempts on dependency outages or a paused queue — **passed** (17 ms)
+- [x] waits for the five-second deadline and resumes the same attempt after restart, even while paused — **passed** (18 ms)
+- [x] fails once, preserves a one-second retry deadline, then commits success and its event — **passed** (20 ms)
+- [x] exhausts exactly three attempts with one- and five-second retry delays — **passed** (37 ms)
+- [x] rolls back the final attempt and job if its outcome cannot be stored — **passed** (24 ms)
+- [x] keeps at most one active attempt when multiple jobs wait — **passed** (14 ms)
 
 ## Shared contracts and runtime · tests/http-contract.test.ts
 
-- [x] serializes a product response matching the shared runtime contract — **passed** (42 ms)
-- [x] rejects invalid and extra write fields without silently changing the submission — **passed** (4 ms)
+- [x] serializes a product response matching the shared runtime contract — **passed** (40 ms)
+- [x] rejects invalid and extra write fields without silently changing the submission — **passed** (3 ms)
 - [x] reports malformed JSON as a client error rather than a dependency outage — **passed** (1 ms)
-- [x] preserves stable business error codes and request identifiers — **passed** (2 ms)
-- [x] exports observed request/response activity with correlation and timing metadata — **passed** (9 ms)
+- [x] preserves stable business error codes and request identifiers — **passed** (1 ms)
+- [x] exports observed request/response activity with correlation and timing metadata — **passed** (8 ms)
 - [x] rejects excessive shopper traffic and unknown fault scenarios at the contract seam — **passed** (22 ms)
-- [x] requires preset values and rejects ignored or misdirected control parameters before accepting an action — **passed** (33 ms)
+- [x] requires preset values and rejects ignored or misdirected control parameters before accepting an action — **passed** (25 ms)
 
 ## Shared tooling · tests/lifecycle-cleanup.test.ts
 
 - [x] continues shutdown after failure/timeout and records every owned closer without leaking its error — **passed** (15 ms)
 - [x] removes only allowlisted generated files and retains recovery, source, configuration and evidence — **passed** (3 ms)
-- [x] saves a refused-cleanup report and leaves artifacts intact when local state is active or unknown — **passed** (1 ms)
+- [x] saves a refused-cleanup report and leaves artifacts intact when local state is active or unknown — **passed** (2 ms)
 - [x] drains in-flight owner work before releasing its scheduling loop — **passed** (2 ms)
 - [x] refuses a symlinked artifact ancestor and never deletes its external target — **passed** (2 ms)
-- [x] allows bounded exercise restoration beyond the ordinary connection-close deadline — **passed** (1 ms)
+- [x] allows bounded exercise restoration beyond the ordinary connection-close deadline — **passed** (2 ms)
 
 ## Shared tooling · tests/logs.test.ts
 
@@ -208,36 +215,36 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 
 ## Operator host monitoring · tests/monitor.test.ts
 
-- [x] opens the single guest monitor on its owning host — **passed** (26 ms)
-- [x] opens the two guest monitor on its owning host — **passed** (10 ms)
+- [x] opens the single guest monitor on its owning host — **passed** (24 ms)
+- [x] opens the two guest monitor on its owning host — **passed** (11 ms)
 
 ## Shared runtime · tests/observation.test.ts
 
-- [x] records input, processing and output with one trace and redacts nested credentials — **passed** (20 ms)
+- [x] records input, processing and output with one trace and redacts nested credentials — **passed** (19 ms)
 - [x] logs rejected business submissions and keeps successful health polling quiet — **passed** (2 ms)
-- [x] bounds payloads and preserves a successful response if the activity sink fails — **passed** (4 ms)
+- [x] bounds payloads and preserves a successful response if the activity sink fails — **passed** (3 ms)
 - [x] summarizes identical dependency failures and records recovery without idle success logs — **passed** (3 ms)
 - [x] does not let a polling header suppress business write observations — **passed** (1 ms)
 
 ## Shared tooling · tests/operator-inspection.test.ts
 
-- [x] serves the actual recovery page and documents its HTML content type — **passed** (31 ms)
+- [x] serves the actual recovery page and documents its HTML content type — **passed** (30 ms)
 - [x] serializes the collected report and validates it through the browser contract — **passed** (37 ms)
 
 ## Operator · tests/operator-lifecycle.test.ts
 
-- [x] stops an owned orphan listener even when the recorded launcher has exited — **passed** (3 ms)
+- [x] stops an owned orphan listener even when the recorded launcher has exited — **passed** (2 ms)
 - [x] refuses both stopping and starting over a listener from another checkout — **passed** (1 ms)
 - [x] starts TypeScript in the recorded process and verifies that it owns the listener — **passed** (1 ms)
 - [x] accepts Linux socket ownership despite a truncated Next process name — **passed** (1 ms)
-- [x] refuses Linux lifecycle changes when a listening socket hides its owner — **passed** (1033 ms)
-- [x] waits for a retiring Linux socket after its owned process has stopped — **passed** (28 ms)
-- [x] tears down only the lab project without deleting volumes and saves measured shutdown evidence — **passed** (6 ms)
-- [x] continues container cleanup after an unowned local listener and never certifies it as stopped — **passed** (2 ms)
-- [x] persists an unverified report when the container host fails cleanup — **passed** (1 ms)
-- [x] restarts the entire lab only after verified teardown and returns its stop report — **passed** (15 ms)
-- [x] releases only the configured dedicated guest and reports its retained disk — **passed** (41 ms)
-- [x] controls a local dedicated guest while preserving volumes and measuring its own scope — **passed** (56 ms)
+- [x] refuses Linux lifecycle changes when a listening socket hides its owner — **passed** (1042 ms)
+- [x] waits for a retiring Linux socket after its owned process has stopped — **passed** (31 ms)
+- [x] tears down only the lab project without deleting volumes and saves measured shutdown evidence — **passed** (15 ms)
+- [x] continues container cleanup after an unowned local listener and never certifies it as stopped — **passed** (8 ms)
+- [x] persists an unverified report when the container host fails cleanup — **passed** (2 ms)
+- [x] restarts the entire lab only after verified teardown and returns its stop report — **passed** (16 ms)
+- [x] releases only the configured dedicated guest and reports its retained disk — **passed** (35 ms)
+- [x] controls a local dedicated guest while preserving volumes and measuring its own scope — **passed** (46 ms)
 - [x] creates and refreshes a private guest projection before Compose in a fresh single-host checkout — **passed** (13 ms)
 
 ## Publication tooling · tests/public-content.test.ts
@@ -249,16 +256,16 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 
 ## Operator · tests/resources.test.ts
 
-- [x] reports measured changes and retained allocations without claiming baseline restoration — **passed** (2 ms)
+- [x] reports measured changes and retained allocations without claiming baseline restoration — **passed** (3 ms)
 - [x] fails verification for a remaining service or unavailable measurement — **passed** (0 ms)
 
 ## Shared tooling · tests/shell.test.ts
 
 - [x] round-trips a literal shell argument: "" — **passed** (6 ms)
 - [x] round-trips a literal shell argument: "apostrophe ' and space" — **passed** (4 ms)
-- [x] round-trips a literal shell argument: "double \" and $variable; $(printf injected)" — **passed** (5 ms)
+- [x] round-trips a literal shell argument: "double \" and $variable; $(printf injected)" — **passed** (4 ms)
 - [x] round-trips a literal shell argument: "line one\nline two" — **passed** (4 ms)
-- [x] preserves Python source through the host shell and nested guest shell — **passed** (7 ms)
+- [x] preserves Python source through the host shell and nested guest shell — **passed** (6 ms)
 
 ## Shopper feeder · tests/shopper-behavior.test.ts
 
@@ -267,8 +274,8 @@ Tests use good and rejected fictional inputs at public boundaries. Pure policies
 ## Shared tooling · tests/submission-journey.test.ts
 
 - [x] retains one scoped key reference through replay, worker restart and success outcome — **passed** (43 ms)
-- [x] retains one scoped key reference through replay, worker restart and retry outcome — **passed** (19 ms)
-- [x] retains one scoped key reference through replay, worker restart and fail outcome — **passed** (26 ms)
+- [x] retains one scoped key reference through replay, worker restart and retry outcome — **passed** (21 ms)
+- [x] retains one scoped key reference through replay, worker restart and fail outcome — **passed** (28 ms)
 - [x] accepts legacy events and rejects malformed or raw-key tracing metadata — **passed** (1 ms)
 
 ## Quality tooling · tests/test-inventory.test.ts

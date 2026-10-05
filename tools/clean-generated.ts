@@ -12,11 +12,11 @@ const exec = promisify(execFile);
  * Communicates with OS listener inspection and local generated-artifact cleanup.
  */
 async function assertIdle() {
-  const ports = new Set([4310, 4311, 4312]);
+  const ports = new Set([4310, 4311, 4312, 4313]);
   const file = path.join(projectRoot(), '.env');
   if (fs.existsSync(file)) {
     const values = dotenv.parse(fs.readFileSync(file));
-    for (const key of ['WEB_URL', 'ORDERING_URL', 'FULFILLMENT_URL']) {
+    for (const key of ['WEB_URL', 'ORDERING_URL', 'FULFILLMENT_URL', 'OPERATOR_URL']) {
       if (!values[key]) continue;
       const port = Number(new URL(values[key]).port);
       if (!port) throw new Error('Configured application port unavailable');
