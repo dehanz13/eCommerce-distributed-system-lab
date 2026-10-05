@@ -66,6 +66,16 @@ async function compose(args: string[]) {
         : `cd ${quoteShell(cfg.REMOTE_DIR)} && docker compose --env-file .lab/remote.env ${args.map(quoteShell).join(' ')}`,
     ]);
   }
+  if (cfg.REMOTE_VM) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM)) throw new Error('Invalid REMOTE_VM');
+    return command('limactl', [
+      'shell',
+      cfg.REMOTE_VM,
+      'sh',
+      '-c',
+      `cd ${quoteShell(root)} && docker compose --env-file .lab/remote.env ${args.map(quoteShell).join(' ')}`,
+    ]);
+  }
   return command('docker', ['compose', '--env-file', '.env', ...args]);
 }
 /** Locate the recorded launcher PID file for a named lab process.
@@ -340,6 +350,8 @@ export async function startLab(progress: (message: string) => void = () => {}) {
     if (cfg.REMOTE_VM)
       await command('ssh', [remoteHost(), `limactl start ${quoteShell(cfg.REMOTE_VM)}`]);
     await deployRemote();
+  } else if (cfg.REMOTE_VM) {
+    await command('limactl', ['start', cfg.REMOTE_VM]);
   }
   progress('Starting PostgreSQL, RabbitMQ, Redis and proxy');
   await compose(['up', '-d', '--wait', 'postgres', 'rabbitmq', 'redis', 'toxiproxy']);
@@ -638,16 +650,22 @@ export async function sampleResources(includeGuest = true): Promise<ResourceSnap
       error: null,
     },
   ];
-  if (cfg.TOPOLOGY === 'two') {
-    for (const scope of ['remote host', ...(cfg.REMOTE_VM && includeGuest ? ['lab guest'] : [])]) {
+  if (cfg.TOPOLOGY === 'two' || (cfg.REMOTE_VM && includeGuest)) {
+    for (const scope of [
+      ...(cfg.TOPOLOGY === 'two' ? ['remote host'] : []),
+      ...(cfg.REMOTE_VM && includeGuest ? ['lab guest'] : []),
+    ]) {
       try {
         const script = `python3 -c ${quoteShell(remoteSample)}`;
-        const result = await command('ssh', [
-          remoteHost(),
-          scope === 'lab guest'
-            ? `limactl shell ${quoteShell(cfg.REMOTE_VM)} sh -c ${quoteShell(script)}`
-            : script,
-        ]);
+        const result =
+          cfg.TOPOLOGY === 'single'
+            ? await command('limactl', ['shell', cfg.REMOTE_VM, 'sh', '-c', script])
+            : await command('ssh', [
+                remoteHost(),
+                scope === 'lab guest'
+                  ? `limactl shell ${quoteShell(cfg.REMOTE_VM)} sh -c ${quoteShell(script)}`
+                  : script,
+              ]);
         const observed = JSON.parse(result.stdout);
         if (
           ![observed.totalMemoryBytes, observed.freeMemoryBytes, observed.diskFreeBytes].every(
@@ -657,7 +675,7 @@ export async function sampleResources(includeGuest = true): Promise<ResourceSnap
           throw new Error('Invalid host measurement');
         samples.push({
           scope,
-          source: 'SSH Python 3 + OS counters (Linux available or macOS free + inactive memory)',
+          source: `${cfg.TOPOLOGY === 'single' ? 'Local Lima' : 'SSH'} Python 3 + OS counters (Linux available or macOS free + inactive memory)`,
           sampledAt: new Date().toISOString(),
           available: true,
           ...observed,
@@ -703,10 +721,12 @@ export async function stopLab(
     errors.push('Compose teardown failed; inspect the configured container host.');
   }
   let vmReleased = false;
-  if (releaseVm && cfg.TOPOLOGY === 'two' && cfg.REMOTE_VM) {
+  if (releaseVm && cfg.REMOTE_VM) {
     try {
       progress('Stopping configured dedicated guest');
-      await command('ssh', [remoteHost(), `limactl stop ${quoteShell(cfg.REMOTE_VM)}`]);
+      if (cfg.TOPOLOGY === 'two')
+        await command('ssh', [remoteHost(), `limactl stop ${quoteShell(cfg.REMOTE_VM)}`]);
+      else await command('limactl', ['stop', cfg.REMOTE_VM]);
       vmReleased = true;
     } catch {
       errors.push('Configured lab guest did not stop; inspect its status.');
@@ -752,7 +772,7 @@ export async function stopLab(
   }
   const after = (await sampleResources()).filter((x) => !(vmReleased && x.scope === 'lab guest'));
   const report = cleanupReport(reason, before, after, services, errors);
-  if (cfg.TOPOLOGY === 'two' && cfg.REMOTE_VM)
+  if (cfg.REMOTE_VM)
     report.retained.push(
       vmReleased
         ? 'Configured lab guest is stopped; its virtual disk remains on disk.'

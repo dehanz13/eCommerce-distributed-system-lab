@@ -1,944 +1,950 @@
 {
-  "generatedAt": "2026-10-05T04:09:59.538Z",
+  "generatedAt": "2026-10-05T04:28:18.726Z",
   "source": "Vitest JSON assertion results",
-  "runStartedAt": "2026-10-05T04:09:22.171Z",
-  "counts": { "passed": 156, "failed": 0, "skippedOrPending": 0 },
+  "runStartedAt": "2026-10-05T04:27:49.706Z",
+  "counts": { "passed": 157, "failed": 0, "skippedOrPending": 0 },
   "tests": [
     {
       "file": "tests/activity-collection.test.ts",
       "name": "collects valid source data and labels unavailable owners rather than inventing an empty healthy stream",
       "status": "passed",
-      "durationMs": 86.559708
+      "durationMs": 36.071957999999995
     },
     {
       "file": "tests/activity-collection.test.ts",
       "name": "rejects an invalid activity reply at the real runtime contract boundary",
       "status": "passed",
-      "durationMs": 1.612250000000131
+      "durationMs": 1.865624999999909
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "maps cache observations, operator controls and uncertain health without inventing hops",
       "status": "passed",
-      "durationMs": 26.62412500000005
+      "durationMs": 4.566416000000004
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "observed architecture journeys joins replay requests by scoped reference and leaves ambiguous correlation-only logs separate",
       "status": "passed",
-      "durationMs": 11.54666599999996
+      "durationMs": 1.1003750000000139
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "observed architecture journeys does not infer unobserved work from an accepted response or missing activity",
       "status": "passed",
-      "durationMs": 6.147041000000058
+      "durationMs": 0.334541999999999
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "observed architecture journeys keeps retries as activity until a terminal attempt and compensation are observed",
       "status": "passed",
-      "durationMs": 0.9826669999999922
+      "durationMs": 0.40270799999996143
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "observed architecture journeys shows a rejected checkout without inventing an order or database milestone",
       "status": "passed",
-      "durationMs": 1.119374999999991
+      "durationMs": 0.2636669999999981
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "observed architecture journeys deduplicates overlapping activity snapshots and preserves correlation separation",
       "status": "passed",
-      "durationMs": 0.7483339999999998
+      "durationMs": 0.459541999999999
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "observed architecture journeys does not evict a checkout merely because unrelated reads are newer",
       "status": "passed",
-      "durationMs": 0.3115419999999176
+      "durationMs": 0.5431670000000395
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "observed architecture journeys never treats stale cached readiness or an unreachable owner as proof of database health",
       "status": "passed",
-      "durationMs": 0.1516669999999749
+      "durationMs": 0.21754199999998036
     },
     {
       "file": "tests/architecture-flow.test.ts",
       "name": "matches checkout HTTP observations within a larger shopper correlation",
       "status": "passed",
-      "durationMs": 0.14816700000005767
+      "durationMs": 0.8805000000000405
     },
     {
       "file": "tests/backend-console.test.ts",
       "name": "keeps connector lanes clear of cards and other connectors",
       "status": "passed",
-      "durationMs": 47.720417
+      "durationMs": 25.90325000000007
     },
     {
       "file": "tests/backend-console.test.ts",
       "name": "serves the backend console, local module and editable scene independently of shopper routes",
       "status": "passed",
-      "durationMs": 204.50366600000007
+      "durationMs": 276.41383300000007
     },
     {
       "file": "tests/backend-console.test.ts",
       "name": "reports partial outages, redacts sampled secrets and validates the public snapshot contract",
       "status": "passed",
-      "durationMs": 118.96849999999995
+      "durationMs": 146.63054199999988
     },
     {
       "file": "tests/backend-console.test.ts",
       "name": "preserves a valid degraded 503 health report and rejects malformed health fields",
       "status": "passed",
-      "durationMs": 5.778582999999799
+      "durationMs": 2.469624999999951
     },
     {
       "file": "tests/catalog-cache.test.ts",
       "name": "revisioned catalog cache returns authoritative catalog data when a cache fill fails",
       "status": "passed",
-      "durationMs": 3.3535000000000537
+      "durationMs": 4.07891699999999
     },
     {
       "file": "tests/catalog-cache.test.ts",
       "name": "revisioned catalog cache fills a cold key and serves a hit without another catalog load",
       "status": "passed",
-      "durationMs": 0.4105420000000777
+      "durationMs": 0.7970829999999864
     },
     {
       "file": "tests/catalog-cache.test.ts",
       "name": "revisioned catalog cache cannot select a stale revision after a late fill completes",
       "status": "passed",
-      "durationMs": 52.881500000000074
+      "durationMs": 53.74641700000001
     },
     {
       "file": "tests/catalog-cache.test.ts",
       "name": "revisioned catalog cache coalesces overlapping loads within this ordering process",
       "status": "passed",
-      "durationMs": 56.00700000000006
+      "durationMs": 52.904666999999904
     },
     {
       "file": "tests/catalog-cache.test.ts",
       "name": "revisioned catalog cache rejects corrupt cached JSON and replaces it with validated database data",
       "status": "passed",
-      "durationMs": 1.278874999999971
+      "durationMs": 0.8529159999999365
     },
     {
       "file": "tests/catalog-cache.test.ts",
       "name": "revisioned catalog cache falls back when cache lookup fails without masking database failure",
       "status": "passed",
-      "durationMs": 5.4389999999999645
+      "durationMs": 4.171000000000049
     },
     {
       "file": "tests/catalog-cache.test.ts",
       "name": "revisioned catalog cache cleans failed fills so a later request can recover",
       "status": "passed",
-      "durationMs": 1.357499999999959
+      "durationMs": 1.0325000000000273
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "reserves stock, snapshots items, empties the cart and records an event atomically",
       "status": "passed",
-      "durationMs": 51.20729200000005
+      "durationMs": 315.60541699999976
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "recovers an accepted response before checking the emptied cart and rejects key reuse",
       "status": "passed",
-      "durationMs": 29.356166000000485
+      "durationMs": 157.7698330000003
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "requires a bounded key and a known cart",
       "status": "passed",
-      "durationMs": 13.026499999999942
+      "durationMs": 60.53212499999972
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "scopes tracing references to the shopper even when two shoppers choose the same key",
       "status": "passed",
-      "durationMs": 113.2460000000001
+      "durationMs": 83.82237500000065
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "requires reconfirmation after contents or price changes and keeps the cart",
       "status": "passed",
-      "durationMs": 55.90904199999932
+      "durationMs": 227.77245800000037
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "rejects empty, inactive and short-stock carts without a partial order",
       "status": "passed",
-      "durationMs": 69.39337499999965
+      "durationMs": 141.24283300000025
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "rolls back reservation, order and cart changes if saving the outgoing event fails",
       "status": "passed",
-      "durationMs": 250.13891700000022
+      "durationMs": 56.70587500000056
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "compensates once despite duplicate and contradictory terminal outcomes",
       "status": "passed",
-      "durationMs": 341.2928749999992
+      "durationMs": 128.74595799999952
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "fulfills once and refuses a recovery cart for accepted or fulfilled orders",
       "status": "passed",
-      "durationMs": 141.48075000000063
+      "durationMs": 75.09437500000058
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "does not permanently deduplicate an unknown-order outcome before its effects commit",
       "status": "passed",
-      "durationMs": 35.33333400000083
+      "durationMs": 18.4877919999999
     },
     {
       "file": "tests/checkout.test.ts",
       "name": "fingerprints prices independently of item order without mutating the input",
       "status": "passed",
-      "durationMs": 48.853250000000116
+      "durationMs": 34.868916000000354
     },
     {
       "file": "tests/client.test.ts",
       "name": "sends requests and records valid identifiers on local HTTP without randomUUID",
       "status": "passed",
-      "durationMs": 34.38108299999999
+      "durationMs": 40.78091699999999
     },
     {
       "file": "tests/client.test.ts",
       "name": "retries one transient read but never repeats checkout",
       "status": "passed",
-      "durationMs": 271.203125
+      "durationMs": 255.309083
     },
     {
       "file": "tests/client.test.ts",
       "name": "does not retry client validation errors",
       "status": "passed",
-      "durationMs": 1.7194999999999254
+      "durationMs": 1.453916999999933
     },
     {
       "file": "tests/client.test.ts",
       "name": "bounds transport retries and respects an explicitly aborted read",
       "status": "passed",
-      "durationMs": 258.26254200000005
+      "durationMs": 254.24741700000004
     },
     {
       "file": "tests/client.test.ts",
       "name": "correlates browser input, transport and output while redacting fictional sensitive fields",
       "status": "passed",
-      "durationMs": 2.9108750000000327
+      "durationMs": 2.0515419999999267
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "starts web configuration with only public origins and prefers .env.web over backend settings",
       "status": "passed",
-      "durationMs": 7.944834000000014
+      "durationMs": 7.397541999999987
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "accepts the committed single-machine example and optional empty remote settings",
       "status": "passed",
-      "durationMs": 0.34566699999999173
+      "durationMs": 0.5095000000000027
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "reports all missing required settings together without substituting defaults",
       "status": "passed",
-      "durationMs": 1.1336670000000026
+      "durationMs": 4.5307920000000195
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an invalid dependency port: 0",
       "status": "passed",
-      "durationMs": 0.29725000000001955
+      "durationMs": 0.8593329999999924
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an invalid dependency port: 65536",
       "status": "passed",
-      "durationMs": 0.1296249999999759
+      "durationMs": 0.6646660000000111
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an invalid dependency port: 1.5",
       "status": "passed",
-      "durationMs": 0.12387499999999818
+      "durationMs": 0.21183299999995597
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an invalid dependency port: not-a-port",
       "status": "passed",
-      "durationMs": 0.09308299999997871
+      "durationMs": 0.16287499999998545
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an unsafe service origin without logging its value",
       "status": "passed",
-      "durationMs": 0.2132909999999697
+      "durationMs": 1.2267499999999814
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an unsafe service origin without logging its value",
       "status": "passed",
-      "durationMs": 0.15387500000002774
+      "durationMs": 0.3295840000000112
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an unsafe service origin without logging its value",
       "status": "passed",
-      "durationMs": 0.10541700000004539
+      "durationMs": 0.208500000000015
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an unsafe service origin without logging its value",
       "status": "passed",
-      "durationMs": 0.3514170000000263
+      "durationMs": 0.34850000000000136
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an unsafe service origin without logging its value",
       "status": "passed",
-      "durationMs": 0.19845800000001645
+      "durationMs": 0.6439579999999978
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects an unsafe service origin without logging its value",
       "status": "passed",
-      "durationMs": 0.1967920000000163
+      "durationMs": 0.34833400000002257
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'ORDERING_URL' when 'http://localhost' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.29579100000000835
+      "durationMs": 1.266458
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'ORDERING_URL' when 'https://localhost' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.15133400000001984
+      "durationMs": 0.34162500000002183
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'ORDERING_URL' when 'http://localhost:80' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.1648330000000442
+      "durationMs": 0.23537499999997635
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'ORDERING_URL' when 'https://localhost:443' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.2104580000000169
+      "durationMs": 0.2052910000000452
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'ORDERING_URL' when 'http://localhost:0' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.13554199999998673
+      "durationMs": 0.7481249999999591
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'FULFILLMENT_URL' when 'http://localhost' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.12012500000003001
+      "durationMs": 0.3439999999999941
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'FULFILLMENT_URL' when 'https://localhost' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.27174999999999727
+      "durationMs": 0.5526249999999777
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'FULFILLMENT_URL' when 'http://localhost:80' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.7065420000000131
+      "durationMs": 0.31579199999998764
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'FULFILLMENT_URL' when 'https://localhost:443' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.1818749999999909
+      "durationMs": 0.23262499999998454
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'FULFILLMENT_URL' when 'http://localhost:0' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 1.0395409999999856
+      "durationMs": 0.19754199999999855
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'OPERATOR_URL' when 'http://localhost' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.401457999999991
+      "durationMs": 0.19870800000001054
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'OPERATOR_URL' when 'https://localhost' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.2064999999999486
+      "durationMs": 0.20674999999999955
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'OPERATOR_URL' when 'http://localhost:80' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.3502080000000092
+      "durationMs": 0.17970800000000509
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'OPERATOR_URL' when 'https://localhost:443' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.1479580000000169
+      "durationMs": 0.17412500000000364
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'OPERATOR_URL' when 'http://localhost:0' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.11670900000001438
+      "durationMs": 0.18999999999999773
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'WEB_URL' when 'http://localhost' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.11070799999998826
+      "durationMs": 0.16645799999997735
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'WEB_URL' when 'https://localhost' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.10470900000001393
+      "durationMs": 0.17004099999996924
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'WEB_URL' when 'http://localhost:80' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.10599999999999454
+      "durationMs": 0.18495799999999463
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'WEB_URL' when 'https://localhost:443' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.11112500000001546
+      "durationMs": 0.15312499999998863
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "rejects 'WEB_URL' when 'http://localhost:0' has no usable lifecycle port",
       "status": "passed",
-      "durationMs": 0.46045799999996007
+      "durationMs": 0.1803340000000162
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "allows a default-port proxy destination because lifecycle commands do not extract its port",
       "status": "passed",
-      "durationMs": 0.17441700000000537
+      "durationMs": 0.12825000000003683
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "requires remote host, account and directory only for two-machine operation",
       "status": "passed",
-      "durationMs": 0.19104099999998425
+      "durationMs": 0.2552919999999972
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "names missing optional settings when a command needs them",
       "status": "passed",
-      "durationMs": 0.14512500000000728
+      "durationMs": 0.22158399999995027
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "reports a missing source file and the setup location without printing personal paths",
       "status": "passed",
-      "durationMs": 0.15108400000002575
+      "durationMs": 0.21200000000004593
     },
     {
       "file": "tests/configuration.test.ts",
       "name": "loads a complete file and leaves its contents out of configuration errors",
       "status": "passed",
-      "durationMs": 3.399417000000028
+      "durationMs": 2.4548750000000155
     },
     {
       "file": "tests/coverage-report.test.ts",
       "name": "reports the business gate and untested overall/system code separately without publishing host paths",
       "status": "passed",
-      "durationMs": 189.20270899999997
+      "durationMs": 299.23775
     },
     {
       "file": "tests/coverage-report.test.ts",
       "name": "fails a business result at 90% while still writing the report",
       "status": "passed",
-      "durationMs": 189.4134160000001
+      "durationMs": 248.25533399999995
     },
     {
       "file": "tests/coverage-report.test.ts",
       "name": "fails when a listed business module is absent from the collected scope",
       "status": "passed",
-      "durationMs": 733.533875
+      "durationMs": 134.13208299999997
     },
     {
       "file": "tests/database-connectivity.test.ts",
       "name": "observes a disconnected checked-out connection without an unhandled error event",
       "status": "passed",
-      "durationMs": 28.903125000000045
+      "durationMs": 7.6002090000000635
     },
     {
       "file": "tests/database-connectivity.test.ts",
       "name": "rejects interrupted work, attempts rollback, releases the connection and can accept later work",
       "status": "passed",
-      "durationMs": 7.801666999999952
+      "durationMs": 1.5505000000000564
     },
     {
       "file": "tests/domain.test.ts",
       "name": "business guarantees uses integer money and rejects invalid quantities",
       "status": "passed",
-      "durationMs": 5.917666000000054
+      "durationMs": 4.685334000000012
     },
     {
       "file": "tests/domain.test.ts",
       "name": "business guarantees has a bounded deterministic processing budget",
       "status": "passed",
-      "durationMs": 0.5338749999998527
+      "durationMs": 1.5914580000000456
     },
     {
       "file": "tests/domain.test.ts",
       "name": "business guarantees never reverses terminal orders",
       "status": "passed",
-      "durationMs": 0.0911670000000413
+      "durationMs": 0.23395899999997027
     },
     {
       "file": "tests/domain.test.ts",
       "name": "business guarantees rejects contradictory event payloads",
       "status": "passed",
-      "durationMs": 8.94116699999995
+      "durationMs": 7.802250000000015
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the cache-outage exercise with bounded progress",
       "status": "passed",
-      "durationMs": 44.79187500000012
+      "durationMs": 50.474875
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the broker-outage exercise with bounded progress",
       "status": "passed",
-      "durationMs": 3.624083000000155
+      "durationMs": 10.557125000000042
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the database-outage exercise with bounded progress",
       "status": "passed",
-      "durationMs": 2.973707999999988
+      "durationMs": 12.113500000000158
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the fulfillment-restart exercise with bounded progress",
       "status": "passed",
-      "durationMs": 3.7181249999998727
+      "durationMs": 9.501207999999906
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the network-latency exercise with bounded progress",
       "status": "passed",
-      "durationMs": 3.147958000000017
+      "durationMs": 10.158709000000044
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the network-cut exercise with bounded progress",
       "status": "passed",
-      "durationMs": 4.185582999999951
+      "durationMs": 22.201957999999877
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the slow-processing exercise with bounded progress",
       "status": "passed",
-      "durationMs": 4.983541999999943
+      "durationMs": 10.549250000000029
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the retry-processing exercise with bounded progress",
       "status": "passed",
-      "durationMs": 3.198666000000003
+      "durationMs": 10.78454099999999
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "captures and restores the failed-processing exercise with bounded progress",
       "status": "passed",
-      "durationMs": 4.036458000000039
+      "durationMs": 19.950000000000045
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "refuses an unhealthy baseline and records unavailable snapshots",
       "status": "passed",
-      "durationMs": 2.0914580000001024
+      "durationMs": 5.9494170000000395
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "requires explicit restoration after cleanup fails, then restores only named lab targets",
       "status": "passed",
-      "durationMs": 4.554750000000013
+      "durationMs": 15.09979199999998
     },
     {
       "file": "tests/experiments.test.ts",
       "name": "records a proxy mutation failure without reporting the exercise as successful",
       "status": "passed",
-      "durationMs": 2.298584000000119
+      "durationMs": 13.37804099999994
     },
     {
       "file": "tests/feeder.test.ts",
       "name": "preserves an unknown checkout and recovers its original submission before another run",
       "status": "passed",
-      "durationMs": 272.6724159999999
+      "durationMs": 158.07104200000003
     },
     {
       "file": "tests/feeder.test.ts",
       "name": "runs accepted and abandoned shopper journeys and accounts for their requests",
       "status": "passed",
-      "durationMs": 195.40195799999992
+      "durationMs": 197.96624999999995
     },
     {
       "file": "tests/feeder.test.ts",
       "name": "stops new shoppers, finishes active work and retains a terminal run report",
       "status": "passed",
-      "durationMs": 65.89879199999996
+      "durationMs": 54.589750000000095
     },
     {
       "file": "tests/feeder.test.ts",
       "name": "clears definitive checkout rejections but retains transport failures for recovery",
       "status": "passed",
-      "durationMs": 116.98512499999993
+      "durationMs": 106.04849999999999
     },
     {
       "file": "tests/feeder.test.ts",
       "name": "records a failed catalog setup without starting shopper transactions",
       "status": "passed",
-      "durationMs": 52.91904199999999
+      "durationMs": 53.00154199999997
     },
     {
       "file": "tests/fulfillment.test.ts",
       "name": "commits the inbox and one job, deduplicates delivery and snapshots the preset",
       "status": "passed",
-      "durationMs": 58.33587499999885
+      "durationMs": 75.8226250000007
     },
     {
       "file": "tests/fulfillment.test.ts",
       "name": "does not spend processing attempts on dependency outages or a paused queue",
       "status": "passed",
-      "durationMs": 25.711583000000246
+      "durationMs": 147.6200829999998
     },
     {
       "file": "tests/fulfillment.test.ts",
       "name": "waits for the five-second deadline and resumes the same attempt after restart, even while paused",
       "status": "passed",
-      "durationMs": 30.76787499999955
+      "durationMs": 147.19862499999908
     },
     {
       "file": "tests/fulfillment.test.ts",
       "name": "fails once, preserves a one-second retry deadline, then commits success and its event",
       "status": "passed",
-      "durationMs": 141.9589589999996
+      "durationMs": 161.7951660000017
     },
     {
       "file": "tests/fulfillment.test.ts",
       "name": "exhausts exactly three attempts with one- and five-second retry delays",
       "status": "passed",
-      "durationMs": 261.0905419999999
+      "durationMs": 314.96729199999936
     },
     {
       "file": "tests/fulfillment.test.ts",
       "name": "rolls back the final attempt and job if its outcome cannot be stored",
       "status": "passed",
-      "durationMs": 147.23870799999895
+      "durationMs": 310.287624999999
     },
     {
       "file": "tests/fulfillment.test.ts",
       "name": "keeps at most one active attempt when multiple jobs wait",
       "status": "passed",
-      "durationMs": 51.17987499999981
+      "durationMs": 57.99175000000105
     },
     {
       "file": "tests/http-contract.test.ts",
       "name": "serializes a product response matching the shared runtime contract",
       "status": "passed",
-      "durationMs": 84.25662500000021
+      "durationMs": 157.07416700000022
     },
     {
       "file": "tests/http-contract.test.ts",
       "name": "rejects invalid and extra write fields without silently changing the submission",
       "status": "passed",
-      "durationMs": 5.273415999999997
+      "durationMs": 10.308667000000014
     },
     {
       "file": "tests/http-contract.test.ts",
       "name": "reports malformed JSON as a client error rather than a dependency outage",
       "status": "passed",
-      "durationMs": 1.8464160000000902
+      "durationMs": 2.7124579999999696
     },
     {
       "file": "tests/http-contract.test.ts",
       "name": "preserves stable business error codes and request identifiers",
       "status": "passed",
-      "durationMs": 1.7791670000001432
+      "durationMs": 4.220708000000059
     },
     {
       "file": "tests/http-contract.test.ts",
       "name": "exports observed request/response activity with correlation and timing metadata",
       "status": "passed",
-      "durationMs": 14.57429100000013
+      "durationMs": 18.951916999999867
     },
     {
       "file": "tests/http-contract.test.ts",
       "name": "rejects excessive shopper traffic and unknown fault scenarios at the contract seam",
       "status": "passed",
-      "durationMs": 117.63312500000006
+      "durationMs": 72.09979199999998
     },
     {
       "file": "tests/http-contract.test.ts",
       "name": "requires preset values and rejects ignored or misdirected control parameters before accepting an action",
       "status": "passed",
-      "durationMs": 151.24354199999993
+      "durationMs": 89.24316700000008
     },
     {
       "file": "tests/lifecycle-cleanup.test.ts",
       "name": "continues shutdown after failure/timeout and records every owned closer without leaking its error",
       "status": "passed",
-      "durationMs": 21.226499999999987
+      "durationMs": 17.13533300000006
     },
     {
       "file": "tests/lifecycle-cleanup.test.ts",
       "name": "removes only allowlisted generated files and retains recovery, source, configuration and evidence",
       "status": "passed",
-      "durationMs": 9.73029200000019
+      "durationMs": 7.400624999999991
     },
     {
       "file": "tests/lifecycle-cleanup.test.ts",
       "name": "saves a refused-cleanup report and leaves artifacts intact when local state is active or unknown",
       "status": "passed",
-      "durationMs": 7.581957999999986
+      "durationMs": 3.2270409999999856
     },
     {
       "file": "tests/lifecycle-cleanup.test.ts",
       "name": "drains in-flight owner work before releasing its scheduling loop",
       "status": "passed",
-      "durationMs": 5.2699579999998605
+      "durationMs": 5.358292000000006
     },
     {
       "file": "tests/lifecycle-cleanup.test.ts",
       "name": "refuses a symlinked artifact ancestor and never deletes its external target",
       "status": "passed",
-      "durationMs": 8.300250000000005
+      "durationMs": 4.8110000000000355
     },
     {
       "file": "tests/observation.test.ts",
       "name": "records input, processing and output with one trace and redacts nested credentials",
       "status": "passed",
-      "durationMs": 55.38650000000007
+      "durationMs": 61.864915999999994
     },
     {
       "file": "tests/observation.test.ts",
       "name": "logs rejected business submissions and keeps successful health polling quiet",
       "status": "passed",
-      "durationMs": 4.8754579999999805
+      "durationMs": 38.876417000000174
     },
     {
       "file": "tests/observation.test.ts",
       "name": "bounds payloads and preserves a successful response if the activity sink fails",
       "status": "passed",
-      "durationMs": 4.1174590000000535
+      "durationMs": 38.193624999999884
     },
     {
       "file": "tests/observation.test.ts",
       "name": "summarizes identical dependency failures and records recovery without idle success logs",
       "status": "passed",
-      "durationMs": 3.9608330000000933
+      "durationMs": 9.47179200000005
     },
     {
       "file": "tests/observation.test.ts",
       "name": "does not let a polling header suppress business write observations",
       "status": "passed",
-      "durationMs": 4.135499999999865
+      "durationMs": 2.575125000000071
     },
     {
       "file": "tests/operator-inspection.test.ts",
       "name": "serves the actual recovery page and documents its HTML content type",
       "status": "passed",
-      "durationMs": 313.7761670000002
+      "durationMs": 116.81329200000005
     },
     {
       "file": "tests/operator-inspection.test.ts",
       "name": "serializes the collected report and validates it through the browser contract",
       "status": "passed",
-      "durationMs": 147.91929100000016
+      "durationMs": 105.3917919999999
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "stops an owned orphan listener even when the recorded launcher has exited",
       "status": "passed",
-      "durationMs": 2.67450000000008
+      "durationMs": 17.494875000000093
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "refuses both stopping and starting over a listener from another checkout",
       "status": "passed",
-      "durationMs": 1.2078750000000582
+      "durationMs": 15.27299999999991
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "starts TypeScript in the recorded process and verifies that it owns the listener",
       "status": "passed",
-      "durationMs": 0.882082999999966
+      "durationMs": 2.1894170000000486
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "accepts Linux socket ownership despite a truncated Next process name",
       "status": "passed",
-      "durationMs": 0.927417000000105
+      "durationMs": 14.949500000000171
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "refuses Linux lifecycle changes when a listening socket hides its owner",
       "status": "passed",
-      "durationMs": 1031.023583
+      "durationMs": 1020.292958
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "waits for a retiring Linux socket after its owned process has stopped",
       "status": "passed",
-      "durationMs": 53.211207999999715
+      "durationMs": 30.087082999999893
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "tears down only the lab project without deleting volumes and saves measured shutdown evidence",
       "status": "passed",
-      "durationMs": 32.22054200000002
+      "durationMs": 9.276540999999725
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "continues container cleanup after an unowned local listener and never certifies it as stopped",
       "status": "passed",
-      "durationMs": 5.8223330000000715
+      "durationMs": 3.61266599999999
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "persists an unverified report when the container host fails cleanup",
       "status": "passed",
-      "durationMs": 3.4498749999997926
+      "durationMs": 5.058374999999614
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "restarts the entire lab only after verified teardown and returns its stop report",
       "status": "passed",
-      "durationMs": 48.66254200000003
+      "durationMs": 31.196000000000367
     },
     {
       "file": "tests/operator-lifecycle.test.ts",
       "name": "releases only the configured dedicated guest and reports its retained disk",
       "status": "passed",
-      "durationMs": 180.90729199999987
+      "durationMs": 97.08641700000044
+    },
+    {
+      "file": "tests/operator-lifecycle.test.ts",
+      "name": "controls a local dedicated guest while preserving volumes and measuring its own scope",
+      "status": "passed",
+      "durationMs": 135.043584
     },
     {
       "file": "tests/public-content.test.ts",
       "name": "rejects private files and identifying values without echoing their contents",
       "status": "passed",
-      "durationMs": 9.797874999999976
+      "durationMs": 5.120499999999993
     },
     {
       "file": "tests/public-content.test.ts",
       "name": "accepts the fictional environment example and public project URL",
       "status": "passed",
-      "durationMs": 8.013000000000034
+      "durationMs": 1.5632920000000468
     },
     {
       "file": "tests/public-content.test.ts",
       "name": "checks visible diagram labels without interpreting editor ordering tokens as documentation",
       "status": "passed",
-      "durationMs": 1.119083000000046
+      "durationMs": 0.330332999999996
     },
     {
       "file": "tests/public-content.test.ts",
       "name": "continues scanning all diagram metadata for private paths and rejects malformed scenes",
       "status": "passed",
-      "durationMs": 0.9856250000000273
+      "durationMs": 0.27616699999998673
     },
     {
       "file": "tests/resources.test.ts",
       "name": "reports measured changes and retained allocations without claiming baseline restoration",
       "status": "passed",
-      "durationMs": 9.111583999999993
+      "durationMs": 7.493874999999974
     },
     {
       "file": "tests/resources.test.ts",
       "name": "fails verification for a remaining service or unavailable measurement",
       "status": "passed",
-      "durationMs": 1.8124159999999847
+      "durationMs": 0.9629580000000146
     },
     {
       "file": "tests/shell.test.ts",
       "name": "round-trips a literal shell argument: \"\"",
       "status": "passed",
-      "durationMs": 10.818916999999999
+      "durationMs": 14.315042000000005
     },
     {
       "file": "tests/shell.test.ts",
       "name": "round-trips a literal shell argument: \"apostrophe ' and space\"",
       "status": "passed",
-      "durationMs": 47.35320900000005
+      "durationMs": 13.711874999999964
     },
     {
       "file": "tests/shell.test.ts",
       "name": "round-trips a literal shell argument: \"double \\\" and $variable; $(printf injected)\"",
       "status": "passed",
-      "durationMs": 15.486625000000004
+      "durationMs": 9.822917000000018
     },
     {
       "file": "tests/shell.test.ts",
       "name": "round-trips a literal shell argument: \"line one\\nline two\"",
       "status": "passed",
-      "durationMs": 23.172250000000076
+      "durationMs": 15.787666999999999
     },
     {
       "file": "tests/shell.test.ts",
       "name": "preserves Python source through the host shell and nested guest shell",
       "status": "passed",
-      "durationMs": 102.01104099999998
+      "durationMs": 25.48629200000005
     },
     {
       "file": "tests/shopper-behavior.test.ts",
       "name": "repeats shopper choices with a seed while retaining bounded quantities",
       "status": "passed",
-      "durationMs": 198.71745899999996
+      "durationMs": 80.64129200000002
     },
     {
       "file": "tests/submission-journey.test.ts",
       "name": "retains one scoped key reference through replay, worker restart and success outcome",
       "status": "passed",
-      "durationMs": 347.7521659999984
+      "durationMs": 627.2586659999997
     },
     {
       "file": "tests/submission-journey.test.ts",
       "name": "retains one scoped key reference through replay, worker restart and retry outcome",
       "status": "passed",
-      "durationMs": 63.9233340000028
+      "durationMs": 105.09554200000093
     },
     {
       "file": "tests/submission-journey.test.ts",
       "name": "retains one scoped key reference through replay, worker restart and fail outcome",
       "status": "passed",
-      "durationMs": 502.2926249999982
+      "durationMs": 176.45029100000102
     },
     {
       "file": "tests/submission-journey.test.ts",
       "name": "accepts legacy events and rejects malformed or raw-key tracing metadata",
       "status": "passed",
-      "durationMs": 12.462958999996772
+      "durationMs": 7.365375000001222
     },
     {
       "file": "tests/test-inventory.test.ts",
       "name": "records only observed assertion statuses with relative paths, including failed and skipped cases",
       "status": "passed",
-      "durationMs": 4.4341249999999945
+      "durationMs": 8.654708000000028
     }
   ]
 }

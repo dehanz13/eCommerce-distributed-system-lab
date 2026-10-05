@@ -30,6 +30,23 @@ vi.mock('node:child_process', async (original) => {
         return { stdout: '', stderr: '' };
       }
       if (file === 'ps') return { stdout: '128\n', stderr: '' };
+      if (file === 'limactl') {
+        if (args.includes('-c')) actual.execFileSync('/bin/sh', ['-n', '-c', args.at(-1)!]);
+        if (state.failCompose && args.at(-1)?.includes("'down'"))
+          throw new Error('fixture teardown failure');
+        return {
+          stdout: args.at(-1)?.includes('python3')
+            ? JSON.stringify({
+                totalMemoryBytes: 1000,
+                freeMemoryBytes: 500,
+                diskFreeBytes: 2000,
+                loadAverage: [0, 0, 0],
+                managedResidentBytes: null,
+              })
+            : '',
+          stderr: '',
+        };
+      }
       if (file === 'ssh') {
         // Parse the real forwarded command; a canned SSH reply must not hide broken quoting.
         actual.execFileSync('/bin/sh', ['-n', '-c', args.at(-1)!]);
@@ -233,6 +250,38 @@ it('releases only the configured dedicated guest and reports its retained disk',
     ).toBe(true);
     expect(report?.hosts.map((x) => x.scope)).toEqual(['operator host', 'remote host']);
     expect(report?.retained).toContain(
+      'Configured lab guest is stopped; its virtual disk remains on disk.',
+    );
+  } finally {
+    Object.assign(cfg, previous);
+  }
+});
+
+it('controls a local dedicated guest while preserving volumes and measuring its own scope', async () => {
+  const { cfg } = await import('@lab/runtime');
+  const previous = { ...cfg };
+  Object.assign(cfg, { TOPOLOGY: 'single', REMOTE_VM: 'lab-fixture' });
+  try {
+    const report = await stopLab();
+    expect(report.verified).toBe(true);
+    expect(report.hosts.map((x) => x.scope)).toEqual(['operator host', 'lab guest']);
+    expect(report.hosts[1]?.after.source).toContain('Local Lima');
+    expect(state.commands.some((x) => x.file === 'ssh' || x.file === 'docker')).toBe(false);
+    const teardown = state.commands.find((x) => x.args.at(-1)?.includes("'down'"))!;
+    expect(teardown.file).toBe('limactl');
+    expect(teardown.args.slice(0, 2)).toEqual(['shell', 'lab-fixture']);
+    expect(teardown.args.at(-1)).toContain('--env-file .lab/remote.env');
+    expect(teardown.args.at(-1)).not.toContain("'-v'");
+    state.failCompose = true;
+    await expect(stopLab()).rejects.toThrow('could not be verified');
+    expect(readCleanup()?.verified).toBe(false);
+    state.failCompose = false;
+    const poweredOff = await execute('poweroff');
+    expect(
+      state.commands.some((x) => x.file === 'limactl' && x.args.join(' ') === 'stop lab-fixture'),
+    ).toBe(true);
+    expect(poweredOff?.hosts.map((x) => x.scope)).toEqual(['operator host']);
+    expect(poweredOff?.retained).toContain(
       'Configured lab guest is stopped; its virtual disk remains on disk.',
     );
   } finally {

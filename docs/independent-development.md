@@ -30,7 +30,7 @@ pnpm exec tsx tools/migrate.ts
 pnpm exec tsx tools/seed.ts
 ```
 
-For the existing dedicated Lima guest, start it with `limactl start ecommerce-lab`. Run Compose inside its mounted checkout using the existing `.lab/remote.env` projection, and configure the host's Node APIs to use the guest's forwarded ports. Follow [the guest runbook](remote-lab-vm.md) for forwarding and projection setup; do not assume guest-only Docker names resolve on macOS. Do not start the containerized fulfillment profile and a foreground fulfillment process on the same port.
+For the existing dedicated Lima guest, set `TOPOLOGY=single` and `REMOTE_VM=ecommerce-lab` on the backend host. The operator then runs its scoped Compose controls through local `limactl shell`; it does not use the host's default Docker context or SSH to another machine. Start the guest with `limactl start ecommerce-lab`. Run Compose inside its mounted checkout using the existing `.lab/remote.env` projection, and configure the host's Node APIs to use the guest's forwarded ports. Follow [the guest runbook](remote-lab-vm.md) for forwarding and projection setup; do not assume guest-only Docker names resolve on macOS. Stop the containerized fulfillment profile before starting foreground fulfillment on the host. Host APIs need host-reachable addresses; the guest projection keeps container DNS names. Preserve the existing Compose project and volumes when changing process placement.
 
 Open a separate VSCode terminal for each foreground process:
 
