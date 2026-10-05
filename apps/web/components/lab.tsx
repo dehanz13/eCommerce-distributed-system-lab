@@ -1,4 +1,5 @@
 'use client';
+import { CheckoutRecoveryDialog } from './checkout-recovery-dialog';
 import { v4 as newId } from 'uuid';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
@@ -54,9 +55,21 @@ const systemHelp: Record<string, string> = {
   broker: 'RabbitMQ management samples include only lab queues.',
   host: 'Operator host measurements include unrelated workloads. They are not container or remote-guest measurements.',
 };
+/** Format integer cents as USD for display.
+ * Input: cents, from React props, current browser state and explicit user actions.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 const dollars = (cents: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
+/** Format observed metadata without fabricating absent values.
+ * Input: x, from React props, current browser state and explicit user actions.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 const display = (x: unknown) => JSON.stringify(x, null, 2);
+/** Render inspectable JSON supplied by a caller.
+ * Input: props, from React props, current browser state and explicit user actions.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function Details({ data, label = 'Inspect metadata' }: { data: unknown; label?: string }) {
   return (
     <details className="mt-2">
@@ -65,6 +78,10 @@ function Details({ data, label = 'Inspect metadata' }: { data: unknown; label?: 
     </details>
   );
 }
+/** Render a textual status with accessible visual styling.
+ * Input: props, from React props, current browser state and explicit user actions.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function Status({ value }: { value: string }) {
   return (
     <span
@@ -81,14 +98,21 @@ function Status({ value }: { value: string }) {
     </span>
   );
 }
+/** Coordinate shopper/admin/dashboard presentation through owner HTTP contracts.
+ * Input: props, from React props, current browser state and explicit user actions.
+ * Communicates with owner HTTP contracts through the shared client; never owner databases.
+ */
 export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
+  const needsShopperReload = useRef(true);
   const [dark, setDark] = useState(false),
     [products, setProducts] = useState<Product[]>([]),
     [cart, setCart] = useState<Cart | null>(null),
     [orders, setOrders] = useState<Order[]>([]),
     [preview, setPreview] = useState<Preview | null>(null),
     [pending, setPending] = useState<Pending | null>(null),
+    [recoveryOpen, setRecoveryOpen] = useState(false),
     [message, setMessage] = useState(''),
+    [backendUnavailable, setBackendUnavailable] = useState(false),
     [busy, setBusy] = useState(false),
     [shopper, setShopper] = useState('');
   const [editing, setEditing] = useState<Product | null>(null),
@@ -103,8 +127,17 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
     >({}),
     [poll, setPoll] = useState(true),
     [tab, setTab] = useState('Overview'),
+    [journeyReference, setJourneyReference] = useState(''),
     [correlation, setCorrelation] = useState(''),
     [collected, setCollected] = useState<unknown>(null);
+  useEffect(() => {
+    if (view !== 'system') return;
+    const reference = new URLSearchParams(window.location.search).get('submission');
+    if (reference && /^[a-f0-9]{64}$/.test(reference)) {
+      setJourneyReference(reference);
+      setTab('Architecture');
+    }
+  }, [view]);
   useEffect(() => {
     const id = localStorage.getItem('lab.shopper') ?? newId();
     localStorage.setItem('lab.shopper', id);
@@ -113,6 +146,7 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
     if (saved) {
       try {
         setPending(JSON.parse(saved));
+        setRecoveryOpen(true);
       } catch {
         localStorage.removeItem('lab.checkout');
       }
@@ -121,48 +155,98 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
     setDark(theme);
     document.documentElement.classList.toggle('dark', theme);
   }, []);
-  const load = useCallback(async () => {
-    try {
-      const p = await request<Product[]>('/api/v1/products');
-      setProducts(p.data);
-      if (shopper) {
-        const c = await request<Cart>('/api/v1/carts', {
-          method: 'POST',
-          body: JSON.stringify({ shopperId: shopper }),
-        });
-        setCart(c.data);
-        const o = await request<Order[]>('/api/v1/orders?shopperId=' + shopper);
-        setOrders(o.data);
+  /** Read catalog, cart and orders for the current browser shopper.
+   * Input: signal, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const p = await request<Product[]>('/api/v1/products', { signal });
+        setProducts(p.data);
+        if (shopper) {
+          const c = await request<Cart>('/api/v1/carts', {
+            method: 'POST',
+            body: JSON.stringify({ shopperId: shopper }),
+            signal,
+          });
+          setCart(c.data);
+          const o = await request<Order[]>('/api/v1/orders?shopperId=' + shopper, { signal });
+          setOrders(o.data);
+          needsShopperReload.current = false;
+        }
+        setBackendUnavailable(false);
+      } catch (e) {
+        if (signal?.aborted) return;
+        const unavailable = !(e instanceof ApiError) || e.status === 0 || e.status >= 500;
+        setBackendUnavailable(unavailable);
+        if (unavailable) needsShopperReload.current = true;
+        if (!unavailable) setMessage(String(e instanceof Error ? e.message : e));
       }
-    } catch (e) {
-      setMessage(String(e instanceof Error ? e.message : e));
-    }
-  }, [shopper]);
+    },
+    [shopper],
+  );
   useEffect(() => {
-    void load();
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
   }, [load]);
   useEffect(() => {
     if (view !== 'shop' || !shopper) return;
-    const t = setInterval(() => {
-      request<Order[]>('/api/v1/orders?shopperId=' + shopper, {
-        headers: { 'x-lab-observation': 'poll' },
-      })
-        .then((r) => setOrders(r.data))
-        .catch(() => {});
-    }, 2000);
-    return () => clearInterval(t);
-  }, [view, shopper]);
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    /** Poll ordering's shopper records sequentially; cancel transport and scheduling when leaving Shop.
+     * Input: no arguments; uses its current owner state, from the current shopper identity and view-owned cancellation signal.
+     * Communicates with owner HTTP contracts through the shared client; never owner databases.
+     */
+    async function pollOrders() {
+      try {
+        const result = await request<Order[]>('/api/v1/orders?shopperId=' + shopper, {
+          headers: { 'x-lab-observation': 'poll' },
+          signal: controller.signal,
+        });
+        if (!controller.signal.aborted) {
+          setOrders(result.data);
+          // Reload the idempotently acquired cart/catalog after a read outage; never replay checkout.
+          if (needsShopperReload.current) await load(controller.signal);
+          else setBackendUnavailable(false);
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          needsShopperReload.current = true;
+          setBackendUnavailable(true);
+        }
+      } finally {
+        if (!controller.signal.aborted) timer = setTimeout(pollOrders, 2000);
+      }
+    }
+    timer = setTimeout(pollOrders, 2000);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [view, shopper, load]);
+  /** Run one explicit UI action and surface its failure without replaying it.
+   * Input: work, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   async function mutate(work: () => Promise<void>) {
     setBusy(true);
     setMessage('');
     try {
       await work();
     } catch (e) {
+      if (!(e instanceof ApiError) || e.status === 0 || e.status >= 500)
+        setBackendUnavailable(true);
       setMessage(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }
+  /** Set or remove one cart quantity through ordering and refresh the preview state.
+   * Input: productId, quantity, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   async function item(productId: string, quantity?: number) {
     if (!cart) return;
     await mutate(async () => {
@@ -175,6 +259,10 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
       await load();
     });
   }
+  /** Send the retained checkout once; preserve ambiguous outcomes for explicit recovery.
+   * Input: p, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   async function submit(p: Pending) {
     await mutate(async () => {
       try {
@@ -185,6 +273,7 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
         });
         localStorage.removeItem('lab.checkout');
         setPending(null);
+        setRecoveryOpen(false);
         setPreview(null);
         await load();
         setMessage(
@@ -196,16 +285,22 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
           setPending(null);
           setPreview(null);
         }
-        if (!(e instanceof ApiError) || e.status === 0 || e.status >= 500)
+        if (!(e instanceof ApiError) || e.status === 0 || e.status >= 500) {
+          setRecoveryOpen(true);
           throw new ApiError(
             0,
             'OUTCOME_UNKNOWN',
             'Outcome unknown. Recover the saved submission to discover whether it was accepted.',
           );
+        }
         throw e;
       }
     });
   }
+  /** Persist the shopper’s confirmed submission before sending it to ordering.
+   * Input: no arguments; uses its current owner state, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   async function confirm() {
     if (!preview) return;
     const p: Pending = {
@@ -222,6 +317,10 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
     await submit(p);
   }
   const refreshing = useRef(false);
+  /** Collect independent owner/operator observations and label unavailable sources.
+   * Input: no arguments; uses its current owner state, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   const refreshSystems = useCallback(async () => {
     if (refreshing.current) return;
     refreshing.current = true;
@@ -271,6 +370,10 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
     const t = setInterval(() => void refreshSystems(), 2000);
     return () => clearInterval(t);
   }, [view, poll, refreshSystems]);
+  /** Submit an allowlisted operator action and refresh its recorded outcome.
+   * Input: action, service, preset, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   async function control(action: string, service?: string, preset?: string) {
     await mutate(async () => {
       await request('/operator/api/v1/actions', {
@@ -290,6 +393,14 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
   ];
   return (
     <div className="min-h-screen">
+      <CheckoutRecoveryDialog
+        open={view === 'shop' && recoveryOpen && !!pending}
+        busy={busy}
+        onOpenChange={setRecoveryOpen}
+        onRecover={() => {
+          if (pending) void submit(pending);
+        }}
+      />
       <header className="border-b" style={{ background: 'var(--panel)' }}>
         <div className="mx-auto max-w-7xl px-5 py-4 flex items-center justify-between gap-4">
           <Link href="/" className="font-semibold text-lg flex gap-3 items-center">
@@ -367,6 +478,27 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
               Refresh
             </Button>
           </div>
+          {backendUnavailable && view !== 'system' && (
+            <div role="alert" className="mb-5 panel p-4 border-blue-400">
+              <p>
+                We’re having trouble connecting to the shop right now. Please try again shortly.
+              </p>
+              {pending && (
+                <p className="mt-2">
+                  Your pending checkout has been kept for recovery. Please recover it before placing
+                  another order.
+                </p>
+              )}
+              <Button
+                variant="outline"
+                className="mt-3"
+                disabled={busy}
+                onClick={() => void load()}
+              >
+                Check connection
+              </Button>
+            </div>
+          )}
           {message && (
             <div role="status" className="mb-5 panel p-4 border-blue-400 flex gap-3">
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
@@ -415,7 +547,9 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
                     ))}
                   {!products.length && (
                     <div className="panel p-6 sm:col-span-2">
-                      No products yet. Start the lab or seed it from Controls.
+                      {backendUnavailable
+                        ? 'Products could not be loaded. Please check the connection shortly.'
+                        : 'No products yet. Start the lab or seed it from Controls.'}
                     </div>
                   )}
                 </section>
@@ -522,6 +656,14 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
                         <strong>{dollars(o.totalCents)}</strong>
                       </div>
                       <p className="hint mt-2">Accepted {new Date(o.createdAt).toLocaleString()}</p>
+                      {o.submissionReference && (
+                        <Link
+                          className="inline-block mt-3 underline"
+                          href={'/system?submission=' + o.submissionReference}
+                        >
+                          Follow this order
+                        </Link>
+                      )}
                       {o.status === 'failed' && (
                         <Button
                           variant="outline"
@@ -856,7 +998,13 @@ export function Lab({ view }: { view: 'shop' | 'catalog' | 'system' }) {
                   ))}
                 </>
               )}
-              {tab === 'Architecture' && <Architecture samples={systems} polling={poll} />}
+              {tab === 'Architecture' && (
+                <Architecture
+                  samples={systems}
+                  polling={poll}
+                  initialReference={journeyReference}
+                />
+              )}
               {['Cache', 'Shoppers', 'Failure Lab'].includes(tab) && (
                 <LearningControls
                   mode={tab as 'Cache' | 'Shoppers' | 'Failure Lab'}

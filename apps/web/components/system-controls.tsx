@@ -19,8 +19,16 @@ const descriptions: Record<string, string> = {
     'Routes AMQP through the lab network proxy. Stop interrupts broker connectivity while durable work remains pending.',
   web: 'Serves this dashboard and the shop. Stopping it closes this recovery path; open the operator control centre first.',
 };
+/** Format an observed byte count without treating missing data as zero.
+ * Input: value, from React props, current browser state and explicit user actions.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 const mib = (value: number | null) =>
   value === null ? 'Unavailable' : (value / 1048576).toFixed(1) + ' MiB';
+/** Present scoped lifecycle actions and measured cleanup results.
+ * Input: props, from React props, current browser state and explicit user actions.
+ * Communicates with owner HTTP contracts through the shared client; never owner databases.
+ */
 export function SystemControls({
   samples,
   busy,

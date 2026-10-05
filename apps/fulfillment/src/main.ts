@@ -3,15 +3,20 @@ import { Id, Preset } from '@lab/contracts';
 import { cfg, pool, server, listen, response, loop, Problem } from '@lab/runtime';
 import { row } from '@lab/runtime/rows';
 import { broker } from '@lab/runtime/broker';
+import { installShutdown } from '@lab/runtime/lifecycle';
 import { fulfillment } from './domain';
 const p = pool('fulfillment');
 const app = await server('fulfillment');
+/** Read the injected broker-readiness predicate without a network probe.
+ * Input: no arguments; uses its current owner state, from validated HTTP input and owner configuration.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 let connected = () => false;
 const domain = fulfillment(p, () => connected());
 const io = broker('fulfillment', p, domain.consume);
 connected = () => io.status().connected;
-loop('fulfillment', io.tick);
-loop('fulfillment', domain.tick, 100);
+const stopPublishing = loop('fulfillment', io.tick);
+const stopProcessing = loop('fulfillment', domain.tick, 100);
 app.get('/health', async (req, reply) => {
   let db = true;
   try {
@@ -83,3 +88,22 @@ app.put(
   },
 );
 await listen(app, cfg.FULFILLMENT_URL);
+installShutdown('fulfillment', [
+  { name: 'publication timer', close: stopPublishing },
+  { name: 'processing timer', close: stopProcessing },
+  {
+    name: 'HTTP listener and active requests',
+    /** Drain requests and close this owner HTTP server; receives no data and uses the server created at startup. */
+    close: () => app.close(),
+  },
+  {
+    name: 'broker connection',
+    /** Close this owner RabbitMQ channels/connection; receives no data and uses the startup delivery adapter. */
+    close: () => io.close(),
+  },
+  {
+    name: 'database pool',
+    /** Drain the owner PostgreSQL pool; receives no data and uses the startup database pool. */
+    close: () => p.end(),
+  },
+]);

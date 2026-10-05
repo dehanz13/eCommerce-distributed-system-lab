@@ -5,11 +5,35 @@ import dotenv from 'dotenv';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
   loadConfiguration,
+  loadWebConfiguration,
   requireSettings,
   validateConfiguration,
 } from '../packages/runtime/src/configuration';
 
 const example = dotenv.parse(fs.readFileSync('.env.example'));
+it('starts web configuration with only public origins and prefers .env.web over backend settings', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'web-origins-'));
+  try {
+    fs.writeFileSync(
+      path.join(root, '.env.web'),
+      'ORDERING_URL=http://api.local:4311\nFULFILLMENT_URL=http://api.local:4312\nOPERATOR_URL=http://api.local:4313\n',
+    );
+    fs.writeFileSync(path.join(root, '.env'), 'ORDERING_URL=broken\n');
+    expect(loadWebConfiguration(root)).toEqual({
+      ORDERING_URL: 'http://api.local:4311',
+      FULFILLMENT_URL: 'http://api.local:4312',
+      OPERATOR_URL: 'http://api.local:4313',
+    });
+    fs.writeFileSync(
+      path.join(root, '.env.web'),
+      'ORDERING_URL=http://user:private-fixture@127.0.0.1:4311\n',
+    );
+    expect(() => loadWebConfiguration(root)).toThrow('ORDERING_URL must be an HTTP origin');
+    expect(() => loadWebConfiguration(root)).not.toThrow('private-fixture');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}));
 afterEach(() => vi.restoreAllMocks());
 
@@ -108,6 +132,41 @@ it('loads a complete file and leaves its contents out of configuration errors', 
     fs.writeFileSync(file, 'TOPOLOGY=single\nORDERING_PASSWORD=never-log-this\n');
     expect(() => loadConfiguration(file)).toThrow('missing PG_HOST');
     expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('never-log-this');
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
+});
+
+it.each(['missing', 'unreadable dedicated', 'unreadable fallback'])(
+  'reports %s web configuration without exposing paths or OS details',
+  (scenario) => {
+    const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'private-web-config-'));
+    try {
+      if (scenario !== 'missing')
+        fs.mkdirSync(path.join(folder, scenario === 'unreadable dedicated' ? '.env.web' : '.env'));
+      expect(() => loadWebConfiguration(folder)).toThrow(
+        '[configuration] Web configuration is missing or unreadable. Create .env.web from .env.web.example (or check .env); values omitted.',
+      );
+      try {
+        loadWebConfiguration(folder);
+      } catch (error) {
+        expect(String(error)).not.toContain(folder);
+        expect(String(error)).not.toMatch(/ENOENT|EISDIR/);
+      }
+    } finally {
+      fs.rmSync(folder, { recursive: true, force: true });
+    }
+  },
+);
+
+it('loads public origins from the fallback .env when a dedicated web file is absent', () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'web-fallback-'));
+  try {
+    fs.writeFileSync(
+      path.join(folder, '.env'),
+      'ORDERING_URL=http://api.local:4311\nFULFILLMENT_URL=http://api.local:4312\nOPERATOR_URL=http://api.local:4313\n',
+    );
+    expect(loadWebConfiguration(folder).ORDERING_URL).toBe('http://api.local:4311');
   } finally {
     fs.rmSync(folder, { recursive: true, force: true });
   }

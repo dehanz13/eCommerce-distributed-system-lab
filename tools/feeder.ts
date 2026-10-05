@@ -19,6 +19,10 @@ try {
 } catch {
   current = null;
 }
+/** Atomically persist the current bounded operator workload state.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 function save() {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = file + '.tmp';
@@ -26,8 +30,20 @@ function save() {
   fs.renameSync(temporary, file);
 }
 export const feeder = {
+  /** Report whether the owner’s current workload prevents conflicting controls.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with the module’s current local snapshot only; no new network or storage operation.
+   */
   busy: () => !!current && ['running', 'stopping'].includes(current.status),
+  /** Return the current local snapshot without starting new work.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with the module’s current local snapshot only; no new network or storage operation.
+   */
   inspect: () => current,
+  /** Stop this module’s new scheduling while preserving active/recoverable work.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   stop() {
     if (current?.status === 'running') {
       current.status = 'stopping';
@@ -35,6 +51,10 @@ export const feeder = {
     }
     return current;
   },
+  /** Create fresh work from the retained original submission or failed-order history.
+   * Input: key, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   async recover(key: string) {
     if (feeder.busy())
       throw new Problem(409, 'FEEDER_RUNNING', 'Stop active shoppers before recovery');
@@ -84,6 +104,10 @@ export const feeder = {
       throw e;
     }
   },
+  /** Persist and begin a bounded explicitly requested learning workload.
+   * Input: options, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   start(options: FeederOptions) {
     if (feeder.busy())
       throw new Problem(409, 'FEEDER_RUNNING', 'Stop or finish the current shopper run');
@@ -131,6 +155,10 @@ export const feeder = {
     return run;
   },
 };
+/** Drive bounded fictional shopper journeys through public ordering contracts.
+ * Input: run, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function simulate(run: FeederRun) {
   const random = seededRandom(run.options.seed);
   const plans = Array.from({ length: run.options.shoppers }, () => ({
@@ -138,6 +166,10 @@ async function simulate(run: FeederRun) {
     index: Math.floor(random() * 3),
     delay: Math.floor(random() * run.options.thinkMs),
   }));
+  /** Send one simulated shopper request while recording its measured outcome.
+   * Input: route, method, body, correlationId, key, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   async function call<T>(
     route: string,
     method = 'GET',

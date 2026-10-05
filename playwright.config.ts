@@ -11,4 +11,8 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: 'list',
+  projects: [
+    { name: 'shop', testIgnore: 'backend-console.spec.ts' },
+    { name: 'operator', testMatch: 'backend-console.spec.ts', use: { baseURL: cfg.OPERATOR_URL } },
+  ],
 });

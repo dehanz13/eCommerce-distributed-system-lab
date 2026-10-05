@@ -1,5 +1,7 @@
 # Verification record
 
+This is a dated verification snapshot. Current backend-host placement and later measured checks are recorded in [local verification](local-verification.md); current startup commands are in [independent development](independent-development.md). Historical results below retain their original scope.
+
 ## Transaction observations and lifecycle controls
 
 Local verification on October 3, 2026 UTC used Node 24.21.0, pnpm 10.21.0, Vitest 4.1.11 and the pinned lockfile. This is evidence for the observation/control changes on `release/0.3.0-observation-controls`; earlier entries below describe earlier source revisions.

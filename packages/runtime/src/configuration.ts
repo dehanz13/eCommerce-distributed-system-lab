@@ -38,6 +38,10 @@ const optionalDefaults = {
 };
 export type Configuration = Record<(typeof requiredKeys)[number], string> & typeof optionalDefaults;
 
+/** Locate the repository root from the current working directory.
+ * Input: no arguments; uses its current owner state, from local configuration files or caller-supplied settings.
+ * Communicates with local filesystem only; no dependency startup.
+ */
 export function projectRoot() {
   let folder = process.cwd();
   while (!fs.existsSync(path.join(folder, 'pnpm-workspace.yaml'))) {
@@ -48,6 +52,10 @@ export function projectRoot() {
   return folder;
 }
 
+/** Explain invalid configuration by field names without displaying supplied values.
+ * Input: issues, source, from local configuration files or caller-supplied settings.
+ * Communicates with local filesystem only; no dependency startup.
+ */
 function rejectConfiguration(issues: string[], source: string): never {
   // Only names and fixes belong in diagnostics; never interpolate supplied values.
   const message = `[configuration] ${source}: ${issues.join('; ')}. Check the root .env against .env.example.`;
@@ -55,7 +63,10 @@ function rejectConfiguration(issues: string[], source: string): never {
   throw new Error(message);
 }
 
-/** Validate the editable source before any process or dependency is started. */
+/** Validate the editable source before any process or dependency is started.
+ * Input: input, source, from local configuration files or caller-supplied settings.
+ * Communicates with local filesystem only; no dependency startup.
+ */
 export function validateConfiguration(
   input: Record<string, string>,
   source = '.env',
@@ -110,6 +121,10 @@ export function validateConfiguration(
   return values;
 }
 
+/** Require the named settings needed by a scoped operation.
+ * Input: values, keys, from local configuration files or caller-supplied settings.
+ * Communicates with local filesystem only; no dependency startup.
+ */
 export function requireSettings(values: Configuration, keys: (keyof Configuration)[]) {
   const missing = keys.filter((key) => !values[key]?.trim());
   if (missing.length)
@@ -119,6 +134,10 @@ export function requireSettings(values: Configuration, keys: (keyof Configuratio
     );
 }
 
+/** Read and validate the backend/operator configuration file.
+ * Input: file, from local configuration files or caller-supplied settings.
+ * Communicates with local filesystem only; no dependency startup.
+ */
 export function loadConfiguration(file = path.join(projectRoot(), '.env')) {
   let contents: string;
   try {
@@ -127,4 +146,43 @@ export function loadConfiguration(file = path.join(projectRoot(), '.env')) {
     rejectConfiguration(['configuration file is missing or unreadable'], '.env');
   }
   return validateConfiguration(dotenv.parse(contents), '.env');
+}
+
+/** Read only public HTTP origins from .env.web (or .env); the web process never needs API credentials.
+ * Input: folder, from the web entry point and local public-origin file.
+ * Communicates with local filesystem only; no dependency startup.
+ */
+export function loadWebConfiguration(folder = projectRoot()) {
+  const dedicated = path.join(folder, '.env.web');
+  const file = fs.existsSync(dedicated) ? dedicated : path.join(folder, '.env');
+  let contents: string;
+  try {
+    contents = fs.readFileSync(file, 'utf8');
+  } catch {
+    throw new Error(
+      '[configuration] Web configuration is missing or unreadable. Create .env.web from .env.web.example (or check .env); values omitted.',
+    );
+  }
+  const input = dotenv.parse(contents);
+  const values: Record<string, string> = {};
+  for (const key of ['ORDERING_URL', 'FULFILLMENT_URL', 'OPERATOR_URL'] as const) {
+    try {
+      const url = new URL(input[key] ?? '');
+      if (
+        !['http:', 'https:'].includes(url.protocol) ||
+        url.username ||
+        url.password ||
+        url.pathname !== '/' ||
+        url.search ||
+        url.hash
+      )
+        throw new Error('Invalid origin');
+      values[key] = url.origin;
+    } catch {
+      throw new Error(
+        `[configuration] ${key} must be an HTTP origin in .env.web or .env; values omitted.`,
+      );
+    }
+  }
+  return values as Record<'ORDERING_URL' | 'FULFILLMENT_URL' | 'OPERATOR_URL', string>;
 }

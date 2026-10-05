@@ -66,6 +66,9 @@ test('a committed checkout with a lost response is recovered using the saved sub
     { times: 1 },
   );
   await page.getByRole('button', { name: 'Confirm order', exact: true }).click();
+  const recovery = page.getByRole('dialog', { name: 'We couldn’t confirm your checkout' });
+  await expect(recovery).toBeVisible();
+  await recovery.getByRole('button', { name: 'Keep for later' }).click();
   await expect(page.getByRole('button', { name: 'Recover submission', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Recover submission', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Order accepted');

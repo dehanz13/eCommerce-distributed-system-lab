@@ -86,6 +86,26 @@ it('requires a bounded key and a known cart', async () => {
   await expect(shop.preview(randomUUID())).rejects.toMatchObject({ code: 'CART_NOT_FOUND' });
   await expect(shop.order(randomUUID())).rejects.toMatchObject({ code: 'ORDER_NOT_FOUND' });
 });
+it('scopes tracing references to the shopper even when two shoppers choose the same key', async () => {
+  const first = await accept(await submission(), 'shared-fictional-key');
+  const otherCart = randomUUID();
+  await storage.pool.query('INSERT INTO carts(id,shopper_id) VALUES($1,$2)', [
+    otherCart,
+    randomUUID(),
+  ]);
+  await storage.pool.query(
+    'INSERT INTO cart_items(id,cart_id,product_id,quantity) VALUES($1,$2,$3,1)',
+    [randomUUID(), otherCart, productId],
+  );
+  const preview = await shop.preview(otherCart);
+  const second = await accept(
+    { cartId: otherCart, revision: preview.revision, priceFingerprint: preview.priceFingerprint },
+    'shared-fictional-key',
+  );
+  expect(first.submissionReference).toMatch(/^[a-f0-9]{64}$/);
+  expect(second.submissionReference).toMatch(/^[a-f0-9]{64}$/);
+  expect(second.submissionReference).not.toBe(first.submissionReference);
+});
 it('requires reconfirmation after contents or price changes and keeps the cart', async () => {
   const body = await submission();
   await storage.pool.query('UPDATE carts SET revision=revision+1 WHERE id=$1', [cartId]);

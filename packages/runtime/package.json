@@ -6,6 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./broker": "./src/broker.ts",
+    "./events": "./src/events.ts",
+    "./lifecycle": "./src/lifecycle.ts",
+    "./observation": "./src/observation.ts",
     "./rows": "./src/rows.ts",
     "./telemetry": "./src/telemetry.ts",
     "./configuration": "./src/configuration.ts"

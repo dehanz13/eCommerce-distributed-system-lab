@@ -1,5 +1,9 @@
 import * as metrics from '@prometheus-io/client';
 const sources = new Map<string, ReturnType<typeof create>>();
+/** Create one owner’s metric registry with low-cardinality labels.
+ * Input: no arguments; uses its current owner state, from the telemetry registry factory.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function create() {
   const registry = new metrics.Registry();
   metrics.collectDefaultMetrics({ register: registry });
@@ -61,6 +65,10 @@ function create() {
   };
 }
 // Source identity belongs to the response envelope, never an ID-valued metric label.
+/** Reuse the local metric registry for the named owner.
+ * Input: owner, from the owning application/module name.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function telemetry(owner: string) {
   let source = sources.get(owner);
   if (!source) {

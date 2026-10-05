@@ -1,0 +1,120 @@
+# Local verification checkpoint
+
+Verified on October 4, 2026 (America/Chicago; October 5 UTC). These results describe the working-tree revision deployed during this session, not a published Git revision or a public SDK release.
+
+## Deployment tested
+
+The existing two-machine topology was refreshed through its managed operator. SSH to the backend machine used its Tailscale address. The backend machine's dedicated ecommerce Lima guest hosted PostgreSQL, RabbitMQ, Redis, Toxiproxy and containerized fulfillment. Ordering, operator and shopper web ran on the client machine. This establishes the existing cross-machine flow; it does not establish that ordering and operator have moved to the backend machine.
+
+The refreshed operator served `/architecture` and `/api/v1/backend`, and all ten configured backend observations were available. The architecture renderer describes configured systems, not discovered physical placement. Host counters describe the operator host.
+
+## Results
+
+| Check                                      | Observed result                                                                                                                                      |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Latest unit/coverage run before deployment | 155 tests passed                                                                                                                                     |
+| Type checking and lint after deployment    | Passed                                                                                                                                               |
+| Integration                                | Passed: overselling, preservation, idempotency, price/cart conflicts, last-write-wins, asynchronous failure, compensation deduplication and recovery |
+| Recovery                                   | Passed: discarded response replay, recorded-attempt restart, duplicate delivery, broker-outage outbox recovery and database recovery                 |
+| Learning controls                          | All nine fault scenarios restored; catalog revision invalidation verified                                                                            |
+| Full browser suite                         | All 16 tests passed against the refreshed applications                                                                                               |
+| Additional live API stop                   | Shopper remained available; warning appeared; console reported ordering unavailable; warning cleared after restart without reloading the page        |
+| Managed restart and named ordering stop    | Cleanup verified; durable volumes and diagnostic reports retained                                                                                    |
+| Public-content scan                        | 208 files checked with no configured content-policy matches                                                                                          |
+
+The additional API-stop check used the real process and network, without transport fixtures. Some browser cases deliberately substitute HTTP replies to reproduce uncertain checkout outcomes and partial observations reliably. Together these checks cover actual deployment behavior and controlled failure presentation; they do not prove every possible timing or failure combination.
+
+Private evidence is retained in `.lab/reports/`, including `live-api-availability.json`, with the latest managed cleanup at `.lab/cleanup.json`. Browser screenshots/traces are generated artifacts under `test-results/`. A named stop checks the requested service; it does not claim that dependencies or the VM also stopped. The full restart cleanup verified all managed services before starting them again. OS memory changes do not certify an idle baseline.
+
+## Remaining boundaries
+
+- At the original checkpoint, the entire backend group had not moved to its own backend checkout. The later cutover below establishes that placement. Follow [independent development](independent-development.md) and the [guest runbook](remote-lab-vm.md); use one lifecycle owner per process.
+- The original checkpoint was uncommitted local work. The published revisions and completed cutover are recorded below; clone the named release branch to obtain them.
+- Stripe payments and a distributable client package are design work described in [the reusable API plan](reusable-ecommerce-api.md), not implemented checkout capabilities.
+- At this original checkpoint, external-editor import was unverified. The later documentation refinement restored all eight scenes and exported them through the actual Excalidraw 0.18.1 SDK, then inspected every SVG in a local browser. The console continues to use its lightweight live renderer.
+- Native container stdout and per-container/guest resource counters are not collected by the console. Use the scoped terminal commands in [the console guide](backend-console.md).
+- Generated-cache deletion was tested against disposable fixtures. This live checkpoint retained the running lab's build artifacts; it did not prune unrelated caches, Docker images or VM allocations.
+
+## Architecture refinement checkpoint
+
+The subsequent visual refinement passed all 156 unit tests, type checking, lint and the operator browser case. Browser assertions cover flow classification, expiry, pause, dark mode and reduced motion. Desktop/mobile screenshots were inspected, and a real catalog HTTP request highlighted the client-to-ordering connection. Connector geometry checks found no intersections with cards or other links. The full 16-case suite above remains the earlier deployment checkpoint; this visual-only update reran its relevant operator case.
+
+## Expanded ecosystem and ordered replay checkpoint
+
+The diagram now shows both owned database objects and the actual RabbitMQ default exchange, three durable queues, and producer/consumer roles. Bidirectional arrowheads represent request/results, publish/confirms and delivery/acknowledgments. Queue counts come from broker management; database connectivity comes from each owning API's probe. The layout's connector intersection checks passed.
+
+A real fictional checkout completed through both machines without transport fixtures. Its corrected replay captured 84 hops, including both APIs, both owned database paths, accepted-order publication/delivery, outcome publication/delivery, and response/acknowledgment colors. Both queue deliveries appeared before their acknowledgments. The display uses 650 milliseconds per hop and does not alter real processing speed.
+
+The live check exposed an ordering lesson: a consumer can finish before the publisher records confirmation. Replay therefore orders delivery after the matching publish attempt and processing/acknowledgment after receipt, rather than forcing receipt to wait for the publisher's confirmation record. Private reports are retained under `.lab/reports/checkout-replay-*.json`; fictional business records are retained for inspection.
+
+The relevant browser checks cover skewed request/SQL timestamps, matching event delivery/acknowledgment IDs, missing queue evidence, zero consumers, individual database failures, response colors, replay expiry and pause cancellation. The unit run passed all 156 cases. This checkpoint exercises the existing learning lab; it does not add a fan-out exchange, payment service, public SDK or independent packet tracer.
+
+## Final closure checkpoint
+
+The final working-tree check completed on October 5, 2026 UTC (October 4 locally). All 156 unit tests and all 18 browser tests passed, including the three expanded backend-console cases. Type checking, lint, formatting of changed project files, and the public-content scan passed. Formatting excluded the unrelated personal editor configuration. The measured business line coverage was 98%; overall configured line coverage was 51.19%. Browser and live integration results are separate evidence and do not contribute to those unit coverage figures.
+
+After the browser failure scenarios, the live status check at `2026-10-05T04:12:11Z` reported ordering, fulfillment, operator and shopper web ready. Both APIs reported database and broker connectivity. At `2026-10-05T04:12:18Z`, all ten backend-console observations were available; both owned database cards showed Connected and the accepted-order queue showed Available. The refreshed screenshot is `test-results/backend-console-complete-ecosystem.png`.
+
+The integration, recovery and nine learning-control results above remain the earlier backend deployment checks. This closing run reran the complete browser suite against the expanded diagram and kept the lab running. Records, diagnostic reports and running build artifacts remained retained. That checkpoint was still uncommitted; the publication and cutover below followed it.
+
+## Published backend-host cutover
+
+On October 5, 2026 UTC (October 4 locally), checkpoint `ea53a0d` and the tested local-Lima adapter `546c279` were pushed to `release/0.4.0-two-host-verification`. The backend machine obtained that branch in the existing mounted lab directory. Its previous deployed source was backed up privately before establishing the Git checkout. The host uses an isolated Node 24.21.0 and pnpm 10.21.0 toolchain; its system Node installation was preserved.
+
+Ordering, fulfillment and operator now run as separately owned Node processes on the backend host. PostgreSQL, RabbitMQ, Redis and Toxiproxy remain in the existing dedicated guest, using the same Compose project and retained volumes. The former fulfillment container was stopped before starting the host process. The client machine runs only shopper web on port 4310; no API or operator listeners remain on its ports 4311–4313. Its private web configuration points to backend HTTP origins, and its production frontend was rebuilt and restarted for those origins. Other guests were left running.
+
+The local-Lima adapter passed type checking, lint and all 157 unit tests. Its new lifecycle case covers guest-scoped Compose commands, retained volumes, guest resource samples, failed teardown reporting and explicit poweroff. The dependency audit reported no known vulnerabilities; staged-content and complete Git-history secret scans passed.
+
+After deployment, integration, recovery, all nine learning fault controls and all 18 browser tests passed against this split. A separate real ordering stop/restart showed the shopper warning, backend-console unavailability and recovery without reloading the shopper; named cleanup was verified. A real fictional checkout finished fulfilled, and its diagram captured 85 hops across both owners, their database paths and both broker work queues. Both queue deliveries replayed before their acknowledgments. These live checks used no transport fixtures and retained the fictional records.
+
+Private evidence is in `.lab/reports/backend-cutover.json`, `live-api-availability.json` and the dated `checkout-replay-*.json` receipts. Original private configuration and the previous availability receipt remain backed up. No business reset, volume deletion, image prune or guest shutdown was performed. The migration runner verified both owners against their existing databases.
+
+For hands-on development, follow the foreground-terminal transition and log-viewer commands in [independent development](independent-development.md). The legacy whole-lab start still includes web on its controller host; this deployment uses individually scoped backend owners and an independent client web process. Changes to backend logic can be restarted independently; contract changes still require the [schema-change runbook](schema-change-guide.md).
+
+## Review-readiness and documentation checkpoint
+
+On October 5, 2026 locally and UTC, revision `47228d2` passed all 18 browser cases after its recovery fixture was corrected to include the required product lifecycle field. The fixture is checked against the shared `Product` type. Application revision `28d7039` was deployed to the independent client/backend split; the intervening commit changes tests and documentation only. Integration, recovery and all nine learning scenarios passed on that refreshed deployment, with restoration verified.
+
+All 162 unit/module cases passed. Measured business-logic line coverage is **98%**, with **93.37%** branch coverage; overall configured unit line coverage is **52.11%**. The agreed review target is business-logic coverage above 90% plus passing quality checks. Type checking, lint, published-file formatting, executable shell checks and production build passed. Complete-history and publication scans reported no findings; the dependency audit reported no known vulnerabilities. These measurements do not imply a general correctness percentage.
+
+Focused specification/standards reviews led to three behavior fixes: automatic catalog/cart initialization after an offline start, unavailable evidence for malformed/missing configured proxy data, and bounded repeated terminal-viewer errors. Checkout recovery remains explicit. Cache/shutdown/HTTP-envelope comments were narrowed to their actual inputs and communications.
+
+All eight architecture scenes were regenerated with locally embedded colored technology marks, restored/exported using Excalidraw 0.18.1, and visually inspected as SVGs. Element/image counts matched every source scene. The complete backend scene opened in the actual local editor with 131 elements; its documented JSON remains identical to the downloadable compact reference. The drawings distinguish physical processes, internal modules, owner databases and actual broker queues. Asset provenance and regeneration instructions are in [the drawing guide](diagrams/README.md).
+
+A separate live read at `2026-10-05T05:22:52Z` reported all four applications ready and all ten backend observations available. Its screenshot and receipt are retained privately at `.lab/reports/review-backend-console.png` and `review-readiness.json`. Runtime evidence remains separate from static drawings and browser transport fixtures. Routine cleanup still retains records, volumes and reports; no reset, global prune or unrelated guest action was performed. GitHub checks and requested review results remain separate from these local observations.
+
+## Copilot retained-window and shutdown follow-up
+
+On October 5, 2026, the working diff based on `da3eb8e` reproduced three new review findings before fixing them: a busy owner caused unchanged quiet-owner records to repeat in the terminal and console, and settled failed or restart-derived unknown restoration incorrectly permitted verified shutdown. The viewers now forget only IDs absent from their current bounded snapshot. Shutdown always checks retained restoration after optionally awaiting active work; explicit recovery remains required for unresolved outcomes.
+
+A related collector boundary test reproduced acceptance of an oversized remote activity window. The collector now accepts 200 records and labels 201 or more unavailable rather than silently truncating evidence. The local reader already limits each owner to 200 records. This keeps the retained snapshot within 600 records across three owners.
+
+Before commit, all 188 unit/module cases passed, with 98.67% business line coverage and 93.62% business branch coverage; overall configured unit line coverage was 54.40%. All 20 browser cases passed using the running shopper/backend split and an isolated operator inspection page serving the updated console script. Fixtures deliberately exercise high-volume snapshots and uncertain outcomes. The new shutdown regressions use real retained state and cleanup-report generation with named service operations mocked; they do not stop developer workloads. Type checking, lint, published-file formatting, publication checks, dependency audit and full-history secret scan passed. Both focused specification and standards reviews reported no remaining findings. Later deployment and CI results are separate from this pre-commit evidence.
+
+## Operator-aware generated cleanup follow-up
+
+The October 5, 2026 working diff based on `52f0e39` reproduced generated-cache deletion while only an Operator API listener remained. The idle guard now includes default port 4313 and the configured `OPERATOR_URL` port. Four command-level regressions cover macOS/Linux and default/custom ports, using real cleanup/report code with disposable files and substituted OS listener inspection. They failed before the fix and now verify refusal, retained artifacts, an unverified receipt and a nonzero command outcome. Both cleanup guides require stopping the local operator first.
+
+All 192 unit/module cases passed before commit. Business line/branch coverage remained 98.67%/93.62%; overall configured unit line coverage rose to 55.26%. Type checking, lint, publication checks, dependency audit and full-history secret scan passed. The 20 browser cases, integration/recovery scenarios and nine restored fault controls above describe the previously deployed `52f0e39` checkpoint; this follow-up changes only the cache-cleanup guard, its tests and documentation. No real lab artifacts or services were deleted by these regression tests. The PR description is updated to match the current generated evidence while preserving revision-specific live results.
+
+## Same-millisecond causal replay follow-up
+
+The October 5, 2026 working diff based on `cb4a011` reproduced receipt/processing replaying after a later publication when owner timestamps tied. Observations now carry writer-owned process stream/sequence metadata, and AMQP attempts carry optional publication and delivery identities. Replay preserves known local order and matches exact attempts; legacy timestamps are only a conservative fallback. Durable event bodies and SQL schemas remain unchanged. Process restarts, missing retained parents and legacy records still limit what can be inferred.
+
+All 202 unit/module cases and all 20 browser cases passed before commit. Business line/branch coverage is 98.67%/93.62%; overall configured unit line coverage is 58.32%. Type checking, lint, publication checks, dependency audit and full-history secret scan passed. Both focused reviews found no remaining issues. Broker regressions execute the real adapter with substituted AMQP/SQL boundaries, including a confirmed send whose database update fails before retry. Browser proof uses an isolated updated operator inspection page and the existing shopper/backend deployment; the tied replay case supplies explicit causal fixtures. Published observation schemas were regenerated from the shared source. Subsequent live-owner refresh, broker transport and CI checks are separate evidence.
+
+After publishing `56274ba`, all three backend owners were refreshed on the backend host. Integration, recovery, all nine restored fault scenarios and all 20 browser cases passed against the real split. At `2026-10-05T09:26:36Z`, a separate fictional checkout finished fulfilled with 38 retained observations, two publications, two receipts and two acknowledgments. Publication identities matched across owners; receipt identities matched SQL processing and acknowledgments. All three backend APIs were ready. Live OpenAPI exports matched the committed schemas semantically; differences were object-key order only. The private receipt is `.lab/reports/replay-causal-live.json`.
+
+One of the two CI ecosystem runs on that revision exposed a reduced-motion test race: media emulation could outlast the 650 ms replay frame before asserting its active state. Its sibling run passed. The test now gives its tied fixture records an explicit owner sequence, holds browser time during that media assertion and resumes it for subsequent replay/expiry checks; production timing is unchanged. This test-only follow-up is verified separately from the live backend refresh above.
+
+The corrected reduced-motion case passed three consecutive live-operator browser runs before the follow-up commit. Type checking, lint, formatting and publication checks passed again. The full 202-case coverage and 20-case live browser results remain the preceding production-fix checkpoint; this follow-up changes only the browser fixture/timing and this evidence log.
+
+## Accepted-action drain, web configuration and terminal ordering follow-up
+
+The October 5, 2026 working diff based on `44f460e` reproduced all three findings from Copilot review `5419259662`. An accepted action could still be waiting in its 50 ms scheduling delay when shutdown wrote a verified receipt. Missing or unreadable web configuration exposed raw filesystem errors. A newest-first owner window printed tied and rolled-back timestamps in reverse process order.
+
+The Operator API now owns the action promise before returning 202 and drains its scheduling delay, named service work and retained result within a 180-second shutdown budget. Stalled work or result-persistence failure stays unverified. A settled failed action retains its failed outcome separately from the drain receipt. The web loader reports a stable actionable error without paths, OS details or values. Terminal logs share the diagram's causal ordering, preserve known stream sequence and retain existing filtering/deduplication; they cannot reorder previously printed lines or reconstruct missing history. No request/response or SQL schema changed.
+
+All 211 unit/module cases passed before commit. Business line/branch coverage is 98.67%/94.37%; overall configured unit line coverage is 60.89%. Type checking, lint, published-file formatting, publication checks, dependency audit and full-history secret scan passed. Focused spec and standards reviews found no remaining issues. Action regressions use real Fastify routes, persisted action state and cleanup receipts with named service execution substituted at the process boundary. They verify pending/running work, conflict rejection, stalled timeout, retained failure and real result-write failure. Configuration regressions use disposable missing/unreadable files. Later live-owner refresh and CI are separate evidence.
+
+All 20 browser cases also passed before commit against the existing independent shopper/backend deployment. The new action-drain behavior is proven by the route/cleanup regressions above; the browser run is compatibility evidence against the prior deployed backend, not proof of this new graceful shutdown path. Local production web artifacts were retained; CI builds in its isolated runner.

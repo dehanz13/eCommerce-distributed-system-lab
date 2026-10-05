@@ -30,6 +30,23 @@ vi.mock('node:child_process', async (original) => {
         return { stdout: '', stderr: '' };
       }
       if (file === 'ps') return { stdout: '128\n', stderr: '' };
+      if (file === 'limactl') {
+        if (args.includes('-c')) actual.execFileSync('/bin/sh', ['-n', '-c', args.at(-1)!]);
+        if (state.failCompose && args.at(-1)?.includes("'down'"))
+          throw new Error('fixture teardown failure');
+        return {
+          stdout: args.at(-1)?.includes('python3')
+            ? JSON.stringify({
+                totalMemoryBytes: 1000,
+                freeMemoryBytes: 500,
+                diskFreeBytes: 2000,
+                loadAverage: [0, 0, 0],
+                managedResidentBytes: null,
+              })
+            : '',
+          stderr: '',
+        };
+      }
       if (file === 'ssh') {
         // Parse the real forwarded command; a canned SSH reply must not hide broken quoting.
         actual.execFileSync('/bin/sh', ['-n', '-c', args.at(-1)!]);
@@ -235,6 +252,64 @@ it('releases only the configured dedicated guest and reports its retained disk',
     expect(report?.retained).toContain(
       'Configured lab guest is stopped; its virtual disk remains on disk.',
     );
+  } finally {
+    Object.assign(cfg, previous);
+  }
+});
+
+it('controls a local dedicated guest while preserving volumes and measuring its own scope', async () => {
+  const { cfg } = await import('@lab/runtime');
+  const previous = { ...cfg };
+  Object.assign(cfg, { TOPOLOGY: 'single', REMOTE_VM: 'lab-fixture' });
+  try {
+    const report = await stopLab();
+    expect(report.verified).toBe(true);
+    expect(report.hosts.map((x) => x.scope)).toEqual(['operator host', 'lab guest']);
+    expect(report.hosts[1]?.after.source).toContain('Local Lima');
+    expect(state.commands.some((x) => x.file === 'ssh' || x.file === 'docker')).toBe(false);
+    const teardown = state.commands.find((x) => x.args.at(-1)?.includes("'down'"))!;
+    expect(teardown.file).toBe('limactl');
+    expect(teardown.args.slice(0, 2)).toEqual(['shell', 'lab-fixture']);
+    expect(teardown.args.at(-1)).toContain('--env-file .lab/remote.env');
+    expect(teardown.args.at(-1)).not.toContain("'-v'");
+    state.failCompose = true;
+    await expect(stopLab()).rejects.toThrow('could not be verified');
+    expect(readCleanup()?.verified).toBe(false);
+    state.failCompose = false;
+    const poweredOff = await execute('poweroff');
+    expect(
+      state.commands.some((x) => x.file === 'limactl' && x.args.join(' ') === 'stop lab-fixture'),
+    ).toBe(true);
+    expect(poweredOff?.hosts.map((x) => x.scope)).toEqual(['operator host']);
+    expect(poweredOff?.retained).toContain(
+      'Configured lab guest is stopped; its virtual disk remains on disk.',
+    );
+  } finally {
+    Object.assign(cfg, previous);
+  }
+});
+
+it('creates and refreshes a private guest projection before Compose in a fresh single-host checkout', async () => {
+  const { cfg } = await import('@lab/runtime');
+  const previous = { ...cfg };
+  const file = path.join(state.root, '.lab/remote.env');
+  fs.rmSync(file, { force: true });
+  Object.assign(cfg, { TOPOLOGY: 'single', REMOTE_VM: 'lab-fixture', REDIS_PORT: '63801' });
+  try {
+    await startService('redis');
+    expect(fs.existsSync(file)).toBe(true);
+    const projection = fs.readFileSync(file, 'utf8');
+    expect(projection).toContain('PG_HOST=postgres');
+    expect(projection).toContain('RABBIT_CONNECT_HOST=toxiproxy');
+    expect(projection).toContain('REDIS_PUBLISHED_PORT=63801');
+    expect(fs.statSync(file).mode & 0o777).toBe(0o600);
+    expect(state.commands.some((command) => command.file === 'ssh')).toBe(false);
+    const inode = fs.statSync(file).ino;
+    await startService('redis');
+    expect(fs.statSync(file).ino).toBe(inode);
+    cfg.REDIS_PORT = '63802';
+    await startService('redis');
+    expect(fs.readFileSync(file, 'utf8')).toContain('REDIS_PUBLISHED_PORT=63802');
   } finally {
     Object.assign(cfg, previous);
   }

@@ -20,6 +20,10 @@ const styles = cva(
     defaultVariants: { variant: 'default' },
   },
 );
+/** Render the shared accessible button and optional operation explanation.
+ * Input: props, from React props and user interaction supplied by the parent.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function Button({
   className,
   variant,

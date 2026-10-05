@@ -52,7 +52,12 @@
                           "owner": { "type": "string" },
                           "type": { "type": "string" },
                           "occurredAt": { "format": "date-time", "type": "string" },
+                          "streamId": { "format": "uuid", "type": "string" },
+                          "sequence": { "minimum": 1, "type": "integer" },
+                          "publicationId": { "format": "uuid", "type": "string" },
+                          "deliveryId": { "format": "uuid", "type": "string" },
                           "correlationId": { "format": "uuid", "type": "string" },
+                          "submissionReference": { "pattern": "^[a-f0-9]{64}$", "type": "string" },
                           "requestId": { "format": "uuid", "type": "string" },
                           "eventId": { "format": "uuid", "type": "string" },
                           "eventType": { "type": "string" },
@@ -142,7 +147,15 @@
                                     "owner": { "type": "string" },
                                     "type": { "type": "string" },
                                     "occurredAt": { "format": "date-time", "type": "string" },
+                                    "streamId": { "format": "uuid", "type": "string" },
+                                    "sequence": { "minimum": 1, "type": "integer" },
+                                    "publicationId": { "format": "uuid", "type": "string" },
+                                    "deliveryId": { "format": "uuid", "type": "string" },
                                     "correlationId": { "format": "uuid", "type": "string" },
+                                    "submissionReference": {
+                                      "pattern": "^[a-f0-9]{64}$",
+                                      "type": "string"
+                                    },
                                     "requestId": { "format": "uuid", "type": "string" },
                                     "eventId": { "format": "uuid", "type": "string" },
                                     "eventType": { "type": "string" },
@@ -177,7 +190,15 @@
                               "owner": { "type": "string" },
                               "type": { "type": "string" },
                               "occurredAt": { "format": "date-time", "type": "string" },
+                              "streamId": { "format": "uuid", "type": "string" },
+                              "sequence": { "minimum": 1, "type": "integer" },
+                              "publicationId": { "format": "uuid", "type": "string" },
+                              "deliveryId": { "format": "uuid", "type": "string" },
                               "correlationId": { "format": "uuid", "type": "string" },
+                              "submissionReference": {
+                                "pattern": "^[a-f0-9]{64}$",
+                                "type": "string"
+                              },
                               "requestId": { "format": "uuid", "type": "string" },
                               "eventId": { "format": "uuid", "type": "string" },
                               "eventType": { "type": "string" },
@@ -357,7 +378,9 @@
                           }
                         },
                         "errors": { "type": "array", "items": { "type": "string" } },
-                        "retained": { "type": "array", "items": { "type": "string" } }
+                        "retained": { "type": "array", "items": { "type": "string" } },
+                        "lessons": { "type": "array", "items": { "type": "string" } },
+                        "recoverySteps": { "type": "array", "items": { "type": "string" } }
                       },
                       "required": [
                         "id",
@@ -634,7 +657,9 @@
                               }
                             },
                             "errors": { "type": "array", "items": { "type": "string" } },
-                            "retained": { "type": "array", "items": { "type": "string" } }
+                            "retained": { "type": "array", "items": { "type": "string" } },
+                            "lessons": { "type": "array", "items": { "type": "string" } },
+                            "recoverySteps": { "type": "array", "items": { "type": "string" } }
                           },
                           "required": [
                             "id",
@@ -820,7 +845,9 @@
                                 }
                               },
                               "errors": { "type": "array", "items": { "type": "string" } },
-                              "retained": { "type": "array", "items": { "type": "string" } }
+                              "retained": { "type": "array", "items": { "type": "string" } },
+                              "lessons": { "type": "array", "items": { "type": "string" } },
+                              "recoverySteps": { "type": "array", "items": { "type": "string" } }
                             },
                             "required": [
                               "id",
@@ -1007,7 +1034,9 @@
                               }
                             },
                             "errors": { "type": "array", "items": { "type": "string" } },
-                            "retained": { "type": "array", "items": { "type": "string" } }
+                            "retained": { "type": "array", "items": { "type": "string" } },
+                            "lessons": { "type": "array", "items": { "type": "string" } },
+                            "recoverySteps": { "type": "array", "items": { "type": "string" } }
                           },
                           "required": [
                             "id",
@@ -1867,6 +1896,179 @@
                   "type": "object",
                   "properties": {
                     "data": {},
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": { "format": "uuid", "type": "string" },
+                        "correlationId": { "format": "uuid", "type": "string" },
+                        "respondedAt": { "format": "date-time", "type": "string" }
+                      },
+                      "required": ["requestId", "correlationId", "respondedAt"]
+                    }
+                  },
+                  "required": ["data", "meta"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/architecture": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": { "text/html": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/backend": {
+      "get": {
+        "responses": {
+          "2XX": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sampledAt": { "format": "date-time", "type": "string" },
+                        "topology": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["single"] },
+                            { "type": "string", "enum": ["two"] }
+                          ]
+                        },
+                        "scope": { "type": "string" },
+                        "host": { "type": "object", "additionalProperties": {} },
+                        "samples": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string" },
+                              "available": { "type": "boolean" },
+                              "sampledAt": { "format": "date-time", "type": "string" },
+                              "data": {},
+                              "error": { "type": "string", "nullable": true }
+                            },
+                            "required": ["id", "available", "sampledAt", "data", "error"]
+                          }
+                        },
+                        "activity": {
+                          "type": "object",
+                          "properties": {
+                            "sampledAt": { "format": "date-time", "type": "string" },
+                            "exhaustive": { "type": "boolean", "enum": [false] },
+                            "limitPerOwner": { "minimum": 1, "type": "integer" },
+                            "retentionDays": { "minimum": 1, "type": "integer" },
+                            "sources": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "owner": { "type": "string" },
+                                  "available": { "type": "boolean" },
+                                  "sampledAt": { "format": "date-time", "type": "string" },
+                                  "records": {
+                                    "type": "array",
+                                    "items": {
+                                      "additionalProperties": true,
+                                      "type": "object",
+                                      "properties": {
+                                        "id": { "format": "uuid", "type": "string" },
+                                        "owner": { "type": "string" },
+                                        "type": { "type": "string" },
+                                        "occurredAt": { "format": "date-time", "type": "string" },
+                                        "streamId": { "format": "uuid", "type": "string" },
+                                        "sequence": { "minimum": 1, "type": "integer" },
+                                        "publicationId": { "format": "uuid", "type": "string" },
+                                        "deliveryId": { "format": "uuid", "type": "string" },
+                                        "correlationId": { "format": "uuid", "type": "string" },
+                                        "submissionReference": {
+                                          "pattern": "^[a-f0-9]{64}$",
+                                          "type": "string"
+                                        },
+                                        "requestId": { "format": "uuid", "type": "string" },
+                                        "eventId": { "format": "uuid", "type": "string" },
+                                        "eventType": { "type": "string" },
+                                        "orderId": { "format": "uuid", "type": "string" },
+                                        "jobId": { "format": "uuid", "type": "string" },
+                                        "attemptId": { "format": "uuid", "type": "string" },
+                                        "attemptNumber": { "minimum": 1, "type": "integer" },
+                                        "durationMs": { "minimum": 0, "type": "number" },
+                                        "method": { "type": "string" },
+                                        "route": { "type": "string" },
+                                        "status": {
+                                          "anyOf": [{ "type": "integer" }, { "type": "string" }]
+                                        },
+                                        "outcome": { "type": "string" },
+                                        "key": { "type": "string" }
+                                      },
+                                      "required": ["id", "owner", "type", "occurredAt"]
+                                    }
+                                  },
+                                  "error": { "type": "string", "nullable": true }
+                                },
+                                "required": ["owner", "available", "sampledAt", "records", "error"]
+                              }
+                            },
+                            "records": {
+                              "type": "array",
+                              "items": {
+                                "additionalProperties": true,
+                                "type": "object",
+                                "properties": {
+                                  "id": { "format": "uuid", "type": "string" },
+                                  "owner": { "type": "string" },
+                                  "type": { "type": "string" },
+                                  "occurredAt": { "format": "date-time", "type": "string" },
+                                  "streamId": { "format": "uuid", "type": "string" },
+                                  "sequence": { "minimum": 1, "type": "integer" },
+                                  "publicationId": { "format": "uuid", "type": "string" },
+                                  "deliveryId": { "format": "uuid", "type": "string" },
+                                  "correlationId": { "format": "uuid", "type": "string" },
+                                  "submissionReference": {
+                                    "pattern": "^[a-f0-9]{64}$",
+                                    "type": "string"
+                                  },
+                                  "requestId": { "format": "uuid", "type": "string" },
+                                  "eventId": { "format": "uuid", "type": "string" },
+                                  "eventType": { "type": "string" },
+                                  "orderId": { "format": "uuid", "type": "string" },
+                                  "jobId": { "format": "uuid", "type": "string" },
+                                  "attemptId": { "format": "uuid", "type": "string" },
+                                  "attemptNumber": { "minimum": 1, "type": "integer" },
+                                  "durationMs": { "minimum": 0, "type": "number" },
+                                  "method": { "type": "string" },
+                                  "route": { "type": "string" },
+                                  "status": {
+                                    "anyOf": [{ "type": "integer" }, { "type": "string" }]
+                                  },
+                                  "outcome": { "type": "string" },
+                                  "key": { "type": "string" }
+                                },
+                                "required": ["id", "owner", "type", "occurredAt"]
+                              }
+                            }
+                          },
+                          "required": [
+                            "sampledAt",
+                            "exhaustive",
+                            "limitPerOwner",
+                            "retentionDays",
+                            "sources",
+                            "records"
+                          ]
+                        }
+                      },
+                      "required": ["sampledAt", "topology", "scope", "host", "samples", "activity"]
+                    },
                     "meta": {
                       "type": "object",
                       "properties": {

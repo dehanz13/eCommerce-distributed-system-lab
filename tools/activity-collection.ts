@@ -1,6 +1,10 @@
 import { cfg, readActivity } from '@lab/runtime';
 import { validateReply } from '@lab/contracts';
-/** Collect bounded observations without making unavailable producers appear silent or healthy. */
+const limitPerOwner = 200;
+/** Collect bounded observations without making unavailable producers appear silent or healthy.
+ * Input: correlationId, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function collectActivity(correlationId?: string) {
   const sources = await Promise.all(
     Object.entries({
@@ -25,6 +29,7 @@ export async function collectActivity(correlationId?: string) {
         if (!response.ok) throw new Error('Unavailable producer');
         const payload = await response.json();
         validateReply('/activity', 'GET', payload);
+        if (payload.data.length > limitPerOwner) throw new Error('Owner activity window exceeded');
         return {
           owner,
           available: true,
@@ -46,7 +51,7 @@ export async function collectActivity(correlationId?: string) {
   return {
     sampledAt: new Date().toISOString(),
     exhaustive: false,
-    limitPerOwner: 200,
+    limitPerOwner,
     retentionDays: 7,
     sources,
     records: sources

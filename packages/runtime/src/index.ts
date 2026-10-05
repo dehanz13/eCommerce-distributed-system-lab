@@ -16,6 +16,10 @@ redactValues(
     .filter(([key]) => /PASSWORD|SECRET|TOKEN/.test(key))
     .map(([, value]) => value),
 );
+/** Create the owner’s bounded PostgreSQL connection pool.
+ * Input: owner, from the owning application entry point.
+ * Communicates with owner HTTP/SQL runtime and bounded local observations.
+ */
 export function pool(owner: 'ordering' | 'fulfillment') {
   const name = owner.toUpperCase() as 'ORDERING' | 'FULFILLMENT';
   const p = new pg.Pool({
@@ -35,6 +39,10 @@ export function pool(owner: 'ordering' | 'fulfillment') {
   });
   return p;
 }
+/** Run owner work inside one SQL transaction and observe commit or rollback.
+ * Input: p, run, from the owner module: its SQL pool and transaction callback.
+ * Communicates with owner HTTP/SQL runtime and bounded local observations.
+ */
 export async function transaction<T>(
   p: pg.Pool,
   run: (c: pg.PoolClient) => Promise<T>,
@@ -98,6 +106,10 @@ export async function transaction<T>(
   }
 }
 export class Problem extends Error {
+  /** Describe a rejected owner operation for the HTTP error handler.
+   * Inputs: status, stable code, public message and optional details from validated owner work.
+   * Stores error data locally; the server handler later sends Problem Details to the caller.
+   */
   constructor(
     public status: number,
     public code: string,
@@ -107,6 +119,7 @@ export class Problem extends Error {
     super(message);
   }
 }
+/** Identify an HTTP attempt from its incoming Fastify request and correlation header; computes locally without database or network calls. */
 export function identifiers(req: FastifyRequest) {
   const raw = req.headers['x-correlation-id'];
   return {
@@ -118,12 +131,21 @@ export function identifiers(req: FastifyRequest) {
         : req.id,
   };
 }
+/** Build the caller's HTTP envelope from the incoming Fastify request and route result; adds identifiers/time locally without extra service calls. */
 export function response<T>(req: FastifyRequest, data: T) {
   return { data, meta: { ...identifiers(req), respondedAt: new Date().toISOString() } };
 }
+/** Assemble validated HTTP routes, bounded activity and process metrics for an owner.
+ * Input: owner, from owner configuration, validated HTTP input and injected SQL work.
+ * Communicates with owner HTTP/SQL runtime and bounded local observations.
+ */
 export async function server(owner: string) {
   const app = Fastify({
     logger: false,
+    /** Generate the owner’s HTTP-attempt UUID.
+     * Input: no arguments; uses its current owner state, from owner configuration, validated HTTP input and injected SQL work.
+     * Communicates with local computation/presentation only; no direct network or database calls.
+     */
     genReqId: () => randomUUID(),
     bodyLimit: 65536,
     ajv: { customOptions: { removeAdditional: false, coerceTypes: false } },
@@ -151,6 +173,10 @@ export async function server(owner: string) {
     registers: [register],
   });
   const times = new WeakMap<object, number>();
+  /** Choose business requests for diagnostics while excluding routine polling.
+   * Input: route, method, polling, from owner configuration, validated HTTP input and injected SQL work.
+   * Communicates with local computation/presentation only; no direct network or database calls.
+   */
   const traced = (route: string, method: string, polling = false) =>
     !polling &&
     (/^\/api\/v1\/(products|carts|checkouts|orders|jobs)(?:\/|$)/.test(route) ||
@@ -283,18 +309,27 @@ export async function server(owner: string) {
   app.get('/openapi.json', () => app.swagger());
   return app;
 }
+/** Bind the owner HTTP process on the configured port.
+ * Input: app, url, from owner configuration, validated HTTP input and injected SQL work.
+ * Communicates with owner HTTP/SQL runtime and bounded local observations.
+ */
 export async function listen(app: FastifyInstance, url: string) {
   await app.listen({ host: '0.0.0.0', port: +(new URL(url).port || 80) });
 }
+/** Schedule nonoverlapping owner work and return an async stop/drain function.
+ * Input: owner, task, ms, from the application entry point: an owner task and scheduling interval.
+ * Communicates with owner HTTP/SQL runtime and bounded local observations.
+ */
 export function loop(owner: string, task: () => Promise<void>, ms = 500) {
   let busy = false;
+  let active: Promise<void> | undefined;
   let lastFailure = '';
   let lastLogged = 0;
   let suppressed = 0;
   const t = setInterval(() => {
     if (busy) return;
     busy = true;
-    task()
+    active = task()
       .then(() => {
         if (lastFailure) activity(owner, 'dependency.recovered', { suppressed });
         lastFailure = '';
@@ -313,5 +348,8 @@ export function loop(owner: string, task: () => Promise<void>, ms = 500) {
         busy = false;
       });
   }, ms);
-  return () => clearInterval(t);
+  return async () => {
+    clearInterval(t);
+    await active;
+  };
 }

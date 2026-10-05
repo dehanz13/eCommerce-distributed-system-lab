@@ -12,18 +12,34 @@ import {
   type CheckoutInput,
   type DomainEvent,
 } from '@lab/contracts';
-import { transaction, Problem, activity } from '@lab/runtime';
+import { transaction, Problem, activity, trace } from '@lab/runtime';
 import { row } from '@lab/runtime/rows';
-import { event, saveEvent } from '@lab/runtime/broker';
+import { event, saveEvent } from '@lab/runtime/events';
+/** Fingerprint structured input with SHA-256; this is identity comparison, not authorization.
+ * Input: s, from the caller’s structured domain value.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 const hash = (s: unknown) => createHash('sha256').update(JSON.stringify(s)).digest('hex');
+/** Fingerprint sorted product prices for checkout reconfirmation.
+ * Input: items, from the cart snapshot loaded by ordering before preview/acceptance.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export const prices = (items: CartItem[]) =>
   hash(
     [...items]
       .sort((a, b) => a.productId.localeCompare(b.productId))
       .map((i) => [i.productId, i.priceCents]),
   );
+/** Assemble the ordering module around its owned SQL transaction engine.
+ * Input: p, from the application entry point: an injected ordering SQL pool.
+ * Communicates with ordering PostgreSQL and transactional outbox; never fulfillment tables.
+ */
 export function ordering(p: pg.Pool) {
   const measurements = telemetry('ordering');
+  /** Read one owned cart with current product snapshots.
+   * Input: id, c, from validated ordering HTTP submissions or parsed outcome events.
+   * Communicates with ordering PostgreSQL only; no reads of fulfillment tables.
+   */
   async function cart(id: string, c: pg.Pool | pg.PoolClient = p): Promise<Cart> {
     const result = await c.query('SELECT * FROM carts WHERE id=$1', [id]);
     if (!result.rows[0]) throw new Problem(404, 'CART_NOT_FOUND', 'Cart does not exist');
@@ -33,12 +49,20 @@ export function ordering(p: pg.Pool) {
     );
     return { ...row<Cart>(result.rows[0]), items: items.rows.map((i) => row<CartItem>(i)) };
   }
+  /** Read one owned order with immutable purchased-item snapshots.
+   * Input: id, c, from validated ordering HTTP submissions or parsed outcome events.
+   * Communicates with ordering PostgreSQL only; no reads of fulfillment tables.
+   */
   async function order(id: string, c: pg.Pool | pg.PoolClient = p): Promise<Order> {
     const result = await c.query('SELECT * FROM orders WHERE id=$1', [id]);
     if (!result.rows[0]) throw new Problem(404, 'ORDER_NOT_FOUND', 'Order does not exist');
     const items = await c.query('SELECT * FROM order_items WHERE order_id=$1 ORDER BY id', [id]);
     return { ...row<Order>(result.rows[0]), items: items.rows.map((i) => row<OrderItem>(i)) };
   }
+  /** Observe current cart contents, prices and availability without reserving stock.
+   * Input: id, from validated ordering HTTP submissions or parsed outcome events.
+   * Communicates with ordering PostgreSQL only; no reads of fulfillment tables.
+   */
   async function preview(id: string): Promise<Preview> {
     const x = await transaction(p, async (c) => {
       await c.query('SELECT id FROM carts WHERE id=$1 FOR UPDATE', [id]);
@@ -53,6 +77,10 @@ export function ordering(p: pg.Pool) {
       observedAt: new Date().toISOString(),
     };
   }
+  /** Replay or atomically accept a confirmed checkout and stage its durable event.
+   * Input: input, key, correlationId, requestId, from validated ordering HTTP submissions or parsed outcome events.
+   * Communicates with ordering PostgreSQL and transactional outbox; never fulfillment tables.
+   */
   async function accept(
     input: CheckoutInput,
     key: string,
@@ -70,6 +98,16 @@ export function ordering(p: pg.Pool) {
       const found = await c.query('SELECT * FROM carts WHERE id=$1 FOR UPDATE', [input.cartId]);
       if (!found.rows[0]) throw new Problem(404, 'CART_NOT_FOUND', 'Cart does not exist');
       const shopperId = String(found.rows[0].shopper_id);
+      // The key remains local to ordering. Its scope is part of the diagnostic identity.
+      const submissionReference = hash(['checkout:v1', shopperId, key]);
+      const context = trace.getStore();
+      if (context) context.submissionReference = submissionReference;
+      activity('ordering', 'checkout.submitted', {
+        correlationId,
+        requestId,
+        submissionReference,
+        stage: 'input',
+      });
       const fingerprint = hash(input);
       const previous = await c.query('SELECT * FROM idempotency WHERE shopper_id=$1 AND key=$2', [
         shopperId,
@@ -110,8 +148,8 @@ export function ordering(p: pg.Pool) {
         );
       const id = randomUUID();
       await c.query(
-        "INSERT INTO orders(id,shopper_id,status,total_cents,correlation_id) VALUES($1,$2,'accepted',$3,$4)",
-        [id, shopperId, total(current.items), correlationId],
+        "INSERT INTO orders(id,shopper_id,status,total_cents,correlation_id,submission_reference) VALUES($1,$2,'accepted',$3,$4,$5)",
+        [id, shopperId, total(current.items), correlationId, submissionReference],
       );
       for (const item of current.items) {
         await c.query(
@@ -132,13 +170,17 @@ export function ordering(p: pg.Pool) {
         'INSERT INTO idempotency(shopper_id,key,fingerprint,response) VALUES($1,$2,$3,$4)',
         [shopperId, key, fingerprint, result],
       );
-      await saveEvent(c, event('order.accepted', { orderId: id }, correlationId, requestId));
+      await saveEvent(
+        c,
+        event('order.accepted', { orderId: id }, correlationId, requestId, submissionReference),
+      );
       return result;
     });
     activity('ordering', recovered ? 'checkout.recovered' : 'checkout.committed', {
       correlationId,
       requestId,
       orderId: result.id,
+      submissionReference: result.submissionReference ?? trace.getStore()?.submissionReference,
     });
     measurements.operations.inc({
       operation: 'checkout',
@@ -151,6 +193,10 @@ export function ordering(p: pg.Pool) {
       );
     return result;
   }
+  /** Apply a validated event once and commit its owner effects.
+   * Input: e, from validated ordering HTTP submissions or parsed outcome events.
+   * Communicates with ordering PostgreSQL and transactional outbox; never fulfillment tables.
+   */
   async function consume(e: DomainEvent) {
     let consumption = 'applied';
     let released = 0;
@@ -195,9 +241,14 @@ export function ordering(p: pg.Pool) {
       orderId: e.data.orderId,
       eventId: e.id,
       correlationId: e.correlationId,
+      submissionReference: e.submissionReference,
       eventType: e.type,
     });
   }
+  /** Create fresh work from the retained original submission or failed-order history.
+   * Input: id, from validated ordering HTTP submissions or parsed outcome events.
+   * Communicates with ordering PostgreSQL and transactional outbox; never fulfillment tables.
+   */
   async function recover(id: string) {
     const source = await order(id);
     if (source.status !== 'failed')
@@ -221,6 +272,10 @@ export function ordering(p: pg.Pool) {
     accept,
     consume,
     recover,
+    /** List the ordering-owned catalog records.
+     * Input: no arguments; uses its current owner state, from validated ordering HTTP submissions or parsed outcome events.
+     * Communicates with ordering PostgreSQL only; no reads of fulfillment tables.
+     */
     products: async () =>
       (await p.query('SELECT * FROM products ORDER BY created_at,id')).rows.map((x) =>
         row<Product>(x),

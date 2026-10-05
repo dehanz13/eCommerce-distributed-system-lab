@@ -14,6 +14,9 @@ for (const owner of ['ORDERING', 'FULFILLMENT'] as const)
     direction: 'up',
     migrationsTable: 'migrations',
     count: Infinity,
+    /** Discard migration-library progress messages, including SQL, rather than logging them.
+     * Accepts library-supplied diagnostics; sends nothing to other systems. The final completion message follows both migrations.
+     */
     log: () => {},
   });
 console.log('Both owner migrations applied');

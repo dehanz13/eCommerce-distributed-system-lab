@@ -6,6 +6,9 @@ import { cfg, root, activity, Problem } from '@lab/runtime';
 import { status, startService, stopService, execute } from './operations';
 const file = path.join(root, '.lab/experiment.json');
 let current: ExperimentRun | null = null;
+let active: Promise<void> | undefined;
+let controller: AbortController | undefined;
+let closing = false;
 try {
   current = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (current?.status === 'running') {
@@ -17,6 +20,10 @@ try {
 } catch {
   current = null;
 }
+/** Atomically persist the current bounded operator workload state.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 function save() {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = file + '.tmp';
@@ -43,7 +50,15 @@ export const explanations: Record<ExperimentOptions['scenario'], string> = {
   'failed-processing':
     'New jobs exhaust three processing attempts. Ordering marks failed and releases stock once.',
 };
+/** Sample owner/dependency state before or after an experiment.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function snapshot() {
+  /** Load the next owner-managed observation or record.
+   * Input: url, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   const read = async (url: string) => {
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(2500) });
@@ -60,6 +75,10 @@ async function snapshot() {
     cache: await read(cfg.ORDERING_URL + '/api/v1/cache'),
   };
 }
+/** Apply a bounded named Toxiproxy operation.
+ * Input: path, method, body, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function proxy(path: string, method: string, body?: unknown) {
   const result = await fetch(cfg.TOXIPROXY_URL + '/proxies/lab-rabbitmq' + path, {
     method,
@@ -70,9 +89,37 @@ async function proxy(path: string, method: string, body?: unknown) {
   if (!result.ok && !(method === 'DELETE' && result.status === 404))
     throw new Error('Lab network proxy unavailable: ' + result.status);
 }
+/** Wait within an exercise’s active window; shutdown releases the wait without cancelling restoration.
+ * Accepts a duration from validated exercise options and the controller created by start; uses local timer/signal only.
+ */
+function wait(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    /** Complete or cancel this local delay; receives no data and uses this wait’s timer, signal and resolver. */
+    const finish = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, ms);
+    signal.addEventListener('abort', finish, { once: true });
+    if (signal.aborted) finish();
+  });
+}
 export const experiments = {
+  /** Report whether the owner’s current workload prevents conflicting controls.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with the module’s current local snapshot only; no new network or storage operation.
+   */
   busy: () => current?.status === 'running',
+  /** Return the current local snapshot without starting new work.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with the module’s current local snapshot only; no new network or storage operation.
+   */
   inspect: () => current,
+  /** Restore only lab-owned settings/dependencies after an experiment.
+   * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   async restore() {
     // Explicit recovery is also safe after an interrupted operator: only named lab targets.
     await proxy('', 'POST', { enabled: true });
@@ -86,7 +133,12 @@ export const experiments = {
       save();
     }
   },
+  /** Persist and begin a bounded explicitly requested learning workload.
+   * Input: options, from CLI/control input, public owner contracts or measured local evidence.
+   * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+   */
   start(options: ExperimentOptions) {
+    if (closing) throw new Problem(503, 'OPERATOR_STOPPING', 'Operator is shutting down');
     if (experiments.busy())
       throw new Problem(409, 'EXPERIMENT_RUNNING', 'Wait for the active exercise');
     if (current?.restoration === 'unknown' || current?.restoration === 'failed')
@@ -103,17 +155,47 @@ export const experiments = {
     };
     current = run;
     save();
-    void perform(run);
+    controller = new AbortController();
+    const pending = perform(run, controller.signal);
+    active = pending;
+    // Keep the task awaitable for shutdown while reporting background persistence failures safely.
+    void pending
+      .catch(() =>
+        activity('operator', 'experiment.recording_failed', {
+          runId: run.id,
+          detail: 'Exercise evidence could not be saved; inspect restoration before restart.',
+        }),
+      )
+      .finally(() => {
+        if (active === pending) active = undefined;
+      });
     return run;
   },
+  /** Stop accepting exercises, await active restoration, and reject unresolved retained restoration even after the task settles.
+   * Accepts no data; uses the task/controller from start and retained exercise state from disk or perform.
+   * Communicates with the active exercise's named dependency; settled failures require explicit recovery.
+   */
+  async close() {
+    closing = true;
+    controller?.abort();
+    const pending = active;
+    if (pending) await pending;
+    if (current && current.restoration !== 'completed')
+      throw new Error('Exercise restoration failed or is unverified; explicitly restore the lab');
+  },
 };
-async function perform(run: ExperimentRun) {
+/** Run one scoped failure exercise and record restoration evidence.
+ * Input: run from validated exercise options and a start-owned signal that interrupts waits, never restoration.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
+async function perform(run: ExperimentRun, signal: AbortSignal) {
   let restore: (() => Promise<void>) | undefined;
   try {
     run.before = await snapshot();
     const baseline = run.before as Awaited<ReturnType<typeof snapshot>>;
     if (!baseline.status.services.filter((x) => x.name !== 'web').every((x) => x.ready))
       throw new Error('Start healthy owner services before running an exercise');
+    if (signal.aborted) return;
     const scenario = run.options.scenario;
     if (
       ['cache-outage', 'broker-outage', 'database-outage', 'fulfillment-restart'].includes(scenario)
@@ -159,18 +241,25 @@ async function perform(run: ExperimentRun) {
     run.progress = 'Fault active; send a demo checkout or shoppers now';
     save();
     activity('operator', 'experiment.engaged', { runId: run.id, scenario });
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    run.during = await snapshot();
-    save();
-    await new Promise((resolve) =>
-      setTimeout(resolve, Math.max(0, run.options.durationSeconds * 1000 - 1500)),
-    );
+    await wait(1500, signal);
+    if (!signal.aborted) {
+      run.during = await snapshot();
+      save();
+      await wait(Math.max(0, run.options.durationSeconds * 1000 - 1500), signal);
+    }
     run.progress = 'Active window ended';
   } catch (e) {
     run.error = String(e);
   } finally {
     run.progress = 'Restoring changed dependency or setting';
-    save();
+    let recordingFailed = false;
+    try {
+      save();
+    } catch {
+      // Storage failure must never prevent the already registered restoration.
+      recordingFailed = true;
+      run.error ??= 'Exercise progress could not be saved; inspect retained evidence.';
+    }
     try {
       if (restore) await restore();
       run.restoration = 'completed';
@@ -178,9 +267,9 @@ async function perform(run: ExperimentRun) {
       run.restoration = 'failed';
       run.error = String(e);
     }
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await wait(2500, signal);
     run.after = await snapshot();
-    run.status = run.error ? 'failed' : 'completed';
+    run.status = run.error ? 'failed' : signal.aborted ? 'interrupted' : 'completed';
     run.finishedAt = new Date().toISOString();
     run.progress = 'Inspect expected behavior against the recorded snapshots';
     save();
@@ -189,5 +278,6 @@ async function perform(run: ExperimentRun) {
       status: run.status,
       restoration: run.restoration,
     });
+    if (recordingFailed) throw new Error('Exercise progress could not be saved');
   }
 }

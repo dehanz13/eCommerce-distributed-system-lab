@@ -1,10 +1,14 @@
 # Architecture dashboard
 
+This guide describes the shopper application’s learning map. The [independent backend console](backend-console.md) is the complete backend-focused view: both owner databases, Toxiproxy, the actual RabbitMQ bus/queues, live sampled health, colored ordered-hop replay and log inspection. It runs at the backend Operator API origin plus `/architecture`, separately from shopper web. All static architecture references are available as [eight colored Excalidraw drawings](diagrams/README.md).
+
 Open System Dashboard and select Architecture. The map shows the four applications, RabbitMQ, the Redis catalog cache and both privately owned PostgreSQL databases. Select a piece to inspect its purpose, technology and guarantees. Blue transport motion highlights newly observed hops. Service state is sampled by the operator, not inferred from animation. A missing owner makes its database health unknown; cached observations become stale after ten seconds or when refresh is paused.
 
 The dashboard polls every two seconds. It is a live activity visualizer, not distributed tracing or a network-transit measurement. Pausing refresh preserves inspectable data and marks it stale. Operating-system resource measurements remain in Metrics and btop. Single/two-machine topology comes from the operator configuration; the second machine is not automatically discovered.
 
 ## Follow a journey
+
+After checkout, Shop provides **Follow this order**, which opens Architecture with the order's scoped key reference selected. The observed journey displays **Checkout key reference** and all associated correlation IDs. Explicit replay with a different correlation ID joins the same reference; raw replay keys are not displayed or put into event envelopes. Historical records without this additive metadata show an unavailable reference. See [replacement seams and identity](replacing-systems.md).
 
 Run demo checkout to reserve one in-stock fictional product through the real cart, preview and checkout interfaces. It uses the current new-job simulation preset. Use Controls to choose slow (five seconds) before running it to watch the scheduled processing window. Retry and fail show recorded attempts and retry deadlines. Existing jobs retain their preset. The demo saves an unresolved submission in browser storage and offers explicit idempotent recovery; it never automatically retries acceptance.
 
@@ -30,3 +34,7 @@ Suggested next slices:
 2. Batch/file processor: local SFTP receipt, row validation, checkpointed processing, quarantine and a batch summary. Add encryption/key routines after the plain-file path is reproducible.
 
 The shopper population, revisioned Redis catalog cache and nine scoped failure exercises are implemented; see [learning labs](learning-labs.md). Their recorded test results are linked in [verification](verification.md). Benchmark reporting, richer telemetry and additional database models remain separate proposed slices.
+
+## Backend console replay and repeated delivery
+
+The separate operator console orders recorded request and SQL-step pairs by their explicit attempt IDs. Event IDs survive republishing and redelivery, so the backend replay uses only preceding publication/receipt observations as event dependencies; it never makes an earlier delivery wait for a later retry. With missing evidence or unsynchronized clocks, timestamp order is conservative and does not certify global causality. The replay changes display timing only, not the broker or business work.

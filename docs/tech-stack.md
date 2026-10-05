@@ -101,3 +101,9 @@ CI uses separate quality, ecosystem and security jobs. Coverage measures the con
 ## Test-only database engine
 
 PGlite 0.5.8 runs owner migrations and transactional domain checks in isolated unit fixtures. It is a development dependency, not a running backend service. Its single embedded connection does not establish real-server concurrency behavior; container integration checks retain that responsibility. Excalidraw 0.18.1 produced the editable documentation scenes and SVG exports; it is not an application runtime dependency.
+
+## Documentation tooling and placement
+
+Excalidraw 0.18.1 restores the eight editable scenes and exports their SVG references. Simple Icons 16.0.0 supplies locally embedded technology marks in their published colors; Toxiproxy uses its official README-linked mark. See [asset provenance](diagrams/icons/README.md). These are documentation tools/assets, not new backend services or runtime package dependencies. `tools/architecture-diagrams.mjs` describes the current implementation; `tools/backend-map.json` supplies the complete console ownership and broker registry.
+
+The current physical split puts Next.js on the client, the three Node APIs on the backend macOS host, and PostgreSQL/RabbitMQ/Redis/Toxiproxy in its dedicated Ubuntu guest. PGlite remains test-only. See [drawing 07](diagrams/07-two-host-vm.svg) and [startup commands](independent-development.md).

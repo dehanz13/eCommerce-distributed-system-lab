@@ -6,22 +6,31 @@ import {
   startService,
   stopService,
   waitReady,
+  prepareGuestEnvironment,
   status,
   names,
   type Service,
   type Action,
 } from './operations';
 const [name, service, arg] = process.argv.slice(2);
+/** Open the configured local/remote resource monitor.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 function monitor() {
+  if (service === 'lab-vm') {
+    requireSettings(cfg, ['REMOTE_VM']);
+    if (!/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM)) throw new Error('Invalid REMOTE_VM in root .env');
+    if (cfg.TOPOLOGY === 'single') {
+      const result = spawnSync('limactl', ['shell', cfg.REMOTE_VM, 'btop'], { stdio: 'inherit' });
+      if (result.error) throw result.error;
+      return result.status ?? 1;
+    }
+  }
   if (service === 'remote-host' || service === 'lab-vm') {
     requireSettings(cfg, ['REMOTE_HOST', 'REMOTE_USER']);
     const host = cfg.REMOTE_USER + '@' + cfg.REMOTE_HOST;
     if (!/^[a-zA-Z0-9_.@-]+$/.test(host)) throw new Error('Invalid remote host');
-    if (service === 'lab-vm') {
-      requireSettings(cfg, ['REMOTE_VM']);
-      if (!/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM))
-        throw new Error('Invalid REMOTE_VM in root .env');
-    }
     const result = spawnSync(
       'ssh',
       ['-t', host, service === 'remote-host' ? 'btop' : 'limactl shell ' + cfg.REMOTE_VM + ' btop'],
@@ -34,7 +43,13 @@ function monitor() {
   if (result.error) throw result.error;
   return result.status ?? 1;
 }
-if (name === 'monitor') {
+if (name === 'prepare-guest') {
+  requireSettings(cfg, ['REMOTE_VM']);
+  if (cfg.TOPOLOGY !== 'single')
+    throw new Error('Prepare the guest on its owning host with TOPOLOGY=single');
+  prepareGuestEnvironment();
+  console.log('Private guest Compose configuration prepared; no services started.');
+} else if (name === 'monitor') {
   process.exitCode = monitor();
 } else if (name === 'test-browser') {
   await (await import('./browser-test')).runBrowserTests();
@@ -140,6 +155,10 @@ else if (name) {
   outro('Lab processes remain in their requested state.');
 }
 
+/** Submit an allowlisted operator action and poll its recorded completion.
+ * Input: name, service, preset, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function requestAction(name: string, service?: Service, preset?: string) {
   const result = await fetch(cfg.OPERATOR_URL + '/api/v1/actions', {
     method: 'POST',

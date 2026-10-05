@@ -1,8 +1,8 @@
 import type { Product } from '@lab/contracts';
 
-/** Catalog reads tolerate cache failures. Preview and acceptance never use this module.
- * Versioned keys expire after 15 seconds; writes advance the database revision atomically.
- * Concurrent misses for one revision share one load within this ordering process.
+/** Catalog reads tolerate cache failures. Preview and acceptance never use this module. Versioned keys expire after 15 seconds; writes advance the database revision atomically. Concurrent misses for one revision share one load within this ordering process.
+ * Input: deps, from ordering’s injected revision/cache/database adapters.
+ * Communicates with injected SQL/Redis capabilities; checkout bypasses this cache.
  */
 export function catalogCache(deps: {
   revision: () => Promise<string>;
@@ -16,11 +16,19 @@ export function catalogCache(deps: {
   const fills = new Map<string, Promise<Product[]>>();
   const counts: Record<string, number> = {};
   let lastKey: string | null = null;
+  /** Record a bounded diagnostic observation.
+   * Input: outcome, correlationId, key, from ordering’s injected revision/cache/database adapters.
+   * Communicates with injected SQL/Redis capabilities; checkout bypasses this cache.
+   */
   const observe = (outcome: string, correlationId: string, key: string) => {
     counts[outcome] = (counts[outcome] ?? 0) + 1;
     deps.observe(outcome, { correlationId, key, ttlSeconds: 15 });
   };
   return {
+    /** Load the next owner-managed observation or record.
+     * Input: correlationId, from ordering’s injected revision/cache/database adapters.
+     * Communicates with injected SQL/Redis capabilities; checkout bypasses this cache.
+     */
     async read(correlationId: string) {
       // The revision read must succeed: Redis is not a database outage replica.
       const key = 'lab:catalog:v' + (await deps.revision());
@@ -72,6 +80,10 @@ export function catalogCache(deps: {
         fills.delete(key);
       }
     },
+    /** Return the current local snapshot without starting new work.
+     * Input: no arguments; uses its current owner state, from ordering’s injected revision/cache/database adapters.
+     * Communicates with the module’s current local snapshot only; no new network or storage operation.
+     */
     inspect: () => ({
       strategy: 'revisioned cache-aside',
       ttlSeconds: 15,

@@ -2,12 +2,24 @@ import { readFile, mkdir, writeFile, appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import { format, resolveConfig } from 'prettier';
 const formatting = await resolveConfig('.prettierrc.json');
+/** Read a local generated JSON measurement.
+ * Input: value, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 const json = (value) => format(JSON.stringify(value), { ...formatting, parser: 'json' });
 import { businessFiles } from '../coverage-scope.mjs';
 const summary = JSON.parse(await readFile('coverage/coverage-summary.json', 'utf8'));
 const entries = Object.entries(summary).filter(([name]) => name !== 'total');
+/** Render a safe repository-relative report path.
+ * Input: name, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 const relative = (name) => path.relative(process.cwd(), name).split(path.sep).join('/');
 const metrics = ['lines', 'statements', 'functions', 'branches'];
+/** Aggregate measured coverage totals for the declared scope.
+ * Input: files, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function aggregate(files) {
   return Object.fromEntries(
     metrics.map((metric) => {

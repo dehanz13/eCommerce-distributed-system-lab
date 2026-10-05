@@ -9,6 +9,7 @@
         "occurredAt": { "format": "date-time", "type": "string" },
         "correlationId": { "format": "uuid", "type": "string" },
         "causationId": { "format": "uuid", "type": "string" },
+        "submissionReference": { "pattern": "^[a-f0-9]{64}$", "type": "string" },
         "type": { "const": "order.accepted", "type": "string" },
         "data": {
           "additionalProperties": false,
@@ -36,6 +37,7 @@
         "occurredAt": { "format": "date-time", "type": "string" },
         "correlationId": { "format": "uuid", "type": "string" },
         "causationId": { "format": "uuid", "type": "string" },
+        "submissionReference": { "pattern": "^[a-f0-9]{64}$", "type": "string" },
         "type": { "const": "fulfillment.completed", "type": "string" },
         "data": {
           "additionalProperties": false,
@@ -66,6 +68,7 @@
         "occurredAt": { "format": "date-time", "type": "string" },
         "correlationId": { "format": "uuid", "type": "string" },
         "causationId": { "format": "uuid", "type": "string" },
+        "submissionReference": { "pattern": "^[a-f0-9]{64}$", "type": "string" },
         "type": { "const": "fulfillment.failed", "type": "string" },
         "data": {
           "additionalProperties": false,

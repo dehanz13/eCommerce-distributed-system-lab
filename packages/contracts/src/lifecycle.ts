@@ -36,6 +36,8 @@ export const CleanupReportSchema = Type.Object({
   ),
   errors: Type.Array(Type.String()),
   retained: Type.Array(Type.String()),
+  lessons: Type.Optional(Type.Array(Type.String())),
+  recoverySteps: Type.Optional(Type.Array(Type.String())),
 });
 export type CleanupReport = Static<typeof CleanupReportSchema>;
 const serviceName = Type.Union(

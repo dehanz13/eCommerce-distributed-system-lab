@@ -26,7 +26,7 @@ For a complete shutdown on both machines, resource cleanup, verification and res
 
 ## Two-machine topology
 
-The application host runs web, ordering and operator. The remote Linux host or guest runs PostgreSQL, RabbitMQ, Redis, the AMQP proxy and fulfillment. Configure the root `.env` with `TOPOLOGY=two`, reachable dependency hosts, service URLs, SSH account and checkout directory. Set `REMOTE_VM=ecommerce-lab` only when the remote host manages that guest through Lima.
+The current independent split runs web on the client host and all three APIs on the backend host. Run lifecycle controls from the backend checkout, using `TOPOLOGY=single` and `REMOTE_VM=ecommerce-lab` for its local dedicated guest. Dependencies run in that guest; host APIs use forwarded ports. Client `.env.web` contains HTTP origins only. The original `TOPOLOGY=two` controller arrangement remains an alternative: ordering/operator/web on the controller and dependencies/containerized fulfillment on its configured remote host. Follow [independent development](independent-development.md) for the current split; whole-lab `start` still includes web on the controller.
 
 See the [remote guest runbook](remote-lab-vm.md) for pinned setup, port forwarding and btop scopes. The operator generates `.lab/remote.env` and explicitly selects the configured guest rather than the host's default Docker context. Missing remote settings name the variables in terminal diagnostics.
 
@@ -39,6 +39,8 @@ The dashboard has Overview, Architecture, Cache, Shoppers, Failure Lab, Records,
 Run btop on each physical host and inside the Linux guest to distinguish host pressure from guest limits. Use docker stats for lab containers. Record workload, topology, sample time and scope. Process RSS includes only that process; host memory includes other applications; a container snapshot does not establish the full system's peak resource use. Unsupported sensor/process measurements are unavailable, never zero by assumption.
 
 Structured owner activity is retained locally for seven days and capped at 100 MiB across the host's .lab/logs files. The activity endpoint returns a bounded recent window; archived days remain local files until pruning. Startup stdout/stderr files are diagnostic process output, separate from the bounded structured activity stream. Reset clears owned lab data and logs while retaining machine setup and canonical configuration.
+
+For tied timestamps, inspect `streamId` and `sequence`: one process generates increasing local positions, and a restart creates a different stream. Follow `publicationId` from `event.publishing` to its broker receipt, then `deliveryId` through consumer processing and acknowledgment/deferment. Retries retain the durable `eventId` but receive a new publication identity; broker redelivery gets a new delivery identity. These are diagnostics, not idempotency keys or globally comparable clocks. Missing legacy metadata remains unavailable evidence.
 
 If a checkout is ambiguous, use Recover submission rather than creating another key. For conflicts, preview again. During a dependency outage inspect readiness and pending outbox work; do not count connectivity retries as processing attempts. Following an unexpected crash, explicitly request restart. Inspect action failure details before repeating reset/restart operations.
 

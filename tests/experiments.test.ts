@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { faultNames } from '@lab/contracts';
+import { closeResources, installShutdown } from '@lab/runtime/lifecycle';
 const state = vi.hoisted(() => ({
   folder: '',
   status: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('../tools/operations', () => ({
 }));
 const { experiments } = await import('../tools/experiments');
 beforeEach(() => {
+  fs.rmSync(state.folder + '/.lab/experiment.json', { force: true });
   vi.useFakeTimers();
   state.status.mockResolvedValue({
     services: [
@@ -46,6 +48,57 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 afterAll(() => fs.rmSync(state.folder, { recursive: true, force: true }));
+it('does not certify shutdown after failed restoration has already settled', async () => {
+  vi.resetModules();
+  const { experiments: owner } = await import('../tools/experiments');
+  state.start.mockRejectedValueOnce(new Error('Fixture restoration failure'));
+  const run = owner.start({ scenario: 'cache-outage', durationSeconds: 3 });
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(run.restoration).toBe('failed');
+  expect(owner.busy()).toBe(false);
+  const report = await closeResources(
+    'operator',
+    [{ name: 'experiment', close: () => owner.close() }],
+    state.folder,
+  );
+  expect(report.verified).toBe(false);
+  expect(run.restoration).toBe('failed');
+  await owner.restore();
+  const restored = await closeResources(
+    'operator',
+    [{ name: 'experiment', close: () => owner.close() }],
+    state.folder,
+  );
+  expect(restored.verified).toBe(true);
+});
+
+it('does not certify shutdown for restoration left unknown by an operator restart', async () => {
+  fs.mkdirSync(state.folder + '/.lab', { recursive: true });
+  fs.writeFileSync(
+    state.folder + '/.lab/experiment.json',
+    JSON.stringify({
+      id: '00000000-0000-4000-8000-000000000001',
+      options: { scenario: 'cache-outage', durationSeconds: 3 },
+      status: 'running',
+      restoration: 'pending',
+      requestedAt: new Date().toISOString(),
+      finishedAt: null,
+      expected: 'Restore cache availability',
+      progress: 'Observing',
+      error: null,
+    }),
+  );
+  vi.resetModules();
+  const { experiments: owner } = await import('../tools/experiments');
+  expect(owner.inspect()).toMatchObject({ status: 'interrupted', restoration: 'unknown' });
+  const report = await closeResources(
+    'operator',
+    [{ name: 'experiment', close: () => owner.close() }],
+    state.folder,
+  );
+  expect(report.verified).toBe(false);
+  expect(state.start).not.toHaveBeenCalled();
+});
 it.each(faultNames)(
   'captures and restores the %s exercise with bounded progress',
   async (scenario) => {
@@ -133,4 +186,145 @@ it('records a proxy mutation failure without reporting the exercise as successfu
   );
   await experiments.restore();
   expect(run.restoration).toBe('completed');
+});
+
+it('drains an interrupted exercise and awaits restoration before shutdown can finish', async () => {
+  vi.resetModules();
+  const { experiments: active } = await import('../tools/experiments');
+  let release!: () => void;
+  state.start.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+  );
+  const run = active.start({ scenario: 'cache-outage', durationSeconds: 30 });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(state.stop).toHaveBeenCalledWith('redis');
+  let closed = false;
+  const draining = active.close().then(() => {
+    closed = true;
+  });
+  await vi.advanceTimersByTimeAsync(6000);
+  expect(state.start).toHaveBeenCalledWith('redis');
+  expect(closed).toBe(false);
+  expect(() => active.start(run.options)).toThrow('shutting down');
+  release();
+  await draining;
+  expect(run).toMatchObject({ status: 'interrupted', restoration: 'completed' });
+  expect(run.after).toBeDefined();
+  expect(JSON.parse(fs.readFileSync(state.folder + '/.lab/experiment.json', 'utf8'))).toMatchObject(
+    { status: 'interrupted', restoration: 'completed' },
+  );
+});
+
+it.each(faultNames)(
+  'restores the %s fault when shutdown interrupts its active window',
+  async (scenario) => {
+    vi.resetModules();
+    const { experiments: active } = await import('../tools/experiments');
+    const run = active.start({ scenario, durationSeconds: 30 });
+    await vi.advanceTimersByTimeAsync(0);
+    await active.close();
+    expect(run).toMatchObject({ status: 'interrupted', restoration: 'completed' });
+    expect(run.finishedAt).not.toBeNull();
+    if (scenario === 'network-cut') {
+      const changes = vi
+        .mocked(fetch)
+        .mock.calls.filter(([url]) => String(url).includes('/proxies/'));
+      expect(changes.map(([, options]) => JSON.parse(String(options?.body)))).toEqual([
+        { enabled: false },
+        { enabled: true },
+      ]);
+    } else if (scenario === 'network-latency') {
+      expect(
+        vi
+          .mocked(fetch)
+          .mock.calls.some(
+            ([url, options]) =>
+              String(url).endsWith('/toxics/lab-latency') && options?.method === 'DELETE',
+          ),
+      ).toBe(true);
+    } else if (scenario.endsWith('processing')) {
+      expect(state.execute).toHaveBeenLastCalledWith('preset', undefined, 'success');
+    } else {
+      expect(state.start).toHaveBeenCalledWith(state.stop.mock.calls[0]![0]);
+    }
+  },
+);
+
+it('reports failed shutdown restoration and retains explicit recovery state', async () => {
+  vi.resetModules();
+  const { experiments: active } = await import('../tools/experiments');
+  state.start.mockRejectedValueOnce(Error('fixture restart failed'));
+  const run = active.start({ scenario: 'cache-outage', durationSeconds: 30 });
+  await vi.advanceTimersByTimeAsync(0);
+  await expect(active.close()).rejects.toThrow('restoration failed');
+  expect(run).toMatchObject({ status: 'failed', restoration: 'failed' });
+});
+
+it('restores the active fault even if writing its shutdown progress fails', async () => {
+  vi.resetModules();
+  const { experiments: active } = await import('../tools/experiments');
+  const run = active.start({ scenario: 'cache-outage', durationSeconds: 30 });
+  await vi.advanceTimersByTimeAsync(0);
+  const write = vi.spyOn(fs, 'writeFileSync').mockImplementationOnce(() => {
+    throw Error('fixture disk full');
+  });
+  try {
+    await expect(active.close()).rejects.toThrow();
+    expect(state.start).toHaveBeenCalledWith('redis');
+    expect(run.restoration).toBe('completed');
+  } finally {
+    write.mockRestore();
+  }
+});
+
+it('does not apply a fault if shutdown arrives while the baseline is being captured', async () => {
+  vi.resetModules();
+  const { experiments: active } = await import('../tools/experiments');
+  const run = active.start({ scenario: 'network-cut', durationSeconds: 30 });
+  await active.close();
+  expect(run).toMatchObject({ status: 'interrupted', restoration: 'completed' });
+  expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/proxies/'))).toBe(
+    false,
+  );
+});
+
+it('does not exit on SIGTERM until the active exercise has restored its dependency', async () => {
+  vi.resetModules();
+  const { experiments: active } = await import('../tools/experiments');
+  let release!: () => void;
+  state.start.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+  );
+  const run = active.start({ scenario: 'cache-outage', durationSeconds: 30 });
+  await vi.advanceTimersByTimeAsync(0);
+  const signals = ['SIGINT', 'SIGTERM'] as const;
+  const before = signals.map((signal) => new Set(process.listeners(signal)));
+  const exit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+  const output = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    installShutdown('operator-fixture', [
+      { name: 'exercise restoration', timeoutMs: 180000, close: () => active.close() },
+    ]);
+    process.emit('SIGTERM');
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(exit).not.toHaveBeenCalled();
+    expect(state.start).toHaveBeenCalledWith('redis');
+    release();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.restoration).toBe('completed');
+    expect(exit).toHaveBeenCalledExactlyOnceWith(0);
+  } finally {
+    signals.forEach((signal, index) => {
+      for (const listener of process.listeners(signal))
+        if (!before[index]!.has(listener)) process.removeListener(signal, listener);
+    });
+    exit.mockRestore();
+    output.mockRestore();
+  }
 });

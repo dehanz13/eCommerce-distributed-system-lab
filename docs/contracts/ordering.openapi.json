@@ -52,7 +52,12 @@
                           "owner": { "type": "string" },
                           "type": { "type": "string" },
                           "occurredAt": { "format": "date-time", "type": "string" },
+                          "streamId": { "format": "uuid", "type": "string" },
+                          "sequence": { "minimum": 1, "type": "integer" },
+                          "publicationId": { "format": "uuid", "type": "string" },
+                          "deliveryId": { "format": "uuid", "type": "string" },
                           "correlationId": { "format": "uuid", "type": "string" },
+                          "submissionReference": { "pattern": "^[a-f0-9]{64}$", "type": "string" },
                           "requestId": { "format": "uuid", "type": "string" },
                           "eventId": { "format": "uuid", "type": "string" },
                           "eventType": { "type": "string" },
@@ -1038,6 +1043,11 @@
                               "createdAt"
                             ]
                           }
+                        },
+                        "submissionReference": {
+                          "pattern": "^[a-f0-9]{64}$",
+                          "type": "string",
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -1136,6 +1146,11 @@
                                 "createdAt"
                               ]
                             }
+                          },
+                          "submissionReference": {
+                            "pattern": "^[a-f0-9]{64}$",
+                            "type": "string",
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -1233,6 +1248,11 @@
                               "createdAt"
                             ]
                           }
+                        },
+                        "submissionReference": {
+                          "pattern": "^[a-f0-9]{64}$",
+                          "type": "string",
+                          "nullable": true
                         }
                       },
                       "required": [

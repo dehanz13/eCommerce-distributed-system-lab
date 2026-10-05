@@ -42,6 +42,10 @@ const icons = {
   'ordering-db': Database,
   'fulfillment-db': Database,
 };
+/** Format an observation timestamp for local display.
+ * Input: value, from React props, current browser state and explicit user actions.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 const time = (value: string) =>
   new Date(value).toLocaleTimeString(undefined, {
     hour: '2-digit',
@@ -49,11 +53,23 @@ const time = (value: string) =>
     second: '2-digit',
     fractionalSecondDigits: 3,
   });
-export function Architecture({ samples, polling }: { samples: Observations; polling: boolean }) {
+/** Present observed request/event milestones and explicitly controlled demo checkout.
+ * Input: props, from React props, current browser state and explicit user actions.
+ * Communicates with owner HTTP contracts through the shared client; never owner databases.
+ */
+export function Architecture({
+  samples,
+  polling,
+  initialReference,
+}: {
+  samples: Observations;
+  polling: boolean;
+  initialReference?: string;
+}) {
   const [now, setNow] = useState(0);
   const [piece, setPiece] = useState<PieceId>('ordering');
-  const [selectedId, setSelectedId] = useState('');
-  const [follow, setFollow] = useState(true);
+  const [selectedId, setSelectedId] = useState(initialReference ?? '');
+  const [follow, setFollow] = useState(!initialReference);
   const [allRequests, setAllRequests] = useState(false);
   const [replay, setReplay] = useState<{ id: string; index: number } | null>(null);
   const [demoBusy, setDemoBusy] = useState(false);
@@ -77,7 +93,11 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
   const flows = available.filter((x) => allRequests || x.checkout);
   const chosen =
     available.find((x) => x.id === replay?.id) ??
-    (follow ? flows[0] : available.find((x) => x.id === selectedId));
+    (follow
+      ? flows[0]
+      : available.find(
+          (x) => x.correlationIds.includes(selectedId) || x.submissionReference === selectedId,
+        ));
   const recent = flows.slice(0, 40);
   const options = chosen && !recent.some((x) => x.id === chosen.id) ? [chosen, ...recent] : recent;
   const hops = chosen ? journeyHops(chosen) : [];
@@ -126,13 +146,27 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
   );
   const eventPayloads = ['ordering', 'fulfillment'].flatMap((owner) =>
     records((samples[owner]?.data as { outbox?: unknown } | undefined)?.outbox)
-      .filter(
-        (record) =>
-          (record.payload as { correlationId?: string } | undefined)?.correlationId === chosen?.id,
-      )
+      .filter((record) => {
+        const envelope = record.payload as
+          | {
+              correlationId?: string;
+              submissionReference?: string;
+            }
+          | undefined;
+        if (!chosen) return false;
+        return chosen.submissionReference
+          ? envelope?.submissionReference === chosen.submissionReference
+          : chosen.correlationIds.includes(String(envelope?.correlationId));
+      })
       .map((record) => ({ owner, publishedAt: record.publishedAt, envelope: record.payload })),
   );
-  const job = chosen && jobs.find((x) => x.correlationId === chosen.id);
+  const job =
+    chosen &&
+    jobs.find((x) =>
+      chosen.submissionReference
+        ? x.submissionReference === chosen.submissionReference
+        : chosen.correlationIds.includes(String(x.correlationId)),
+    );
   const attempt = job && attempts.find((x) => x.jobId === job.id && x.status === 'processing');
   const attemptStart = Date.parse(String(attempt?.startedAt));
   const attemptDue = Date.parse(String(attempt?.dueAt));
@@ -150,6 +184,10 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
           ),
         )
       : 0;
+  /** Replay or atomically accept a confirmed checkout and stage its durable event.
+   * Input: submission, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   async function accept(submission: Submission) {
     try {
       const result = await request<Order>('/api/v1/checkouts', {
@@ -172,6 +210,10 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
       throw new Error('Outcome unknown. Recover the original submission using the saved key.');
     }
   }
+  /** Create one fictional cart and confirmed checkout using public ordering contracts.
+   * Input: recover, from React props, current browser state and explicit user actions.
+   * Communicates with owner HTTP contracts through the shared client; never owner databases.
+   */
   async function demo(recover = false) {
     setDemoBusy(true);
     setNotice('');
@@ -351,7 +393,8 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
           <div>
             <h2 className="font-semibold text-lg">Observed journey</h2>
             <p className="hint mt-1">
-              Select a correlation ID to connect the hops across processes.
+              Follow a checkout key reference across processes, including explicit recovery
+              requests.
             </p>
           </div>
           <Button
@@ -427,6 +470,23 @@ export function Architecture({ samples, polling }: { samples: Observations; poll
         )}
         {chosen ? (
           <>
+            <dl className="mt-4 space-y-2">
+              <div>
+                <dt className="font-semibold">Checkout key reference</dt>
+                <dd className="hint break-all">
+                  {chosen.submissionReference ?? 'Unavailable for this retained journey'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold">Correlation IDs</dt>
+                <dd className="hint break-all">{chosen.correlationIds.join(', ')}</dd>
+              </div>
+            </dl>
+            <p className="hint mt-2">
+              The reference fingerprints the shopper and original idempotency key. Ordering alone
+              stores the replay key; fulfillment keeps the reference through retries and restarts.
+              Repeated delivery is deduplicated by event ID, independently of checkout replay.
+            </p>
             <div className="flex justify-between gap-3 flex-wrap my-4">
               <span className="badge">
                 {replay ? 'Replay · recorded history' : journeyOutcome(chosen)}

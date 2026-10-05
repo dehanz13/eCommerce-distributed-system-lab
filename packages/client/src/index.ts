@@ -1,5 +1,9 @@
 import { safeObservation, validateReply, type Reply } from '@lab/contracts';
 export class ApiError extends Error {
+  /** Describe a rejected or unconfirmed HTTP operation without performing another request.
+   * Inputs: status/code/message/details from the HTTP response or transport failure in request().
+   * Communicates with the calling client through the thrown error; performs no network or database work.
+   */
   constructor(
     public status: number,
     public code: string,
@@ -11,6 +15,10 @@ export class ApiError extends Error {
 }
 export const browserMetrics = { requests: 0, retries: 0, failures: 0, lastDurationMs: 0 };
 export const browserActivity: Record<string, unknown>[] = [];
+/** Generate a local observation UUID, including on plain LAN HTTP.
+ * Input: no arguments; uses its current owner state, from the current browser/runtime crypto capability.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function observationId() {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
   // Local HTTP hostnames may lack randomUUID; getRandomValues remains available.
@@ -20,6 +28,10 @@ function observationId() {
   const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
+/** Record a bounded diagnostic observation.
+ * Input: data, from caller path/body/options and received HTTP responses.
+ * Communicates with bounded in-memory browser activity only.
+ */
 function observe(data: Record<string, unknown>) {
   browserActivity.push({
     ...(safeObservation(data) as object),
@@ -29,6 +41,10 @@ function observe(data: Record<string, unknown>) {
   });
   if (browserActivity.length > 200) browserActivity.shift();
 }
+/** Send a validated HTTP request with one bounded read retry and no mutation replay.
+ * Input: path, options, base, from caller path/body/options and received HTTP responses.
+ * Communicates with native fetch to the chosen HTTP origin and bounded local diagnostics.
+ */
 export async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -43,6 +59,10 @@ export async function request<T>(
     !(method === 'GET' && headers.get('x-lab-observation') === 'poll') &&
     (/^\/api\/v1\/(products|carts|checkouts|orders)(?:\/|$)/.test(path) ||
       (method !== 'GET' && path.includes('/api/v1/')));
+  /** Record this request’s bounded diagnostic stage when tracing is enabled.
+   * Input: data, from caller path/body/options and received HTTP responses.
+   * Communicates with native fetch to the chosen HTTP origin and bounded local diagnostics.
+   */
   const log = (data: Record<string, unknown>) => {
     if (traced) observe({ correlationId, method, route: path.split('?')[0], ...data });
   };
@@ -64,7 +84,9 @@ export async function request<T>(
       const result = await fetch(base + path, {
         ...options,
         headers,
-        signal: options.signal ?? AbortSignal.timeout(8000),
+        signal: options.signal
+          ? AbortSignal.any([options.signal, AbortSignal.timeout(8000)])
+          : AbortSignal.timeout(8000),
       });
       const body = await result.json();
       if (!result.ok) {

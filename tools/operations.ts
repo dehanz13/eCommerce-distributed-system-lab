@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import type { CleanupReport, ResourceSnapshot } from '@lab/contracts';
 import { cleanupReport } from './resources';
+import { writeCleanupEvidence } from '@lab/runtime/lifecycle';
 import { root, cfg, activity } from '@lab/runtime';
 import { requireSettings } from '@lab/runtime/configuration';
 const exec = promisify(execFile);
@@ -22,6 +23,10 @@ export const names = [
   'toxiproxy',
 ] as const;
 export type Service = (typeof names)[number];
+/** Execute a literal allowlisted process command with bounded captured output.
+ * Input: file, args, options, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function command(
   file: string,
   args: string[],
@@ -34,6 +39,10 @@ export async function command(
     env: options.env ?? process.env,
   });
 }
+/** Validate the configured SSH target before a remote lab operation.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 function remoteHost() {
   requireSettings(cfg, ['REMOTE_HOST', 'REMOTE_USER', 'REMOTE_DIR']);
   if (!/^[a-zA-Z0-9_.@/-]+$/.test(cfg.REMOTE_DIR) || !cfg.REMOTE_DIR.startsWith('/'))
@@ -44,6 +53,10 @@ function remoteHost() {
     throw new Error('Invalid remote host or user');
   return `${cfg.REMOTE_USER}@${cfg.REMOTE_HOST}`;
 }
+/** Run scoped lab Compose commands on the selected local/remote container host.
+ * Input: args, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function compose(args: string[]) {
   if (cfg.TOPOLOGY === 'two') {
     return command('ssh', [
@@ -53,11 +66,30 @@ async function compose(args: string[]) {
         : `cd ${quoteShell(cfg.REMOTE_DIR)} && docker compose --env-file .lab/remote.env ${args.map(quoteShell).join(' ')}`,
     ]);
   }
+  if (cfg.REMOTE_VM) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(cfg.REMOTE_VM)) throw new Error('Invalid REMOTE_VM');
+    prepareGuestEnvironment();
+    return command('limactl', [
+      'shell',
+      cfg.REMOTE_VM,
+      'sh',
+      '-c',
+      `cd ${quoteShell(root)} && docker compose --env-file .lab/remote.env ${args.map(quoteShell).join(' ')}`,
+    ]);
+  }
   return command('docker', ['compose', '--env-file', '.env', ...args]);
 }
+/** Locate the recorded launcher PID file for a named lab process.
+ * Input: name, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function pidFile(name: string) {
   return path.join(state, name + '.pid');
 }
+/** Check whether a recorded lab launcher still exists.
+ * Input: name, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function ownedPid(name: string) {
   try {
     const pid = Number(fs.readFileSync(pidFile(name), 'utf8'));
@@ -67,9 +99,17 @@ async function ownedPid(name: string) {
     return null;
   }
 }
+/** Read the named owner’s configured listening port.
+ * Input: name, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function servicePort(name: Service | 'operator') {
   return new URL(cfg[`${name.toUpperCase()}_URL` as 'WEB_URL']).port;
 }
+/** Inspect listening process IDs on a configured application port.
+ * Input: name, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function listeners(name: Service | 'operator') {
   if (process.platform === 'linux') {
     // Older Linux lsof skips Next's truncated process name with unmatched parentheses.
@@ -98,6 +138,10 @@ async function listeners(name: Service | 'operator') {
     throw error;
   }
 }
+/** Verify a listener’s checkout ownership before lifecycle changes.
+ * Input: pid, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function listenerBelongsHere(pid: number) {
   if (process.platform === 'linux') {
     const info = await command('readlink', [`/proc/${pid}/cwd`]);
@@ -109,6 +153,10 @@ async function listenerBelongsHere(pid: number) {
     .split('\n')
     .some((line) => line === 'n' + root || line === 'n' + path.join(root, 'apps/web'));
 }
+/** Start only the requested lab process/container and verify its listener.
+ * Input: name, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function startService(name: Service | 'operator') {
   if (['postgres', 'rabbitmq', 'redis', 'toxiproxy'].includes(name)) {
     await compose(['up', '-d', '--wait', name]);
@@ -185,6 +233,10 @@ export async function startService(name: Service | 'operator') {
   }
   throw new Error(`${name} did not bind its port; inspect .lab/${name}.stdout.log`);
 }
+/** Stop only the requested owned process/container and verify release.
+ * Input: name, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function stopService(name: Service | 'operator') {
   if (
     ['postgres', 'rabbitmq', 'redis', 'toxiproxy'].includes(name) ||
@@ -223,6 +275,10 @@ export async function stopService(name: Service | 'operator') {
   }
   fs.rmSync(pidFile(name), { force: true });
 }
+/** Wait for a named owner’s explicit readiness response.
+ * Input: url, timeout, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function waitReady(url: string, timeout = 60000) {
   const end = Date.now() + timeout;
   while (Date.now() < end) {
@@ -237,22 +293,11 @@ export async function waitReady(url: string, timeout = 60000) {
   }
   throw new Error(`Readiness deadline exceeded: ${url}`);
 }
-export async function deployRemote() {
-  const host = remoteHost();
-  await command('ssh', [host, 'mkdir -p ' + quoteShell(cfg.REMOTE_DIR)]);
-  await command('rsync', [
-    '-az',
-    '--exclude=node_modules',
-    '--exclude=.next',
-    '--exclude=.lab',
-    '--exclude=.env',
-    '--exclude=.git',
-    '--exclude=coverage',
-    '--exclude=playwright-report',
-    '--exclude=test-results',
-    root + '/',
-    `${host}:${cfg.REMOTE_DIR}/`,
-  ]);
+/** Prepare the private Compose projection from the owning host’s validated root configuration.
+ * Accepts no arguments; container DNS/ports come from Compose conventions and published ports from cfg.
+ * Writes only .lab/remote.env atomically with owner-only permissions; never starts services or prints secrets.
+ */
+export function prepareGuestEnvironment() {
   const projection = {
     ...cfg,
     PG_HOST: 'postgres',
@@ -269,24 +314,59 @@ export async function deployRemote() {
     FULFILLMENT_PORT: new URL(cfg.FULFILLMENT_URL).port || '4312',
     RABBIT_PUBLISHED_PORT: cfg.RABBIT_PORT,
   };
-  fs.writeFileSync(
-    path.join(state, 'remote.env'),
-    Object.entries(projection)
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n'),
-    { mode: 0o600 },
-  );
+  const file = path.join(state, 'remote.env');
+  const contents = Object.entries(projection)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('\n');
+  // Keep unchanged mount metadata stable across back-to-back Compose commands.
+  // Replacing the same inode repeatedly can invalidate the guest's virtiofs lookup cache.
+  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === contents) {
+    fs.chmodSync(file, 0o600);
+    return;
+  }
+  const temporary = file + '.tmp';
+  fs.writeFileSync(temporary, contents, { mode: 0o600 });
+  fs.chmodSync(temporary, 0o600);
+  fs.renameSync(temporary, file);
+}
+/** Project and transfer only the lab configuration/artifacts needed by the selected remote host.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
+export async function deployRemote() {
+  const host = remoteHost();
+  await command('ssh', [host, 'mkdir -p ' + quoteShell(cfg.REMOTE_DIR)]);
+  await command('rsync', [
+    '-az',
+    '--exclude=node_modules',
+    '--exclude=.next',
+    '--exclude=.lab',
+    '--exclude=.env',
+    '--exclude=.git',
+    '--exclude=coverage',
+    '--exclude=playwright-report',
+    '--exclude=test-results',
+    root + '/',
+    `${host}:${cfg.REMOTE_DIR}/`,
+  ]);
+  prepareGuestEnvironment();
   await command('ssh', [host, `mkdir -p ${quoteShell(cfg.REMOTE_DIR + '/.lab')}`]);
   await command('scp', [
     path.join(state, 'remote.env'),
     `${host}:${cfg.REMOTE_DIR}/.lab/remote.env`,
   ]);
 }
+/** Start the existing managed topology, migrate/seed and verify owner readiness.
+ * Input: progress, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function startLab(progress: (message: string) => void = () => {}) {
   if (cfg.TOPOLOGY === 'two') {
     if (cfg.REMOTE_VM)
       await command('ssh', [remoteHost(), `limactl start ${quoteShell(cfg.REMOTE_VM)}`]);
     await deployRemote();
+  } else if (cfg.REMOTE_VM) {
+    await command('limactl', ['start', cfg.REMOTE_VM]);
   }
   progress('Starting PostgreSQL, RabbitMQ, Redis and proxy');
   await compose(['up', '-d', '--wait', 'postgres', 'rabbitmq', 'redis', 'toxiproxy']);
@@ -301,6 +381,10 @@ export async function startLab(progress: (message: string) => void = () => {}) {
   await startService('web');
   await waitWeb();
 }
+/** Verify that the configured web HTTP process responds.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 async function waitWeb() {
   const deadline = Date.now() + 60000;
   while (Date.now() < deadline) {
@@ -311,6 +395,10 @@ async function waitWeb() {
   }
   throw new Error('Web readiness deadline exceeded');
 }
+/** Explicitly erase only lab-owned disposable data and recreate it.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function resetLab() {
   for (const n of ['web', 'ordering', 'fulfillment'] as const) await stopService(n);
   await compose(['--profile', 'remote', 'down', '-v']);
@@ -320,6 +408,10 @@ export async function resetLab() {
   }
   await startLab();
 }
+/** Return currently observed readiness or delivery connectivity.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function status() {
   const targets = {
     ordering: cfg.ORDERING_URL,
@@ -377,6 +469,10 @@ export interface Action {
   progress: string;
   cleanup?: CleanupReport;
 }
+/** Dispatch one allowlisted lifecycle action and preserve cleanup evidence.
+ * Input: name, service, preset, progress, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function execute(
   name: string,
   service?: Service,
@@ -402,7 +498,7 @@ export async function execute(
       }
     }
   } else if (name === 'stop') {
-    if (service) await stopService(service);
+    if (service) return stopNamedService(service);
     else return stopLab('stop', false, progress);
   } else if (name === 'restart') {
     if (!service) {
@@ -431,6 +527,10 @@ export async function execute(
     if (!result.ok) throw new Error('Fulfillment controls unavailable');
   } else throw new Error('Unknown action');
 }
+/** Create a recorded operator action with its requested time.
+ * Input: name, service, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 export function action(name: string, service?: Service): Action {
   return {
     id: randomUUID(),
@@ -444,6 +544,10 @@ export function action(name: string, service?: Service): Action {
     progress: 'Waiting to start',
   };
 }
+/** Read bounded persisted operator action history.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export function readActions(): Action[] {
   try {
     return JSON.parse(fs.readFileSync(path.join(state, 'actions.json'), 'utf8'));
@@ -451,6 +555,10 @@ export function readActions(): Action[] {
     return [];
   }
 }
+/** Persist the updated operator action and its outcome.
+ * Input: a, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export function record(a: Action) {
   a.progress =
     a.status === 'requested'
@@ -468,11 +576,19 @@ export function record(a: Action) {
   atomicState('last-action.json', a);
 }
 
+/** Replace one lab state file atomically.
+ * Input: file, value, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 function atomicState(file: string, value: unknown) {
   const temporary = path.join(state, file + '.tmp');
   fs.writeFileSync(temporary, JSON.stringify(value));
   fs.renameSync(temporary, path.join(state, file));
 }
+/** Read the last measured cleanup report without claiming it is current.
+ * Input: no arguments; uses its current owner state, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export function readCleanup(): CleanupReport | null {
   try {
     return JSON.parse(fs.readFileSync(path.join(state, 'cleanup.json'), 'utf8'));
@@ -490,6 +606,10 @@ else:
  page=int(re.search(r'page size of (\\d+)',v).group(1))
  free=sum(int(re.search(r'^'+re.escape(k)+r':\\s+(\\d+)',v,re.M).group(1)) for k in ['Pages free','Pages inactive'])*page
 print(json.dumps(dict(totalMemoryBytes=total,freeMemoryBytes=free,diskFreeBytes=shutil.disk_usage('.').free,loadAverage=list(os.getloadavg()),managedResidentBytes=None)))`;
+/** Represent an unavailable resource sample without inventing measurements.
+ * Input: scope, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with local computation/presentation only; no direct network or database calls.
+ */
 function unavailable(scope: string): ResourceSnapshot {
   return {
     scope,
@@ -504,6 +624,10 @@ function unavailable(scope: string): ResourceSnapshot {
     error: 'Host sample unavailable; verify connectivity and Python 3 on the selected host.',
   };
 }
+/** Measure each reachable configured host/guest using explicit probe sources.
+ * Input: includeGuest, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function sampleResources(includeGuest = true): Promise<ResourceSnapshot[]> {
   const disk = fs.statfsSync(root);
   let resident: number | null = null;
@@ -541,16 +665,22 @@ export async function sampleResources(includeGuest = true): Promise<ResourceSnap
       error: null,
     },
   ];
-  if (cfg.TOPOLOGY === 'two') {
-    for (const scope of ['remote host', ...(cfg.REMOTE_VM && includeGuest ? ['lab guest'] : [])]) {
+  if (cfg.TOPOLOGY === 'two' || (cfg.REMOTE_VM && includeGuest)) {
+    for (const scope of [
+      ...(cfg.TOPOLOGY === 'two' ? ['remote host'] : []),
+      ...(cfg.REMOTE_VM && includeGuest ? ['lab guest'] : []),
+    ]) {
       try {
         const script = `python3 -c ${quoteShell(remoteSample)}`;
-        const result = await command('ssh', [
-          remoteHost(),
-          scope === 'lab guest'
-            ? `limactl shell ${quoteShell(cfg.REMOTE_VM)} sh -c ${quoteShell(script)}`
-            : script,
-        ]);
+        const result =
+          cfg.TOPOLOGY === 'single'
+            ? await command('limactl', ['shell', cfg.REMOTE_VM, 'sh', '-c', script])
+            : await command('ssh', [
+                remoteHost(),
+                scope === 'lab guest'
+                  ? `limactl shell ${quoteShell(cfg.REMOTE_VM)} sh -c ${quoteShell(script)}`
+                  : script,
+              ]);
         const observed = JSON.parse(result.stdout);
         if (
           ![observed.totalMemoryBytes, observed.freeMemoryBytes, observed.diskFreeBytes].every(
@@ -560,7 +690,7 @@ export async function sampleResources(includeGuest = true): Promise<ResourceSnap
           throw new Error('Invalid host measurement');
         samples.push({
           scope,
-          source: 'SSH Python 3 + OS counters (Linux available or macOS free + inactive memory)',
+          source: `${cfg.TOPOLOGY === 'single' ? 'Local Lima' : 'SSH'} Python 3 + OS counters (Linux available or macOS free + inactive memory)`,
           sampledAt: new Date().toISOString(),
           available: true,
           ...observed,
@@ -573,6 +703,10 @@ export async function sampleResources(includeGuest = true): Promise<ResourceSnap
   }
   return samples;
 }
+/** Attempt all independent owned cleanup steps, verify remaining state and save evidence.
+ * Input: reason, releaseVm, progress, from CLI/control input, public owner contracts or measured local evidence.
+ * Communicates with named lab operations, owner HTTP and scoped filesystem/process adapters.
+ */
 export async function stopLab(
   reason = 'stop',
   releaseVm = false,
@@ -602,10 +736,12 @@ export async function stopLab(
     errors.push('Compose teardown failed; inspect the configured container host.');
   }
   let vmReleased = false;
-  if (releaseVm && cfg.TOPOLOGY === 'two' && cfg.REMOTE_VM) {
+  if (releaseVm && cfg.REMOTE_VM) {
     try {
       progress('Stopping configured dedicated guest');
-      await command('ssh', [remoteHost(), `limactl stop ${quoteShell(cfg.REMOTE_VM)}`]);
+      if (cfg.TOPOLOGY === 'two')
+        await command('ssh', [remoteHost(), `limactl stop ${quoteShell(cfg.REMOTE_VM)}`]);
+      else await command('limactl', ['stop', cfg.REMOTE_VM]);
       vmReleased = true;
     } catch {
       errors.push('Configured lab guest did not stop; inspect its status.');
@@ -651,13 +787,14 @@ export async function stopLab(
   }
   const after = (await sampleResources()).filter((x) => !(vmReleased && x.scope === 'lab guest'));
   const report = cleanupReport(reason, before, after, services, errors);
-  if (cfg.TOPOLOGY === 'two' && cfg.REMOTE_VM)
+  if (cfg.REMOTE_VM)
     report.retained.push(
       vmReleased
         ? 'Configured lab guest is stopped; its virtual disk remains on disk.'
         : 'Configured lab guest remains allocated. Use poweroff to release its CPU and memory allocation.',
     );
   atomicState('cleanup.json', report);
+  writeCleanupEvidence(root, 'cleanup', report);
   activity('operator', 'cleanup.completed', {
     cleanupId: report.id,
     verified: report.verified,
@@ -666,5 +803,45 @@ export async function stopLab(
   });
   if (!report.verified)
     throw new Error('Cleanup could not be verified. Inspect /api/v1/resources before restarting.');
+  return report;
+}
+
+/** Stop one operator-selected owner/dependency and record its measured release without stopping independent systems.
+ * Inputs come from a validated named control action; communicates with OS listeners, scoped Compose and host probes.
+ */
+async function stopNamedService(service: Service): Promise<CleanupReport> {
+  const before = await sampleResources();
+  const errors: string[] = [];
+  try {
+    await stopService(service);
+  } catch {
+    errors.push(`Could not stop ${service}; inspect its owner logs and scoped controls.`);
+  }
+  const services: CleanupReport['services'] = [];
+  try {
+    const container =
+      ['postgres', 'rabbitmq', 'redis', 'toxiproxy'].includes(service) ||
+      (service === 'fulfillment' && cfg.TOPOLOGY === 'two');
+    const running = container
+      ? (await compose(['--profile', 'remote', 'ps', '--status', 'running', '--services'])).stdout
+          .trim()
+          .split(/\s+/)
+          .includes(service)
+      : (await listeners(service)).length > 0;
+    services.push({ name: service, running });
+  } catch {
+    services.push({ name: service, running: null, error: 'Stop probe unavailable' });
+  }
+  const report = cleanupReport(
+    `stop ${service}`,
+    before,
+    await sampleResources(),
+    services,
+    errors,
+  );
+  atomicState('cleanup.json', report);
+  writeCleanupEvidence(root, 'cleanup', report);
+  if (!report.verified)
+    throw new Error(`Cleanup of ${service} could not be verified. Inspect /api/v1/resources.`);
   return report;
 }

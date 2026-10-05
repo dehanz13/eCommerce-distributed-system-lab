@@ -43,7 +43,7 @@ Successful health/status/metrics polling and empty processor ticks stay quiet. M
 | `./lab start`                                                    | Start the configured guest if applicable, deploy its projection, start dependencies, migrate/seed, start owners and web, check readiness  |
 | `./lab restart`                                                  | Verify complete teardown, then start; preserve durable records                                                                            |
 | `./lab stop`                                                     | Stop owned applications and remove this Compose project's containers/networks; preserve volumes, images, logs, VM allocation and operator |
-| `./lab poweroff`                                                 | Stop the lab and configured dedicated Lima guest in two-host mode; preserve its disk and operator; in single-host mode stop the lab       |
+| `./lab poweroff`                                                 | Stop the lab and configured dedicated Lima guest, local or remote; preserve its disk and operator                                         |
 | `./lab resources`                                                | Read the saved cleanup report from disk without starting the operator                                                                     |
 | `./lab start redis` / `./lab stop redis` / `./lab restart redis` | Operate only Redis; other service names: web, ordering, fulfillment, postgres, rabbitmq, toxiproxy                                        |
 | `./lab status`                                                   | Probe readiness without starting stopped applications                                                                                     |

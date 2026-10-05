@@ -2,10 +2,17 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-/** Return locations and categories only; a flagged value must not appear in diagnostics. */
+/** Return locations and categories only; a flagged value must not appear in diagnostics.
+ * Inputs: repository-relative filename and file text supplied by the publication scanner.
+ * Checks text locally and returns safe categories; no HTTP, database or lifecycle operations.
+ */
 export function inspectPublicFile(file: string, contents: string) {
   const issues: string[] = [];
-  if (/(^|\/)\.env(?:\.|$)/.test(file) && !file.endsWith('.env.example'))
+  if (
+    /(^|\/)\.env(?:\.|$)/.test(file) &&
+    !file.endsWith('.env.example') &&
+    file !== '.env.web.example'
+  )
     issues.push('private configuration file');
   if (
     /(^|\/)(\.ssh|\.aws|\.lab|test-results|playwright-report)\//.test(file) ||
@@ -44,6 +51,10 @@ export function inspectPublicFile(file: string, contents: string) {
   return issues.map((category) => `${file}: ${category}`);
 }
 
+/** Scan tracked/public candidate files without exposing matched credential values.
+ * Input: none; Git supplies candidate paths and the filesystem supplies their contents.
+ * Reads local Git/filesystem state and prints safe diagnostics; no network or lifecycle operations.
+ */
 export function checkPublicContent() {
   const files = execFileSync(
     'git',

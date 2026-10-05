@@ -16,6 +16,8 @@
     "dev:ordering": "tsx apps/ordering/src/main.ts",
     "dev:fulfillment": "tsx apps/fulfillment/src/main.ts",
     "dev:operator": "tsx apps/operator/src/main.ts",
+    "logs": "tsx tools/logs.ts",
+    "clean:generated": "tsx tools/clean-generated.ts",
     "openapi": "tsx tools/openapi.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",

@@ -96,6 +96,29 @@ it('maps cache observations, operator controls and uncertain health without inve
   expect(activityEdge(log('unrelated'))).toBeUndefined();
 });
 describe('observed architecture journeys', () => {
+  it('joins replay requests by scoped reference and leaves ambiguous correlation-only logs separate', () => {
+    const reference = 'a'.repeat(64);
+    const replay = randomUUID();
+    const flows = journeys([
+      log('http.received'),
+      log('checkout.committed', 'ordering', { submissionReference: reference }),
+      log('http.received', 'ordering', { correlationId: replay }),
+      log('checkout.recovered', 'ordering', {
+        correlationId: replay,
+        submissionReference: reference,
+      }),
+    ]);
+    expect(flows).toHaveLength(1);
+    expect(flows[0]?.logs).toHaveLength(4);
+    expect(flows[0]?.correlationIds).toEqual([correlationId, replay]);
+    const ambiguous = journeys([
+      log('http.received'),
+      log('checkout.committed', 'ordering', { submissionReference: reference }),
+      log('checkout.committed', 'ordering', { submissionReference: 'b'.repeat(64) }),
+    ]);
+    expect(ambiguous).toHaveLength(3);
+    expect(new Set(ambiguous.map((x) => x.id)).size).toBe(3);
+  });
   it('does not infer unobserved work from an accepted response or missing activity', () => {
     const trace = journeys(accepted())[0]!;
     expect(journeyHops(trace).filter((x) => x.observation)).toHaveLength(6);
